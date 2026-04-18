@@ -1,0 +1,13 @@
+name = "lazygit"
+description = "Simple terminal UI for git commands"
+author = "jesseduffield"
+homepage = "https://github.com/jesseduffield/lazygit"
+readme = "https://raw.githubusercontent.com/jesseduffield/lazygit/master/README.md"
+tags = ["git", "tui"]
+license = "MIT"
+category = "Version control"
+language = "Go"
+
+[install]
+type = "brew"
+package = "lazygit"

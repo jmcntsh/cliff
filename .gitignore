@@ -1,0 +1,19 @@
+/cliff
+*.exe
+*.test
+
+.DS_Store
+
+.idea/
+.vscode/
+
+.claude/
+
+AGENTS.md
+
+# wrangler local state
+web/worker/.wrangler/
+web/worker/node_modules/
+
+# goreleaser local builds
+/dist/

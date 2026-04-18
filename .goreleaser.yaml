@@ -1,0 +1,60 @@
+version: 2
+
+project_name: cliff
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: cliff
+    main: ./cmd/cliff
+    binary: cliff
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+archives:
+  - id: cliff
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: ["tar.gz"]
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+# Brew tap publishing — uncomment and create the tap repo
+# (jmcntsh/homebrew-tap) before the first tagged release.
+#
+# brews:
+#   - name: cliff
+#     repository:
+#       owner: jmcntsh
+#       name: homebrew-tap
+#     homepage: "https://cliff.sh"
+#     description: "A terminal-native directory for CLIs and TUIs"
+#     license: "MIT"
+#     install: |
+#       bin.install "cliff"
+#     test: |
+#       system "#{bin}/cliff", "--version"

@@ -1,0 +1,12 @@
+name = "cliff-sh"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+routes = [
+  { pattern = "cliff.sh/*", zone_name = "cliff.sh" },
+  { pattern = "www.cliff.sh/*", zone_name = "cliff.sh" },
+]
+
+# No bindings, no secrets, no env vars — this Worker is fully static
+# beyond the GitHub raw fetch. If we ever add an install-event ping,
+# add a D1 binding here for the events table.

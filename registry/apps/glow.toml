@@ -1,0 +1,13 @@
+name = "glow"
+description = "Render markdown on the CLI, with pizzazz"
+author = "charmbracelet"
+homepage = "https://github.com/charmbracelet/glow"
+readme = "https://raw.githubusercontent.com/charmbracelet/glow/master/README.md"
+tags = ["markdown", "tui"]
+license = "MIT"
+category = "Documentation"
+language = "Go"
+
+[install]
+type = "go"
+package = "github.com/charmbracelet/glow@latest"
