@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 )
 
-// registryJSON is a build-time snapshot of registry/index.json, embedded
-// so the awesome-tuis fallback catalog can still show InstallSpecs for
-// curated entries when the live registry (registry.cliff.sh) isn't
-// reachable. Keep this file in sync with registry/index.json — regenerate
-// via `go run ./registry/cmd/build registry/apps internal/catalog/data/registry.json`.
+// registryJSON is a build-time snapshot of the published index from
+// jmcntsh/cliff-registry, embedded so the awesome-tuis fallback catalog
+// can still show InstallSpecs for curated entries when the live registry
+// (registry.cliff.sh) isn't reachable. Refresh with:
+//
+//	curl -fsSL https://registry.cliff.sh/index.json -o internal/catalog/data/registry.json
 //
 //go:embed data/registry.json
 var registryJSON []byte

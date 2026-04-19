@@ -11,13 +11,12 @@ upstream fails. The `i` install action shells out via the
 manifest's `[install]` block; installed apps are recorded in
 `~/.cliff/installed.json` and marked with `✓` in the list.
 
-The registry itself currently lives in this repo at `registry/`
-as a scaffold (TOML manifests + `cmd/lint` + `cmd/build`). When
-ready, that directory moves to its own GitHub repo wholesale
-(no rewrites — module imports stay valid via the public package
-path). Distribution scaffolding (`.goreleaser.yaml`,
-`scripts/install.sh`) is in place; releases auto-cut on `v*` tag
-push.
+The registry itself lives in [`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry):
+TOML manifests under `apps/`, lint + build commands, and a CI
+workflow that publishes `index.json` to GitHub Pages at
+`registry.cliff.sh` on every merge to main. Distribution
+scaffolding (`.goreleaser.yaml`, `scripts/install.sh`) is in
+place; releases auto-cut on `v*` tag push.
 
 ## Run it
 
@@ -31,11 +30,13 @@ No flags required. Press `?` for keybinds, `q` / `ctrl-c` to quit.
 ### Pointing at a custom registry
 
 By default the client fetches `https://registry.cliff.sh/index.json`.
-For local registry dev:
+For local registry dev, build an `index.json` against a checkout of
+[`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)
+and point the client at it:
 
 ```sh
-go run ./registry/cmd/build ./registry/apps ./registry/index.json
-CLIFF_REGISTRY_URL="file://$PWD/registry/index.json" go run ./cmd/cliff
+cd ../cliff-registry && go run ./cmd/build ./apps /tmp/index.json
+CLIFF_REGISTRY_URL="file:///tmp/index.json" go run ./cmd/cliff
 ```
 
 `CLIFF_DEBUG=1` prints the catalog source (`registry`, `cache`,
@@ -71,12 +72,8 @@ internal/install/                     — install runner + ~/.cliff/installed.js
   install_test.go                     — runner + store unit tests
 internal/catalog/fetch.go             — registry index fetcher (ETag-aware)
                                         with cache → embedded fallback chain
-registry/                             — registry scaffold (will move to its own repo)
-  apps/<name>.toml                    — one TOML manifest per app
-  cmd/lint/main.go                    — manifest validator (also used by registry CI)
-  cmd/build/main.go                   — compiles apps/*.toml → index.json
-  internal/manifest/                  — schema + Validate + ToApp
-  index.json                          — generated; do not edit by hand
+internal/catalog/registry_overlay.go  — embeds a snapshot of registry.cliff.sh/index.json
+                                        as a last-resort overlay on the scrape
 scripts/install.sh                    — installer for `curl cliff.sh | sh`
 web/worker/                           — Cloudflare Worker behind cliff.sh
   src/index.js                        — serves install.sh to curl, HTML to browsers
@@ -99,19 +96,25 @@ go vet ./...           # static checks
 
 ### Working with the registry
 
-Manifests live under `registry/apps/`, one TOML per app. To add or
-edit one:
+Manifests live in [`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)
+under `apps/<name>.toml`. To add or edit one, open a PR there:
 
 ```sh
-$EDITOR registry/apps/myapp.toml
-go run ./registry/cmd/lint ./registry/apps     # validate
-go run ./registry/cmd/build ./registry/apps ./registry/index.json
+$EDITOR apps/myapp.toml
+go run ./cmd/lint ./apps                       # validate
+go run ./cmd/build ./apps /tmp/index.json      # preview the compiled index
 ```
 
-Schema: see [`notes/manifest.md`](notes/manifest.md). When this
-directory moves to `jmcntsh/cliff-registry`, CI will run lint on
-PRs and rebuild on merge — the same two commands above, just in
-GitHub Actions.
+CI lints every PR and, on merge to main, rebuilds `index.json`
+and publishes it to `https://registry.cliff.sh/index.json` via
+GitHub Pages. Schema: [`docs/manifest.md`](https://github.com/jmcntsh/cliff-registry/blob/main/docs/manifest.md)
+in that repo.
+
+To refresh the embedded fallback overlay in this repo:
+
+```sh
+curl -fsSL https://registry.cliff.sh/index.json -o internal/catalog/data/registry.json
+```
 
 ### Regenerating the catalog
 
