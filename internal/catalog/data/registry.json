@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-18T16:54:37.393484Z",
-  "source_commit": "registry@local",
+  "generated_at": "2026-04-19T16:22:07.704187019Z",
+  "source_commit": "8b0b9eb98e2d41e559e0e51fd30da8656a283600",
   "apps": [
     {
       "name": "btop",
@@ -10,11 +10,8 @@
       "category": "Dashboards",
       "language": "C++",
       "license": "Apache-2.0",
-      "stars": 0,
+      "stars": 31710,
       "homepage": "https://github.com/aristocratos/btop",
-      "install": {
-        "brew": "brew install btop"
-      },
       "author": "aristocratos",
       "readme": "https://raw.githubusercontent.com/aristocratos/btop/main/README.md",
       "tags": [
@@ -24,7 +21,8 @@
       "install_spec": {
         "type": "brew",
         "package": "btop"
-      }
+      },
+      "last_commit": "2026-04-13T08:38:34Z"
     },
     {
       "name": "glow",
@@ -33,11 +31,8 @@
       "category": "Documentation",
       "language": "Go",
       "license": "MIT",
-      "stars": 0,
+      "stars": 24475,
       "homepage": "https://github.com/charmbracelet/glow",
-      "install": {
-        "go": "go install github.com/charmbracelet/glow@latest"
-      },
       "author": "charmbracelet",
       "readme": "https://raw.githubusercontent.com/charmbracelet/glow/master/README.md",
       "tags": [
@@ -47,7 +42,8 @@
       "install_spec": {
         "type": "go",
         "package": "github.com/charmbracelet/glow@latest"
-      }
+      },
+      "last_commit": "2026-04-12T00:07:34Z"
     },
     {
       "name": "lazygit",
@@ -56,11 +52,8 @@
       "category": "Version control",
       "language": "Go",
       "license": "MIT",
-      "stars": 0,
+      "stars": 76690,
       "homepage": "https://github.com/jesseduffield/lazygit",
-      "install": {
-        "brew": "brew install lazygit"
-      },
       "author": "jesseduffield",
       "readme": "https://raw.githubusercontent.com/jesseduffield/lazygit/master/README.md",
       "tags": [
@@ -70,7 +63,8 @@
       "install_spec": {
         "type": "brew",
         "package": "lazygit"
-      }
+      },
+      "last_commit": "2026-04-19T09:35:29Z"
     }
   ],
   "categories": [
