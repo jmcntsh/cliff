@@ -24,7 +24,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 )
@@ -205,24 +204,9 @@ func InstalledApps(apps []catalog.App) map[string]bool {
 	bins := Detect()
 	out := map[string]bool{}
 	for i := range apps {
-		if bins[BinaryName(&apps[i])] {
+		if bins[apps[i].BinaryName()] {
 			out[apps[i].Repo] = true
 		}
 	}
 	return out
-}
-
-// BinaryName returns the expected executable name for an app. Today it's
-// just the repo basename (charmbracelet/glow → "glow"), which matches
-// the install convention for ~90% of CLI TUIs. Apps whose binary name
-// differs from the repo (e.g. cli/cli → "gh", ClementTsang/bottom → "btm")
-// would need a manifest binary: field — not wired yet.
-func BinaryName(a *catalog.App) string {
-	if a == nil {
-		return ""
-	}
-	if i := strings.LastIndex(a.Repo, "/"); i >= 0 {
-		return a.Repo[i+1:]
-	}
-	return a.Repo
 }
