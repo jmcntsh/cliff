@@ -13,6 +13,12 @@ Last updated: 2026-04-21.
 - **`registry.cliff.sh/index.json`** — GitHub Pages, HTTPS enforced.
   Built by CI in [`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)
   on every merge to main. DNS + cert live since 2026-04-21.
+- **Catalog: 28 apps**, indie-first with a flashy games section
+  (rebels-in-the-sky, tetrigo, chess-tui, plastic NES emulator,
+  etc.). 13 categories. Seeded 2026-04-21 in
+  [cliff-registry#1](https://github.com/jmcntsh/cliff-registry/pull/1).
+  Embedded snapshot in `internal/catalog/data/index.json` matches
+  the live index.
 - **GitHub releases** — latest `v0.1.4` (2026-04-19). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the

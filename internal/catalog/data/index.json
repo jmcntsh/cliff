@@ -1,8 +1,74 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-19T16:22:07.704187019Z",
-  "source_commit": "8b0b9eb98e2d41e559e0e51fd30da8656a283600",
+  "generated_at": "2026-04-21T23:26:46.985450188Z",
+  "source_commit": "a70c02bad7308dfd96b72411276fd039183f5662",
   "apps": [
+    {
+      "name": "atac",
+      "repo": "Julien-cpsn/ATAC",
+      "description": "A feature-full TUI API client — Postman, but in your terminal",
+      "category": "HTTP clients",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 3569,
+      "homepage": "https://github.com/Julien-cpsn/ATAC",
+      "author": "Julien-cpsn",
+      "readme": "https://raw.githubusercontent.com/Julien-cpsn/ATAC/main/README.md",
+      "tags": [
+        "http",
+        "api",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "atac"
+      },
+      "last_commit": "2026-03-09T07:09:22Z"
+    },
+    {
+      "name": "atuin",
+      "repo": "atuinsh/atuin",
+      "description": "Magical shell history — SQLite-backed, searchable, syncable across machines",
+      "category": "Shell utilities",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 29410,
+      "homepage": "https://github.com/atuinsh/atuin",
+      "author": "atuinsh",
+      "readme": "https://raw.githubusercontent.com/atuinsh/atuin/main/README.md",
+      "tags": [
+        "shell",
+        "history",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "atuin"
+      },
+      "last_commit": "2026-04-21T22:30:48Z"
+    },
+    {
+      "name": "binsider",
+      "repo": "orhun/binsider",
+      "description": "Analyze ELF binaries in your terminal — strings, headers, hex, and live disassembly",
+      "category": "Developer tools",
+      "language": "Rust",
+      "license": "Apache-2.0",
+      "stars": 4159,
+      "homepage": "https://github.com/orhun/binsider",
+      "author": "orhun",
+      "readme": "https://raw.githubusercontent.com/orhun/binsider/main/README.md",
+      "tags": [
+        "binary",
+        "analysis",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "binsider"
+      },
+      "last_commit": "2026-04-19T00:22:56Z"
+    },
     {
       "name": "btop",
       "repo": "aristocratos/btop",
@@ -10,7 +76,7 @@
       "category": "Dashboards",
       "language": "C++",
       "license": "Apache-2.0",
-      "stars": 31710,
+      "stars": 31768,
       "homepage": "https://github.com/aristocratos/btop",
       "author": "aristocratos",
       "readme": "https://raw.githubusercontent.com/aristocratos/btop/main/README.md",
@@ -25,13 +91,144 @@
       "last_commit": "2026-04-13T08:38:34Z"
     },
     {
+      "name": "chess-tui",
+      "repo": "thomas-mauran/chess-tui",
+      "description": "Play chess from your terminal against a bot, a friend, or an engine",
+      "category": "Games",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 1015,
+      "homepage": "https://github.com/thomas-mauran/chess-tui",
+      "author": "thomas-mauran",
+      "readme": "https://raw.githubusercontent.com/thomas-mauran/chess-tui/main/README.md",
+      "tags": [
+        "game",
+        "chess",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "cargo",
+        "package": "chess-tui"
+      },
+      "last_commit": "2026-04-19T12:31:34Z"
+    },
+    {
+      "name": "crossword",
+      "repo": "MatrixFrog/crossword",
+      "description": "Play crossword puzzles in your terminal",
+      "category": "Games",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 47,
+      "homepage": "https://github.com/MatrixFrog/crossword",
+      "author": "MatrixFrog",
+      "readme": "https://raw.githubusercontent.com/MatrixFrog/crossword/main/README.md",
+      "tags": [
+        "game",
+        "puzzle",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "cargo",
+        "package": "crossword"
+      },
+      "last_commit": "2025-07-31T05:17:51Z"
+    },
+    {
+      "name": "dooit",
+      "repo": "kraanzu/dooit",
+      "description": "An awesome todo manager for the terminal",
+      "category": "Productivity",
+      "language": "Python",
+      "license": "MIT",
+      "stars": 2866,
+      "homepage": "https://github.com/kraanzu/dooit",
+      "author": "kraanzu",
+      "readme": "https://raw.githubusercontent.com/kraanzu/dooit/main/README.md",
+      "tags": [
+        "todo",
+        "productivity",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "dooit"
+      },
+      "last_commit": "2026-04-18T04:14:08Z"
+    },
+    {
+      "name": "frogmouth",
+      "repo": "Textualize/frogmouth",
+      "description": "A Markdown browser for your terminal, by the Textual team",
+      "category": "Documentation",
+      "language": "Python",
+      "license": "MIT",
+      "stars": 3138,
+      "homepage": "https://github.com/Textualize/frogmouth",
+      "author": "Textualize",
+      "readme": "https://raw.githubusercontent.com/Textualize/frogmouth/main/README.md",
+      "tags": [
+        "markdown",
+        "reader",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "pipx",
+        "package": "frogmouth"
+      },
+      "last_commit": "2024-08-01T06:51:47Z"
+    },
+    {
+      "name": "gh-dash",
+      "repo": "dlvhdr/gh-dash",
+      "description": "A gh extension: your PRs and issues on a beautiful, customizable terminal dashboard",
+      "category": "Developer tools",
+      "language": "Go",
+      "license": "MIT",
+      "stars": 11422,
+      "homepage": "https://github.com/dlvhdr/gh-dash",
+      "author": "dlvhdr",
+      "readme": "https://raw.githubusercontent.com/dlvhdr/gh-dash/main/README.md",
+      "tags": [
+        "github",
+        "dashboard",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "go",
+        "package": "github.com/dlvhdr/gh-dash@latest"
+      },
+      "last_commit": "2026-04-19T20:09:30Z"
+    },
+    {
+      "name": "gitui",
+      "repo": "extrawurst/gitui",
+      "description": "Blazing-fast terminal UI for git, written in Rust",
+      "category": "Version control",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 21809,
+      "homepage": "https://github.com/extrawurst/gitui",
+      "author": "extrawurst",
+      "readme": "https://raw.githubusercontent.com/extrawurst/gitui/master/README.md",
+      "tags": [
+        "git",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "gitui"
+      },
+      "last_commit": "2026-04-21T02:57:38Z"
+    },
+    {
       "name": "glow",
       "repo": "charmbracelet/glow",
       "description": "Render markdown on the CLI, with pizzazz",
       "category": "Documentation",
       "language": "Go",
       "license": "MIT",
-      "stars": 24475,
+      "stars": 24516,
       "homepage": "https://github.com/charmbracelet/glow",
       "author": "charmbracelet",
       "readme": "https://raw.githubusercontent.com/charmbracelet/glow/master/README.md",
@@ -46,13 +243,79 @@
       "last_commit": "2026-04-12T00:07:34Z"
     },
     {
+      "name": "gum",
+      "repo": "charmbracelet/gum",
+      "description": "A tool for glamorous shell scripts — make your scripts pop with Charm UI primitives",
+      "category": "Shell utilities",
+      "language": "Go",
+      "license": "MIT",
+      "stars": 23428,
+      "homepage": "https://github.com/charmbracelet/gum",
+      "author": "charmbracelet",
+      "readme": "https://raw.githubusercontent.com/charmbracelet/gum/main/README.md",
+      "tags": [
+        "shell",
+        "scripting",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "gum"
+      },
+      "last_commit": "2026-04-20T09:45:22Z"
+    },
+    {
+      "name": "harlequin",
+      "repo": "tconbeer/harlequin",
+      "description": "The SQL IDE for your terminal — query DuckDB, SQLite, Postgres, and more",
+      "category": "Databases",
+      "language": "Python",
+      "license": "MIT",
+      "stars": 6006,
+      "homepage": "https://github.com/tconbeer/harlequin",
+      "author": "tconbeer",
+      "readme": "https://raw.githubusercontent.com/tconbeer/harlequin/main/README.md",
+      "tags": [
+        "sql",
+        "database",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "harlequin"
+      },
+      "last_commit": "2026-04-21T22:01:08Z"
+    },
+    {
+      "name": "jnv",
+      "repo": "ynqa/jnv",
+      "description": "Interactive JSON filter using jq",
+      "category": "Data tools",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 5995,
+      "homepage": "https://github.com/ynqa/jnv",
+      "author": "ynqa",
+      "readme": "https://raw.githubusercontent.com/ynqa/jnv/main/README.md",
+      "tags": [
+        "json",
+        "jq",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "jnv"
+      },
+      "last_commit": "2026-04-03T09:13:20Z"
+    },
+    {
       "name": "lazygit",
       "repo": "jesseduffield/lazygit",
       "description": "Simple terminal UI for git commands",
       "category": "Version control",
       "language": "Go",
       "license": "MIT",
-      "stars": 76690,
+      "stars": 76813,
       "homepage": "https://github.com/jesseduffield/lazygit",
       "author": "jesseduffield",
       "readme": "https://raw.githubusercontent.com/jesseduffield/lazygit/master/README.md",
@@ -64,7 +327,291 @@
         "type": "brew",
         "package": "lazygit"
       },
-      "last_commit": "2026-04-19T09:35:29Z"
+      "last_commit": "2026-04-21T16:58:24Z"
+    },
+    {
+      "name": "minesweep",
+      "repo": "cpcloud/minesweep-rs",
+      "description": "Classic minesweeper in the terminal, built with tui-rs",
+      "category": "Games",
+      "language": "Rust",
+      "license": "Apache-2.0",
+      "stars": 234,
+      "homepage": "https://github.com/cpcloud/minesweep-rs",
+      "author": "cpcloud",
+      "readme": "https://raw.githubusercontent.com/cpcloud/minesweep-rs/main/README.md",
+      "tags": [
+        "game",
+        "minesweeper",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "cargo",
+        "package": "minesweep"
+      },
+      "last_commit": "2025-06-08T01:01:12Z"
+    },
+    {
+      "name": "oxker",
+      "repo": "mrjackwills/oxker",
+      "description": "A simple TUI to view and control Docker containers",
+      "category": "DevOps",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 1628,
+      "homepage": "https://github.com/mrjackwills/oxker",
+      "author": "mrjackwills",
+      "readme": "https://raw.githubusercontent.com/mrjackwills/oxker/main/README.md",
+      "tags": [
+        "docker",
+        "containers",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "oxker"
+      },
+      "last_commit": "2026-03-24T21:03:57Z"
+    },
+    {
+      "name": "plastic",
+      "repo": "Amjad50/plastic",
+      "description": "NES emulator with a Ratatui terminal UI — play NES ROMs in your shell",
+      "category": "Games",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 578,
+      "homepage": "https://github.com/Amjad50/plastic",
+      "author": "Amjad50",
+      "readme": "https://raw.githubusercontent.com/Amjad50/plastic/master/README.md",
+      "tags": [
+        "game",
+        "emulator",
+        "nes",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "cargo",
+        "package": "plastic_tui"
+      },
+      "last_commit": "2026-03-09T04:05:58Z"
+    },
+    {
+      "name": "posting",
+      "repo": "darrenburns/posting",
+      "description": "Modern API client that lives in your terminal",
+      "category": "HTTP clients",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "stars": 11759,
+      "homepage": "https://github.com/darrenburns/posting",
+      "author": "darrenburns",
+      "readme": "https://raw.githubusercontent.com/darrenburns/posting/main/README.md",
+      "tags": [
+        "http",
+        "api",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "posting"
+      },
+      "last_commit": "2026-03-25T23:30:48Z"
+    },
+    {
+      "name": "rebels-in-the-sky",
+      "repo": "ricott1/rebels-in-the-sky",
+      "description": "P2P terminal game about space pirates playing basketball across the galaxy",
+      "category": "Games",
+      "language": "Rust",
+      "license": "GPL-3.0",
+      "stars": 642,
+      "homepage": "https://github.com/ricott1/rebels-in-the-sky",
+      "author": "ricott1",
+      "readme": "https://raw.githubusercontent.com/ricott1/rebels-in-the-sky/main/README.md",
+      "tags": [
+        "game",
+        "multiplayer",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "cargo",
+        "package": "rebels"
+      },
+      "last_commit": "2026-03-24T21:05:42Z"
+    },
+    {
+      "name": "scope-tui",
+      "repo": "alemidev/scope-tui",
+      "description": "A simple oscilloscope, vectorscope, and spectroscope for your terminal",
+      "category": "Toys \u0026 visualizers",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 575,
+      "homepage": "https://github.com/alemidev/scope-tui",
+      "author": "alemidev",
+      "readme": "https://raw.githubusercontent.com/alemidev/scope-tui/dev/README.md",
+      "tags": [
+        "audio",
+        "visualizer",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "cargo",
+        "package": "scope-tui"
+      },
+      "last_commit": "2026-03-01T08:50:33Z"
+    },
+    {
+      "name": "serie",
+      "repo": "lusingander/serie",
+      "description": "Rich git commit graph in your terminal, like magic",
+      "category": "Version control",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 1890,
+      "homepage": "https://github.com/lusingander/serie",
+      "author": "lusingander",
+      "readme": "https://raw.githubusercontent.com/lusingander/serie/main/README.md",
+      "tags": [
+        "git",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "serie"
+      },
+      "last_commit": "2026-04-18T05:52:12Z"
+    },
+    {
+      "name": "soft-serve",
+      "repo": "charmbracelet/soft-serve",
+      "description": "The mighty, self-hostable Git server with an SSH-accessible TUI",
+      "category": "Version control",
+      "language": "Go",
+      "license": "MIT",
+      "stars": 6807,
+      "homepage": "https://github.com/charmbracelet/soft-serve",
+      "author": "charmbracelet",
+      "readme": "https://raw.githubusercontent.com/charmbracelet/soft-serve/main/README.md",
+      "tags": [
+        "git",
+        "ssh",
+        "server",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "soft-serve"
+      },
+      "last_commit": "2026-04-18T01:26:16Z"
+    },
+    {
+      "name": "superfile",
+      "repo": "yorukot/superfile",
+      "description": "Pretty fancy and modern terminal file manager",
+      "category": "File management",
+      "language": "Go",
+      "license": "MIT",
+      "stars": 17187,
+      "homepage": "https://github.com/yorukot/superfile",
+      "author": "yorukot",
+      "readme": "https://raw.githubusercontent.com/yorukot/superfile/main/README.md",
+      "tags": [
+        "file-manager",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "superfile"
+      },
+      "last_commit": "2026-04-21T22:13:05Z"
+    },
+    {
+      "name": "television",
+      "repo": "alexpasmantier/television",
+      "description": "Fast and versatile fuzzy finder TUI for files, git, env, docker, and more",
+      "category": "Shell utilities",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 5735,
+      "homepage": "https://github.com/alexpasmantier/television",
+      "author": "alexpasmantier",
+      "readme": "https://raw.githubusercontent.com/alexpasmantier/television/main/README.md",
+      "tags": [
+        "fuzzy-finder",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "television"
+      },
+      "last_commit": "2026-04-16T08:05:36Z"
+    },
+    {
+      "name": "tetrigo",
+      "repo": "Broderick-Westrope/tetrigo",
+      "description": "Play Tetris in your terminal, following the official 2009 design guideline",
+      "category": "Games",
+      "language": "Go",
+      "license": "GPL-3.0",
+      "stars": 656,
+      "homepage": "https://github.com/Broderick-Westrope/tetrigo",
+      "author": "Broderick-Westrope",
+      "readme": "https://raw.githubusercontent.com/Broderick-Westrope/tetrigo/main/README.md",
+      "tags": [
+        "game",
+        "tetris",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "go",
+        "package": "github.com/Broderick-Westrope/tetrigo/cmd/tetrigo@latest"
+      },
+      "last_commit": "2026-04-05T21:51:57Z"
+    },
+    {
+      "name": "vhs",
+      "repo": "charmbracelet/vhs",
+      "description": "Write terminal GIFs as code for integration testing and demos",
+      "category": "Developer tools",
+      "language": "Go",
+      "license": "MIT",
+      "stars": 19464,
+      "homepage": "https://github.com/charmbracelet/vhs",
+      "author": "charmbracelet",
+      "readme": "https://raw.githubusercontent.com/charmbracelet/vhs/main/README.md",
+      "tags": [
+        "gif",
+        "recording",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "vhs"
+      },
+      "last_commit": "2026-04-13T09:14:30Z"
+    },
+    {
+      "name": "yazi",
+      "repo": "sxyazi/yazi",
+      "description": "Blazing-fast terminal file manager based on async I/O",
+      "category": "File management",
+      "language": "Rust",
+      "license": "MIT",
+      "stars": 36877,
+      "homepage": "https://github.com/sxyazi/yazi",
+      "author": "sxyazi",
+      "readme": "https://raw.githubusercontent.com/sxyazi/yazi/main/README.md",
+      "tags": [
+        "file-manager",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "yazi"
+      },
+      "last_commit": "2026-04-21T15:51:43Z"
     }
   ],
   "categories": [
@@ -73,12 +620,52 @@
       "count": 1
     },
     {
+      "name": "Data tools",
+      "count": 1
+    },
+    {
+      "name": "Databases",
+      "count": 1
+    },
+    {
+      "name": "DevOps",
+      "count": 1
+    },
+    {
+      "name": "Developer tools",
+      "count": 3
+    },
+    {
       "name": "Documentation",
+      "count": 2
+    },
+    {
+      "name": "File management",
+      "count": 2
+    },
+    {
+      "name": "Games",
+      "count": 6
+    },
+    {
+      "name": "HTTP clients",
+      "count": 2
+    },
+    {
+      "name": "Productivity",
+      "count": 1
+    },
+    {
+      "name": "Shell utilities",
+      "count": 3
+    },
+    {
+      "name": "Toys \u0026 visualizers",
       "count": 1
     },
     {
       "name": "Version control",
-      "count": 1
+      "count": 4
     }
   ]
 }
