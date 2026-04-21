@@ -43,18 +43,21 @@ changelog:
       - "^test:"
       - "^chore:"
 
-# Brew tap publishing — uncomment and create the tap repo
-# (jmcntsh/homebrew-tap) before the first tagged release.
-#
-# brews:
-#   - name: cliff
-#     repository:
-#       owner: jmcntsh
-#       name: homebrew-tap
-#     homepage: "https://cliff.sh"
-#     description: "A terminal-native directory for CLIs and TUIs"
-#     license: "MIT"
-#     install: |
-#       bin.install "cliff"
-#     test: |
-#       system "#{bin}/cliff", "--version"
+# Brew tap publishing. The default GITHUB_TOKEN can only push to this
+# repo; pushing a formula commit to jmcntsh/homebrew-tap needs a PAT
+# with contents:write on the tap repo. Set HOMEBREW_TAP_GITHUB_TOKEN
+# as a repo secret on jmcntsh/cliff and pass it through in
+# .github/workflows/release.yml.
+brews:
+  - name: cliff
+    repository:
+      owner: jmcntsh
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://cliff.sh"
+    description: "A terminal-native directory for CLIs and TUIs"
+    license: "MIT"
+    install: |
+      bin.install "cliff"
+    test: |
+      system "#{bin}/cliff", "--version"
