@@ -183,6 +183,10 @@ func TestInstalledApps_MatchesByRepoBasename(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir)
+	// Isolate manager-dir scan: point the defaults at an empty temp
+	// dir so a real ~/.cargo/bin or ~/go/bin on the test host can't
+	// leak a false positive for "lazygit" and pass the negative check.
+	isolateManagerDirs(t)
 
 	apps := []catalog.App{
 		{Name: "glow", Repo: "charmbracelet/glow"},
@@ -195,4 +199,154 @@ func TestInstalledApps_MatchesByRepoBasename(t *testing.T) {
 	if got["jesseduffield/lazygit"] {
 		t.Error("lazygit binary does not exist in PATH; should not be marked")
 	}
+}
+
+// TestInstalledApps_DetectsBinaryInGOBIN_OffPATH pins the post-v0.1.6
+// behavior: a binary dropped in $GOBIN counts as installed even when
+// $GOBIN isn't on $PATH. This is the common post-`go install` state on
+// a fresh machine and was previously reported as "not installed".
+func TestInstalledApps_DetectsBinaryInGOBIN_OffPATH(t *testing.T) {
+	pathDir := t.TempDir()
+	gobin := t.TempDir()
+	exe := filepath.Join(gobin, "tetrigo")
+	if err := os.WriteFile(exe, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", pathDir) // deliberately no gobin in PATH
+	isolateManagerDirs(t)
+	t.Setenv("GOBIN", gobin)
+
+	got := InstalledApps([]catalog.App{
+		{Name: "tetrigo", Repo: "Broderick-Westrope/tetrigo"},
+	})
+	if !got["Broderick-Westrope/tetrigo"] {
+		t.Error("tetrigo in $GOBIN should count as installed even off PATH")
+	}
+}
+
+func TestLocateBinary_OnPATH(t *testing.T) {
+	dir := t.TempDir()
+	exe := filepath.Join(dir, "cliff-locate-a")
+	if err := os.WriteFile(exe, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	isolateManagerDirs(t)
+
+	got, onPath := LocateBinary("cliff-locate-a")
+	if !onPath {
+		t.Errorf("expected onPath=true for binary in $PATH, got dir=%q onPath=%v", got, onPath)
+	}
+}
+
+func TestLocateBinary_InGOBIN_OffPATH(t *testing.T) {
+	pathDir := t.TempDir()
+	gobin := t.TempDir()
+	exe := filepath.Join(gobin, "cliff-locate-b")
+	if err := os.WriteFile(exe, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", pathDir)
+	isolateManagerDirs(t)
+	t.Setenv("GOBIN", gobin)
+
+	dir, onPath := LocateBinary("cliff-locate-b")
+	if onPath {
+		t.Errorf("expected onPath=false for binary only in $GOBIN, got dir=%q onPath=%v", dir, onPath)
+	}
+	if dir != gobin {
+		t.Errorf("expected dir=%q, got %q", gobin, dir)
+	}
+}
+
+func TestLocateBinary_NotFound(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	isolateManagerDirs(t)
+
+	dir, onPath := LocateBinary("cliff-locate-nonesuch")
+	if dir != "" || onPath {
+		t.Errorf("expected empty miss, got dir=%q onPath=%v", dir, onPath)
+	}
+}
+
+// TestStream_AttachesPathWarning exercises the end-to-end post-install
+// check: a successful install whose produced binary lives only in a
+// manager dir (not $PATH) must emit a PathWarning on the Result.
+func TestStream_AttachesPathWarning(t *testing.T) {
+	pathDir := t.TempDir()
+	gobin := t.TempDir()
+	// /bin and /usr/bin so sh + printf + chmod resolve inside sh -c.
+	// If those weren't on PATH, exec would fail before we ever got to
+	// the post-install check we're trying to exercise.
+	t.Setenv("PATH", pathDir+":/bin:/usr/bin")
+	isolateManagerDirs(t)
+	t.Setenv("GOBIN", gobin)
+
+	// Script install that drops an executable into $GOBIN, simulating
+	// what `go install foo@latest` would do. Using a script type keeps
+	// the test hermetic — we don't need Go installed on the test host.
+	// printf + chmod is portable across /bin/sh (macOS + Linux).
+	bin := filepath.Join(gobin, "phantom")
+	app := &catalog.App{
+		Name: "phantom",
+		Repo: "u/phantom",
+		InstallSpec: &catalog.InstallSpec{
+			Type:    "script",
+			Command: `printf '#!/bin/sh\nexit 0\n' > ` + bin + ` && chmod +x ` + bin,
+		},
+	}
+
+	res := Stream(context.Background(), app, nil)
+	if res.Err != nil {
+		t.Fatalf("install failed: %v (output=%q)", res.Err, res.Output)
+	}
+	if res.PathWarning == nil {
+		t.Fatal("expected PathWarning for off-PATH install, got nil")
+	}
+	if res.PathWarning.Binary != "phantom" {
+		t.Errorf("warning.Binary = %q, want %q", res.PathWarning.Binary, "phantom")
+	}
+	if res.PathWarning.Dir != gobin {
+		t.Errorf("warning.Dir = %q, want %q", res.PathWarning.Dir, gobin)
+	}
+}
+
+// TestStream_NoPathWarningWhenOnPATH is the negative case: when the
+// install drops the binary into a dir already on $PATH, no warning
+// should fire.
+func TestStream_NoPathWarningWhenOnPATH(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("PATH", dir+":/bin:/usr/bin")
+	isolateManagerDirs(t)
+
+	app := &catalog.App{
+		Name: "ghost",
+		Repo: "u/ghost",
+		InstallSpec: &catalog.InstallSpec{
+			Type: "script",
+			Command: `printf '#!/bin/sh\nexit 0\n' > ` +
+				filepath.Join(dir, "ghost") + ` && chmod +x ` + filepath.Join(dir, "ghost"),
+		},
+	}
+	res := Stream(context.Background(), app, nil)
+	if res.Err != nil {
+		t.Fatalf("install failed: %v (output=%q)", res.Err, res.Output)
+	}
+	if res.PathWarning != nil {
+		t.Errorf("unexpected PathWarning for on-PATH install: %+v", *res.PathWarning)
+	}
+}
+
+// isolateManagerDirs points GOBIN/GOPATH/HOME at empty temp dirs for
+// the duration of the test so LocateBinary and managerBinDirs can't
+// pick up real binaries from the developer's ~/go/bin or ~/.cargo/bin.
+// Without this, a test host that has `tetrigo` installed via `go
+// install` would make the "not found" tests flake.
+func isolateManagerDirs(t *testing.T) {
+	t.Helper()
+	emptyHome := t.TempDir()
+	emptyGopath := t.TempDir()
+	t.Setenv("HOME", emptyHome)
+	t.Setenv("GOPATH", emptyGopath)
+	t.Setenv("GOBIN", "") // cleared unless the caller re-sets it
 }

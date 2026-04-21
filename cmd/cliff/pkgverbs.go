@@ -84,6 +84,11 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string) in
 	fmt.Println()
 	if result.ExitCode == 0 && result.Err == nil {
 		fmt.Printf("✓ %sed %s\n", strings.TrimSuffix(verb, "e"), app.Name)
+		if pw := result.PathWarning; pw != nil {
+			fmt.Printf("\nInstalled to %s, but that directory isn't on your $PATH.\n", pw.Dir)
+			fmt.Printf("Add this to your shell rc (~/.zshrc or ~/.bashrc), then reopen the terminal:\n")
+			fmt.Printf("  export PATH=\"%s:$PATH\"\n", pw.Dir)
+		}
 		return 0
 	}
 	fmt.Fprintf(os.Stderr, "× %s failed: exit %d\n", verb, result.ExitCode)
