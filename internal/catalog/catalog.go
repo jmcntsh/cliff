@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"strings"
 	"time"
 )
 
@@ -18,7 +19,21 @@ type App struct {
 	Demo        string       `json:"demo,omitempty"`
 	Screenshots []string     `json:"screenshots,omitempty"`
 	Tags        []string     `json:"tags,omitempty"`
+	Binary      string       `json:"binary,omitempty"` // override for the installed executable name; defaults to repo basename
 	InstallSpec *InstallSpec `json:"install_spec,omitempty"`
+	// Optional author-provided recipes. Required for type=script (no
+	// general reverse exists); optional otherwise, where presence
+	// overrides the derivation in InstallSpec.UninstallShell/UpgradeShell.
+	UninstallSpec *CommandSpec `json:"uninstall_spec,omitempty"`
+	UpgradeSpec   *CommandSpec `json:"upgrade_spec,omitempty"`
+}
+
+// CommandSpec is the wire shape for the [uninstall] and [upgrade]
+// manifest blocks: just a shell command to run. Modeled separately
+// from InstallSpec because these blocks are structurally simpler —
+// no type switch, no package/global fields.
+type CommandSpec struct {
+	Command string `json:"command"`
 }
 
 type InstallSpec struct {
@@ -50,6 +65,122 @@ func (s *InstallSpec) Shell() string {
 		return s.Command
 	}
 	return ""
+}
+
+// UninstallShell returns the shell command to uninstall the app, or ""
+// if uninstall isn't supported for this install type. The binary
+// argument is the installed executable name; required for type=go
+// (since go install leaves a binary at $GOBIN/<name> with no built-in
+// uninstall) and ignored otherwise. type=script is always unsupported
+// here — manifests must ship an explicit [uninstall] block for that
+// case (see notes/cli-verbs.md), which is not yet wired in.
+func (s *InstallSpec) UninstallShell(binary string) string {
+	if s == nil {
+		return ""
+	}
+	switch s.Type {
+	case "brew":
+		return "brew uninstall " + s.Package
+	case "cargo":
+		return "cargo uninstall " + s.Package
+	case "npm":
+		if s.Global {
+			return "npm uninstall -g " + s.Package
+		}
+		return "npm uninstall " + s.Package
+	case "pipx":
+		return "pipx uninstall " + s.Package
+	case "go":
+		if binary == "" {
+			return ""
+		}
+		return `rm -f "${GOBIN:-${GOPATH:-$HOME/go}/bin}/` + binary + `"`
+	}
+	return ""
+}
+
+// UpgradeShell returns the shell command to upgrade the app to its
+// latest version, or "" if upgrade isn't supported. type=script isn't
+// supported — re-running an arbitrary install script isn't safe in the
+// general case and the author-owned case needs a manifest block.
+func (s *InstallSpec) UpgradeShell() string {
+	if s == nil {
+		return ""
+	}
+	switch s.Type {
+	case "brew":
+		return "brew upgrade " + s.Package
+	case "cargo":
+		return "cargo install --force " + s.Package
+	case "npm":
+		if s.Global {
+			return "npm install -g " + s.Package + "@latest"
+		}
+		return "npm install " + s.Package + "@latest"
+	case "pipx":
+		return "pipx upgrade " + s.Package
+	case "go":
+		return "go install " + goLatestPath(s.Package)
+	}
+	return ""
+}
+
+// goLatestPath normalizes a Go module path to pin @latest. Accepts
+// both "example.com/x/y" (no version) and "example.com/x/y@v1.2.3"
+// and returns "example.com/x/y@latest".
+func goLatestPath(pkg string) string {
+	if i := strings.Index(pkg, "@"); i >= 0 {
+		return pkg[:i] + "@latest"
+	}
+	return pkg + "@latest"
+}
+
+// BinaryName returns the expected executable name for the app. If the
+// manifest sets an explicit Binary, that wins; otherwise we fall back
+// to the repo basename (charmbracelet/glow → "glow"), which matches
+// the convention for ~90% of CLI TUIs.
+func (a *App) BinaryName() string {
+	if a == nil {
+		return ""
+	}
+	if a.Binary != "" {
+		return a.Binary
+	}
+	if i := strings.LastIndex(a.Repo, "/"); i >= 0 {
+		return a.Repo[i+1:]
+	}
+	return a.Repo
+}
+
+// UninstallCommand returns the shell command to uninstall the app, or
+// "" if uninstall isn't supported. An explicit UninstallSpec from the
+// manifest wins; otherwise we derive from InstallSpec.UninstallShell.
+// This is how script-type installs get their uninstall recipe (the
+// manifest lint enforces that UninstallSpec is present for them), and
+// how authors override the derived command for known managers.
+func (a *App) UninstallCommand() string {
+	if a == nil {
+		return ""
+	}
+	if a.UninstallSpec != nil && a.UninstallSpec.Command != "" {
+		return a.UninstallSpec.Command
+	}
+	return a.InstallSpec.UninstallShell(a.BinaryName())
+}
+
+// UpgradeCommand returns the shell command to upgrade the app, or ""
+// if upgrade isn't supported. Override-first like UninstallCommand. For
+// script-type installs, UpgradeSpec is optional: absent means we refuse
+// to upgrade (honest error at the CLI), because silently re-running an
+// install script isn't always safe.
+func (a *App) UpgradeCommand() string {
+	if a == nil {
+		return ""
+	}
+	if a.UpgradeSpec != nil && a.UpgradeSpec.Command != "" {
+		return a.UpgradeSpec.Command
+	}
+	return a.InstallSpec.UpgradeShell()
 }
 
 type Category struct {

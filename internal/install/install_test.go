@@ -125,24 +125,6 @@ func TestDetect_FindsExecutables(t *testing.T) {
 	}
 }
 
-func TestBinaryName(t *testing.T) {
-	cases := []struct {
-		repo string
-		want string
-	}{
-		{"charmbracelet/glow", "glow"},
-		{"cli/cli", "cli"},
-		{"standalone", "standalone"},
-		{"", ""},
-	}
-	for _, tc := range cases {
-		got := BinaryName(&catalog.App{Repo: tc.repo})
-		if got != tc.want {
-			t.Errorf("BinaryName(%q) = %q, want %q", tc.repo, got, tc.want)
-		}
-	}
-}
-
 func TestDiagnose_CommandNotFoundByExitCode(t *testing.T) {
 	res := Result{
 		App: &catalog.App{

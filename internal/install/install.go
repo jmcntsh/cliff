@@ -24,7 +24,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 )
@@ -48,14 +47,21 @@ type Result struct {
 // Callers in a TUI should invoke Stream off the main loop (inside a
 // tea.Cmd) since it blocks for the duration of the install.
 func Stream(ctx context.Context, app *catalog.App, onLine func(string)) Result {
-	res := Result{App: app}
 	if app == nil || app.InstallSpec == nil {
-		res.Err = errors.New("app has no install spec")
-		return res
+		return Result{App: app, Err: errors.New("app has no install spec")}
 	}
-	cmd := app.InstallSpec.Shell()
+	return StreamCmd(ctx, app, app.InstallSpec.Shell(), onLine)
+}
+
+// StreamCmd is Stream but for an arbitrary shell command — used by the
+// uninstall and upgrade verbs, which derive their commands from
+// InstallSpec.UninstallShell and .UpgradeShell. The app reference is
+// retained on Result so Diagnose can still pattern-match on the install
+// type when a missing-tool (exit 127) failure occurs.
+func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(string)) Result {
+	res := Result{App: app}
 	if cmd == "" {
-		res.Err = errors.New("install spec produced empty command")
+		res.Err = errors.New("empty command")
 		return res
 	}
 	res.Command = cmd
@@ -198,24 +204,9 @@ func InstalledApps(apps []catalog.App) map[string]bool {
 	bins := Detect()
 	out := map[string]bool{}
 	for i := range apps {
-		if bins[BinaryName(&apps[i])] {
+		if bins[apps[i].BinaryName()] {
 			out[apps[i].Repo] = true
 		}
 	}
 	return out
-}
-
-// BinaryName returns the expected executable name for an app. Today it's
-// just the repo basename (charmbracelet/glow → "glow"), which matches
-// the install convention for ~90% of CLI TUIs. Apps whose binary name
-// differs from the repo (e.g. cli/cli → "gh", ClementTsang/bottom → "btm")
-// would need a manifest binary: field — not wired yet.
-func BinaryName(a *catalog.App) string {
-	if a == nil {
-		return ""
-	}
-	if i := strings.LastIndex(a.Repo, "/"); i >= 0 {
-		return a.Repo[i+1:]
-	}
-	return a.Repo
 }
