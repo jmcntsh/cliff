@@ -1,5 +1,6 @@
 // Package install runs install commands derived from manifest InstallSpec
-// values and answers "is this app installed?" by inspecting $PATH.
+// values and answers "is this app installed?" by inspecting $PATH plus a
+// small set of well-known manager bin directories.
 //
 // The runner shells out via `sh -c` and captures stdout+stderr together.
 // We intentionally don't try to sandbox or sanitize — the trust model
@@ -7,11 +8,18 @@
 // same as `brew install`. The confirm modal in the UI shows the exact
 // command before it runs.
 //
-// Installed-state detection is derived from $PATH at runtime rather than
-// persisted to disk. This means the UI's ✓ marker always reflects what
-// the shell can actually run: a `brew uninstall` outside cliff makes the
-// marker disappear on next detection, and an app the user installed
-// before cliff existed is recognized immediately.
+// Installed-state detection is derived from the filesystem at runtime
+// rather than persisted to disk. We scan $PATH first, then a short list
+// of manager-default bin dirs ($GOBIN, $GOPATH/bin, ~/go/bin,
+// ~/.cargo/bin, ~/.local/bin). That second list matters because
+// `go install` and `cargo install` drop binaries into directories that
+// many users haven't added to $PATH, and without it cliff would show "not
+// installed" immediately after a successful install.
+//
+// When a post-install Locate finds the binary only in one of those
+// off-PATH dirs, Stream attaches a PathWarning to the Result so the UI
+// can tell the user the install worked but their shell can't run it
+// until they add the directory to $PATH.
 package install
 
 import (
@@ -24,17 +32,28 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 )
 
+// PathWarning describes the case where an install landed a binary in a
+// known manager dir that isn't on the user's $PATH. The UI surfaces
+// this as "install succeeded, but your shell can't find it yet — add
+// this to your shell rc".
+type PathWarning struct {
+	Binary string // e.g. "tetrigo"
+	Dir    string // absolute dir the binary lives in, e.g. "/Users/jmc/go/bin"
+}
+
 // Result is what Stream reports back when the install finishes.
 type Result struct {
-	App      *catalog.App
-	Command  string
-	ExitCode int
-	Output   string // combined stdout+stderr
-	Err      error
+	App         *catalog.App
+	Command     string
+	ExitCode    int
+	Output      string // combined stdout+stderr
+	Err         error
+	PathWarning *PathWarning // non-nil when install OK but binary isn't on $PATH
 }
 
 // Stream runs the install command and invokes onLine for each line of
@@ -108,6 +127,20 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 		return res
 	}
 	res.ExitCode = 0
+	// Post-install PATH sanity check. If the install reported success
+	// but the binary ended up in a known off-PATH dir (classic
+	// `go install` → ~/go/bin on a fresh machine), surface it so the
+	// user doesn't silently think cliff or the app is broken when
+	// they try to run it. We only do this for install (not uninstall
+	// or upgrade) — it'd be nonsense to warn "uninstall succeeded but
+	// the binary isn't on your PATH".
+	if app != nil && app.InstallSpec != nil && cmd == app.InstallSpec.Shell() {
+		if bin := app.BinaryName(); bin != "" {
+			if dir, onPath := LocateBinary(bin); dir != "" && !onPath {
+				res.PathWarning = &PathWarning{Binary: bin, Dir: dir}
+			}
+		}
+	}
 	return res
 }
 
@@ -166,42 +199,132 @@ var cmdNotFoundRes = func() map[string]*regexp.Regexp {
 
 // Detect walks every directory on $PATH and returns a set of executable
 // basenames found. Non-executable files and directories are skipped.
-// This is the source of truth for the UI's ✓ marker.
+// This is the narrow "what can your shell run right now?" answer —
+// callers that want to also recognize binaries sitting in manager
+// default dirs (go install, cargo install) should use InstalledApps,
+// which wraps Detect with a fallback scan.
 func Detect() map[string]bool {
 	out := map[string]bool{}
 	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
 		if dir == "" {
 			continue
 		}
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			if e.IsDir() {
-				continue
-			}
-			info, err := e.Info()
-			if err != nil {
-				continue
-			}
-			// Any-execute bit set. On Windows this check would need
-			// extension-based heuristics (.exe, .bat) — we accept the
-			// Unix-only limitation consistent with the sh -c runner.
-			if info.Mode()&0o111 == 0 {
-				continue
-			}
-			out[e.Name()] = true
-		}
+		addExecutables(out, dir)
 	}
 	return out
 }
 
-// InstalledApps returns a repo→installed map for the given catalog,
-// computed against the current $PATH. Intended to be refreshed on
-// startup and after install completion.
+// addExecutables reads dir and OR-merges executable basenames into out.
+// Non-executables, subdirs, and unreadable dirs are silently skipped so
+// a bogus PATH entry can't break detection for the rest.
+func addExecutables(out map[string]bool, dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		// Any-execute bit set. On Windows this check would need
+		// extension-based heuristics (.exe, .bat) — we accept the
+		// Unix-only limitation consistent with the sh -c runner.
+		if info.Mode()&0o111 == 0 {
+			continue
+		}
+		out[e.Name()] = true
+	}
+}
+
+// managerBinDirs returns the extra directories where package managers
+// drop binaries by default, beyond $PATH. These are the dirs most
+// likely to hold a binary the user just installed via `go install` or
+// `cargo install` without the dir being on their PATH. Order and
+// contents are best-effort: $GOBIN/$GOPATH resolution mirrors the Go
+// toolchain's own fallback order.
+func managerBinDirs() []string {
+	var dirs []string
+	add := func(d string) {
+		if d == "" {
+			return
+		}
+		for _, existing := range dirs {
+			if existing == d {
+				return
+			}
+		}
+		dirs = append(dirs, d)
+	}
+
+	home, _ := os.UserHomeDir()
+	if gobin := os.Getenv("GOBIN"); gobin != "" {
+		add(gobin)
+	}
+	if gopath := os.Getenv("GOPATH"); gopath != "" {
+		// GOPATH can be colon-separated; only the first entry gets
+		// `go install` output, matching cmd/go's behavior.
+		for _, p := range filepath.SplitList(gopath) {
+			if p != "" {
+				add(filepath.Join(p, "bin"))
+				break
+			}
+		}
+	} else if home != "" {
+		add(filepath.Join(home, "go", "bin"))
+	}
+	if home != "" {
+		add(filepath.Join(home, ".cargo", "bin"))
+		add(filepath.Join(home, ".local", "bin"))
+	}
+	_ = runtime.GOOS // reserved for future per-OS entries (e.g. %USERPROFILE%\go\bin on Windows)
+	return dirs
+}
+
+// LocateBinary answers "where is this binary, and is that dir on $PATH?"
+// for a single basename. It's how Stream decides whether to attach a
+// PathWarning after a successful install. Returns "" if the binary
+// isn't found in $PATH or any known manager dir.
+func LocateBinary(name string) (dir string, onPath bool) {
+	if name == "" {
+		return "", false
+	}
+	// $PATH wins — if the binary is already runnable, no warning needed.
+	if p, err := exec.LookPath(name); err == nil {
+		return filepath.Dir(p), true
+	}
+	// Otherwise, look in the manager defaults. These are not on $PATH
+	// (LookPath would have found it); any hit here means "install put
+	// it here, but the shell can't run it".
+	for _, d := range managerBinDirs() {
+		candidate := filepath.Join(d, name)
+		info, err := os.Stat(candidate)
+		if err != nil || info.IsDir() {
+			continue
+		}
+		if info.Mode()&0o111 == 0 {
+			continue
+		}
+		return d, false
+	}
+	return "", false
+}
+
+// InstalledApps returns a repo→installed map for the given catalog.
+// A binary counts as installed if it's on $PATH or in a known manager
+// default dir ($GOBIN, $GOPATH/bin, ~/go/bin, ~/.cargo/bin,
+// ~/.local/bin). The broader scan keeps the ✓ marker accurate
+// immediately after a successful `go install` or `cargo install`,
+// even when the user hasn't added those dirs to their shell rc yet —
+// Stream's PathWarning will have already told them to do so.
 func InstalledApps(apps []catalog.App) map[string]bool {
 	bins := Detect()
+	for _, d := range managerBinDirs() {
+		addExecutables(bins, d)
+	}
 	out := map[string]bool{}
 	for i := range apps {
 		if bins[apps[i].BinaryName()] {

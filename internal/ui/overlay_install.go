@@ -155,6 +155,23 @@ func installResultView(res *install.Result, vp viewport.Model, width int) string
 				Foreground(theme.ColorWarn).
 				Render(hint))
 	}
+	// Successful install but the binary landed off $PATH. The ✓
+	// marker reflects the filesystem (honest), but the user's shell
+	// still can't run the app until they add the dir to PATH, so we
+	// tell them exactly what line to stick in ~/.zshrc (or ~/.bashrc).
+	if res.Err == nil && res.PathWarning != nil {
+		pw := res.PathWarning
+		msg := fmt.Sprintf(
+			"Installed to %s, but that directory isn't on your $PATH.\n"+
+				"Add this to your shell rc (~/.zshrc or ~/.bashrc), then reopen the terminal:\n"+
+				"  export PATH=\"%s:$PATH\"",
+			pw.Dir, pw.Dir)
+		body = append(body,
+			"",
+			lipgloss.NewStyle().
+				Foreground(theme.ColorWarn).
+				Render(msg))
+	}
 	body = append(body,
 		"",
 		theme.MutedText.Render(res.Command),

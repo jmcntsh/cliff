@@ -6,6 +6,16 @@ describe intent, not state.
 
 Last updated: 2026-04-21.
 
+## Latest change
+
+`v0.1.6` (2026-04-21): post-install PATH warning. When an install
+lands a binary in a known manager dir that isn't on `$PATH`
+(classic `go install` → `~/go/bin`, `cargo install` →
+`~/.cargo/bin`), the TUI and CLI now show the exact
+`export PATH=...` line to add to the user's shell rc. Installed
+detection also broadened to those same dirs so the ✓ marker
+doesn't disappear after a successful off-PATH install.
+
 ## Live
 
 - **`cliff.sh`** — Cloudflare Worker serving `scripts/install.sh` to
@@ -19,7 +29,7 @@ Last updated: 2026-04-21.
   [cliff-registry#1](https://github.com/jmcntsh/cliff-registry/pull/1).
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index.
-- **GitHub releases** — latest `v0.1.5` (2026-04-21). Darwin and
+- **GitHub releases** — latest `v0.1.6` (2026-04-21). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
