@@ -47,6 +47,10 @@ package = "lazygit"    # or `command = "..."` for type=script
   in-TUI rendering planned.
 - `tags` — array of lowercase tags. CI lowercases and dedupes.
 - `license` — SPDX identifier.
+- `binary` — name of the installed executable when it doesn't match
+  the repo basename (e.g. `cli/cli` → `gh`, `ClementTsang/bottom` →
+  `btm`). Optional; clients fall back to the repo basename. Used by
+  uninstall (for `type = "go"`) and installed-state detection.
 
 ### Reserved
 - `tryable` — bool. If true, a future `cliff try <name>` will run
@@ -97,6 +101,48 @@ warning before running `script`-type installs — the warning copy
 is real, not a rubber stamp — because we don't review or sandbox
 what runs.
 
+## Uninstall and upgrade recipes
+
+For known package managers (brew, cargo, npm, pipx, go) cliff derives
+the uninstall and upgrade verbs automatically — no manifest fields
+needed. Authors can override the derivation when they want something
+non-standard (e.g. `brew uninstall --force`) via optional top-level
+`[uninstall]` and `[upgrade]` blocks:
+
+```toml
+[uninstall]
+command = "brew uninstall --force lazygit"
+
+[upgrade]
+command = "brew upgrade lazygit"
+```
+
+Each block takes a single `command` field — nothing else. The client
+runs the command through the same confirm → stream-output → diagnose
+pipeline as install.
+
+### Script-type installs
+
+**`[uninstall]` is required when `install.type = "script"`.** The lint
+rejects PRs without it. There's no general reverse for a curl-pipe-sh
+install; only the author knows which files were created, which paths
+were modified, or which launch agents were registered. An example:
+
+```toml
+[install]
+type = "script"
+command = "curl -fsSL https://starship.rs/install.sh | sh"
+
+[uninstall]
+command = "rm -f /usr/local/bin/starship"
+```
+
+`[upgrade]` is **optional** even for script-type installs. If absent,
+`cliff upgrade` refuses with an honest "no upgrade recipe" error
+rather than silently re-running the install script — some installers
+are idempotent, some break on re-run, and the safe default is to
+ask the author to be explicit.
+
 ## Validation
 
 CI validates every PR via the standalone `cmd/lint` program in
@@ -108,6 +154,8 @@ Checks:
 - `name` uniqueness; matches `[a-z0-9-]`.
 - `tags` lowercased and deduped.
 - URL reachability (readme, homepage, screenshots, demo).
+- `[uninstall]` present when `install.type = "script"`.
+- `[uninstall]` / `[upgrade]` blocks, if present, have non-empty `command`.
 - GitHub star count + last-commit timestamp snapshotted at build
   time into `index.json` (so the client sorts/displays without
   live GitHub calls and we don't burn rate limit at runtime).
