@@ -14,6 +14,12 @@ import (
 func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "install":
+			os.Exit(cmdInstall(os.Args[2:]))
+		case "uninstall":
+			os.Exit(cmdUninstall(os.Args[2:]))
+		case "upgrade":
+			os.Exit(cmdUpgrade(os.Args[2:]))
 		case "completions":
 			os.Exit(cmdCompletions(os.Args[2:]))
 		case "version", "--version", "-v":

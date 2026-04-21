@@ -48,14 +48,21 @@ type Result struct {
 // Callers in a TUI should invoke Stream off the main loop (inside a
 // tea.Cmd) since it blocks for the duration of the install.
 func Stream(ctx context.Context, app *catalog.App, onLine func(string)) Result {
-	res := Result{App: app}
 	if app == nil || app.InstallSpec == nil {
-		res.Err = errors.New("app has no install spec")
-		return res
+		return Result{App: app, Err: errors.New("app has no install spec")}
 	}
-	cmd := app.InstallSpec.Shell()
+	return StreamCmd(ctx, app, app.InstallSpec.Shell(), onLine)
+}
+
+// StreamCmd is Stream but for an arbitrary shell command — used by the
+// uninstall and upgrade verbs, which derive their commands from
+// InstallSpec.UninstallShell and .UpgradeShell. The app reference is
+// retained on Result so Diagnose can still pattern-match on the install
+// type when a missing-tool (exit 127) failure occurs.
+func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(string)) Result {
+	res := Result{App: app}
 	if cmd == "" {
-		res.Err = errors.New("install spec produced empty command")
+		res.Err = errors.New("empty command")
 		return res
 	}
 	res.Command = cmd
