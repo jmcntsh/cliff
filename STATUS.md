@@ -19,21 +19,20 @@ Last updated: 2026-04-21.
   [cliff-registry#1](https://github.com/jmcntsh/cliff-registry/pull/1).
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index.
-- **GitHub releases** — latest `v0.1.4` (2026-04-19). Darwin and
+- **GitHub releases** — latest `v0.1.5` (2026-04-21). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
   `~/.local/bin`.
 - **`go install github.com/jmcntsh/cliff/cmd/cliff@latest`** —
   works.
+- **`brew install jmcntsh/tap/cliff`** — Homebrew tap live at
+  [`jmcntsh/homebrew-tap`](https://github.com/jmcntsh/homebrew-tap).
+  Formula auto-updated by goreleaser on each tagged release via
+  `HOMEBREW_TAP_GITHUB_TOKEN`. First publish: `v0.1.5`, 2026-04-21.
 
 ## Pending
 
-- **Homebrew tap** — `jmcntsh/homebrew-tap` repo exists,
-  `.goreleaser.yaml` has the `brews:` block wired, release workflow
-  passes `HOMEBREW_TAP_GITHUB_TOKEN`. Waiting on: PAT creation +
-  secret upload, then first tagged release exercises the path.
-  After that: `brew install jmcntsh/tap/cliff`.
 - **Phase 2** — curation surfaces (hand-picked seed, "new this
   week", submit flow, weekly digest). Not started.
 
