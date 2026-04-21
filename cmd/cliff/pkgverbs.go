@@ -17,35 +17,24 @@ import (
 // TUI's confirm modal gives), then streams the install.
 func cmdInstall(args []string) int {
 	return runPkgVerb("install", args, func(app *catalog.App) string {
-		if app.InstallSpec == nil {
-			return ""
-		}
 		return app.InstallSpec.Shell()
 	})
 }
 
-// cmdUninstall runs `cliff uninstall <pkg>`. Uses InstallSpec.UninstallShell
-// which returns "" for script-type installs — those need a manifest-level
-// [uninstall] block, not yet wired in. Surfaces a clear error in that case.
+// cmdUninstall runs `cliff uninstall <pkg>`. Prefers the manifest's
+// [uninstall] block when present; falls back to the type-derived verb.
+// Returns "" for script-type installs without a [uninstall] block —
+// those require author-provided recipes (enforced at registry CI).
 func cmdUninstall(args []string) int {
-	return runPkgVerb("uninstall", args, func(app *catalog.App) string {
-		if app.InstallSpec == nil {
-			return ""
-		}
-		return app.InstallSpec.UninstallShell(install.BinaryName(app))
-	})
+	return runPkgVerb("uninstall", args, (*catalog.App).UninstallCommand)
 }
 
 // cmdUpgrade runs `cliff upgrade <pkg>`. Manager-authoritative: we ask
 // brew/cargo/pipx/npm/go to do the upgrade and trust their reports;
-// there's no cliff-side state of record (see commit 82c2833).
+// there's no cliff-side state of record (see commit 82c2833). Prefers
+// the manifest's [upgrade] block when present.
 func cmdUpgrade(args []string) int {
-	return runPkgVerb("upgrade", args, func(app *catalog.App) string {
-		if app.InstallSpec == nil {
-			return ""
-		}
-		return app.InstallSpec.UpgradeShell()
-	})
+	return runPkgVerb("upgrade", args, (*catalog.App).UpgradeCommand)
 }
 
 // runPkgVerb is the shared body of install/uninstall/upgrade. The
