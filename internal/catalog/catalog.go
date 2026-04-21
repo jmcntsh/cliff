@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"strings"
 	"time"
 )
 
@@ -50,6 +51,74 @@ func (s *InstallSpec) Shell() string {
 		return s.Command
 	}
 	return ""
+}
+
+// UninstallShell returns the shell command to uninstall the app, or ""
+// if uninstall isn't supported for this install type. The binary
+// argument is the installed executable name; required for type=go
+// (since go install leaves a binary at $GOBIN/<name> with no built-in
+// uninstall) and ignored otherwise. type=script is always unsupported
+// here — manifests must ship an explicit [uninstall] block for that
+// case (see notes/cli-verbs.md), which is not yet wired in.
+func (s *InstallSpec) UninstallShell(binary string) string {
+	if s == nil {
+		return ""
+	}
+	switch s.Type {
+	case "brew":
+		return "brew uninstall " + s.Package
+	case "cargo":
+		return "cargo uninstall " + s.Package
+	case "npm":
+		if s.Global {
+			return "npm uninstall -g " + s.Package
+		}
+		return "npm uninstall " + s.Package
+	case "pipx":
+		return "pipx uninstall " + s.Package
+	case "go":
+		if binary == "" {
+			return ""
+		}
+		return `rm -f "${GOBIN:-${GOPATH:-$HOME/go}/bin}/` + binary + `"`
+	}
+	return ""
+}
+
+// UpgradeShell returns the shell command to upgrade the app to its
+// latest version, or "" if upgrade isn't supported. type=script isn't
+// supported — re-running an arbitrary install script isn't safe in the
+// general case and the author-owned case needs a manifest block.
+func (s *InstallSpec) UpgradeShell() string {
+	if s == nil {
+		return ""
+	}
+	switch s.Type {
+	case "brew":
+		return "brew upgrade " + s.Package
+	case "cargo":
+		return "cargo install --force " + s.Package
+	case "npm":
+		if s.Global {
+			return "npm install -g " + s.Package + "@latest"
+		}
+		return "npm install " + s.Package + "@latest"
+	case "pipx":
+		return "pipx upgrade " + s.Package
+	case "go":
+		return "go install " + goLatestPath(s.Package)
+	}
+	return ""
+}
+
+// goLatestPath normalizes a Go module path to pin @latest. Accepts
+// both "example.com/x/y" (no version) and "example.com/x/y@v1.2.3"
+// and returns "example.com/x/y@latest".
+func goLatestPath(pkg string) string {
+	if i := strings.Index(pkg, "@"); i >= 0 {
+		return pkg[:i] + "@latest"
+	}
+	return pkg + "@latest"
 }
 
 type Category struct {
