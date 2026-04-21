@@ -3,11 +3,25 @@
 Operating principles for working in this repo. Pitch lives in
 [`README.md`](README.md); build/test instructions in
 [`DEVELOPMENT.md`](DEVELOPMENT.md); manifest schema in
-[`notes/manifest.md`](notes/manifest.md).
+[`notes/manifest.md`](notes/manifest.md); **what's currently shipped
+vs pending lives in [`STATUS.md`](STATUS.md)**.
 
 Strategy, roadmap, and active checklist live in a separate private
 repo (`jmcntsh/cliff-notes`). If you're working on cliff with
 access to that repo, open it alongside this one.
+
+## For agents working here
+
+Before answering "what's the status of X?" for anything
+user-visible (domains, releases, deployed services, published
+packages), **read [`STATUS.md`](STATUS.md) and check the live
+thing.** `curl -sI` a URL, `gh release list`, `dig +short`. This
+file (`CLAUDE.md`) describes intent and principles; it does not
+track shipped state and will mislead you if you treat it that way.
+
+If you ship something user-visible, update `STATUS.md` in the same
+change. If you find `STATUS.md` is stale, fix it before answering
+the question it was stale about.
 
 ## What this repo is
 
@@ -16,12 +30,13 @@ binary in `cmd/cliff` opens a TUI: list of apps, search, sort,
 rendered README, one-key install via the project's own package
 manager (brew / cargo / npm / pipx / `go install` / script).
 
-The registry is TOML manifests under `registry/apps/`, compiled to
-`index.json` by CI, served via GitHub Pages at
-`https://registry.cliff.sh/index.json`. The client fetches that
-URL (overridable via `CLIFF_REGISTRY_URL`) with an ETag-cached copy
-in `~/.cliff/cache/` and a build-time snapshot of the same index
-embedded in the binary as last-resort fallback.
+The registry lives in a separate repo ([`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)):
+TOML manifests under `apps/`, compiled to `index.json` by CI,
+served via GitHub Pages at `https://registry.cliff.sh/index.json`.
+The client fetches that URL (overridable via `CLIFF_REGISTRY_URL`)
+with an ETag-cached copy in `~/.cliff/cache/` and a build-time
+snapshot of the same index embedded in the binary as last-resort
+fallback.
 
 Distribution: `curl cliff.sh | sh`, brew tap, `go install`. Single
 static binary.
