@@ -12,6 +12,20 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "completions":
+			os.Exit(cmdCompletions(os.Args[2:]))
+		case "version", "--version", "-v":
+			os.Exit(cmdVersion())
+		case "help", "--help", "-h":
+			os.Exit(cmdHelp())
+		}
+	}
+	os.Exit(runTUI())
+}
+
+func runTUI() int {
 	// Detect terminal background BEFORE tea takes over. Once tea enters
 	// raw mode + alt screen, OSC 11 round-trips through stdin become
 	// unreliable, so glamour's auto-style consistently picks dark.
@@ -29,7 +43,7 @@ func main() {
 	res := catalog.LoadWithFallback(catalog.LoadOptions{})
 	if res.Catalog == nil {
 		fmt.Fprintln(os.Stderr, "load catalog:", res.Err)
-		os.Exit(1)
+		return 1
 	}
 	if res.Err != nil && os.Getenv("CLIFF_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "catalog source=%s (fetch note: %v)\n", res.Source, res.Err)
@@ -40,6 +54,7 @@ func main() {
 	ui.SetProgram(p)
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
