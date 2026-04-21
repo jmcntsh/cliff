@@ -20,7 +20,8 @@ The registry is TOML manifests under `registry/apps/`, compiled to
 `index.json` by CI, served via GitHub Pages at
 `https://registry.cliff.sh/index.json`. The client fetches that
 URL (overridable via `CLIFF_REGISTRY_URL`) with an ETag-cached copy
-in `~/.cliff/cache/` and an embedded scrape as last-resort fallback.
+in `~/.cliff/cache/` and a build-time snapshot of the same index
+embedded in the binary as last-resort fallback.
 
 Distribution: `curl cliff.sh | sh`, brew tap, `go install`. Single
 static binary.
@@ -59,10 +60,10 @@ search — is in service of it.
   keys → `i`. Anything that adds a step between "I just heard
   about cliff" and "I installed an app with cliff" is load-bearing
   in the wrong direction.
-- **Curation is the product.** The front door is not the full
-  600-app scraped list. It's a hand-picked seed refreshed weekly,
-  plus a "new this week" surface. Famous FOSS is backdrop;
-  indie/new work is the identity.
+- **Curation is the product.** The front door is the curated
+  registry — a hand-picked seed refreshed weekly, plus a "new this
+  week" surface. Famous FOSS is backdrop; indie/new work is the
+  identity.
 - **No dark patterns, ever.** No signup walls, no "sign in to see
   more," no modal nags.
 
@@ -89,9 +90,9 @@ The browser is a last resort. There are no forced browser hops.
 
 ## Working notes
 
-- The bundled awesome-tuis scrape (~600 apps) is the last-resort
-  fallback. The front page is a hand-picked seed; the scrape
-  backfills a "Browse all" surface.
+- The binary embeds a snapshot of `registry.cliff.sh/index.json`
+  as its offline fallback. Refresh it with the curl one-liner in
+  `internal/catalog/load.go`.
 - UI target: feels like a modern app (comparable to Claude Code or
   gh-dash), not a basic list.
 - `cliff.sh` is the priority domain — `curl cliff.sh | sh` is the

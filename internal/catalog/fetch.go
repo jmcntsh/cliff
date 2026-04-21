@@ -72,8 +72,8 @@ type LoadResult struct {
 
 // LoadWithFallback tries, in order: fetch from URL (using ETag-cached copy
 // if present), fall back to the cached copy, fall back to the embedded
-// scrape. It only returns an error if even the embedded catalog fails to
-// load; partial failures are reported via LoadResult.Err.
+// snapshot. It only returns an error if even the embedded catalog fails
+// to load; partial failures are reported via LoadResult.Err.
 func LoadWithFallback(opts LoadOptions) LoadResult {
 	if opts.URL == "" {
 		opts.URL = RegistryURL()
@@ -102,10 +102,6 @@ func LoadWithFallback(opts LoadOptions) LoadResult {
 	if err != nil {
 		return LoadResult{Err: fmt.Errorf("all catalog sources failed: fetch=%v, embedded=%v", fetchErr, err)}
 	}
-	// The embedded catalog is the awesome-tuis scrape, which has no
-	// InstallSpecs. Overlay curated registry manifests so glow/lazygit/etc.
-	// are still installable when the live registry isn't reachable.
-	overlayRegistry(cat)
 	return LoadResult{Catalog: cat, Source: SourceEmbedded, URL: opts.URL, Err: fetchErr}
 }
 

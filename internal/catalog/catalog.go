@@ -10,7 +10,6 @@ type App struct {
 	Description string `json:"description"`
 	Category    string `json:"category"`
 	Language    string `json:"language"`
-	License     string `json:"license"`
 	Stars       int    `json:"stars"`
 	Homepage    string `json:"homepage"`
 

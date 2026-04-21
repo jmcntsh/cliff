@@ -116,15 +116,10 @@ func renderCard(app catalog.App, width, height int, selected, installed bool) st
 	return box.Render(body)
 }
 
-// wrapText word-wraps s into at most maxLines lines of width w, rendered
-// in the muted description color. Kept as a thin wrapper around
-// wrapTextColored for callers that don't care to override the color.
-func wrapText(s string, w, maxLines int) []string {
-	return wrapTextColored(s, w, maxLines, theme.ColorMuted)
-}
-
-// wrapTextColored is wrapText with the foreground color exposed so the
-// selected-card path can lift the description out of muted-grey.
+// wrapTextColored word-wraps s into at most maxLines lines of width w,
+// rendered in the given foreground color. The selected-card path lifts
+// the description out of muted-grey by passing ColorText here; unselected
+// cards pass ColorMuted.
 func wrapTextColored(s string, w, maxLines int, fg lipgloss.TerminalColor) []string {
 	if w <= 0 || maxLines <= 0 || s == "" {
 		out := make([]string, maxLines)

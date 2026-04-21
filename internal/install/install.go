@@ -29,7 +29,7 @@ import (
 	"github.com/jmcntsh/cliff/internal/catalog"
 )
 
-// Result is what Run/Stream report back when the install finishes.
+// Result is what Stream reports back when the install finishes.
 type Result struct {
 	App      *catalog.App
 	Command  string
@@ -38,24 +38,15 @@ type Result struct {
 	Err      error
 }
 
-// Run executes the install command for app and returns when it completes.
-// Callers in a TUI should run this off the main loop (e.g. inside a
-// tea.Cmd) since it blocks for the duration of the install.
-//
-// Run is the non-streaming variant: output is only surfaced in the final
-// Result. Prefer Stream for UI flows that want to show live output.
-func Run(ctx context.Context, app *catalog.App) Result {
-	return Stream(ctx, app, nil)
-}
-
 // Stream runs the install command and invokes onLine for each line of
 // combined stdout+stderr as it's produced. Blocks until the process
 // exits or ctx is canceled (in which case the process is killed).
-// Result.Output still contains the full buffered output so callers can
-// read it after completion without needing to have subscribed.
+// Result.Output contains the full buffered output so callers can read
+// it after completion without needing to have subscribed.
 //
-// onLine may be nil, in which case Stream is equivalent to the old
-// CombinedOutput-based Run.
+// onLine may be nil, in which case Stream just buffers the output.
+// Callers in a TUI should invoke Stream off the main loop (inside a
+// tea.Cmd) since it blocks for the duration of the install.
 func Stream(ctx context.Context, app *catalog.App, onLine func(string)) Result {
 	res := Result{App: app}
 	if app == nil || app.InstallSpec == nil {

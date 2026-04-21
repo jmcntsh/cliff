@@ -54,7 +54,7 @@ type readmeModel struct {
 }
 
 func newReadme(app *catalog.App, width, height int) readmeModel {
-	raw := bundledMarkdown(app)
+	raw := placeholderMarkdown(app)
 	m := readmeModel{app: app, raw: raw, loading: true}
 	return m.resize(width, height)
 }
@@ -194,42 +194,16 @@ func (m readmeModel) renderFooter() string {
 	return status + strings.Repeat(" ", spacer) + scroll
 }
 
-func bundledMarkdown(app *catalog.App) string {
+// placeholderMarkdown is what shows while the live README is being
+// fetched. It's deliberately thin: a name and a fetching note. The
+// footer's "fetching from github…" / "rate limited" / "fetch failed"
+// status line is the real signal; duplicating metadata the user just
+// saw on the card would be noise, not content.
+func placeholderMarkdown(app *catalog.App) string {
 	if app == nil {
 		return "# No app selected"
 	}
-	var sb strings.Builder
-	sb.WriteString("# " + app.Name + "\n\n")
-
-	owner := app.Repo
-	if i := strings.Index(app.Repo, "/"); i > 0 {
-		owner = app.Repo[:i]
-	}
-	sb.WriteString("*by " + owner + "*\n\n")
-	sb.WriteString("---\n\n")
-	sb.WriteString(app.Description + "\n\n")
-
-	sb.WriteString("## Metadata\n\n")
-	sb.WriteString(fmt.Sprintf("- **Stars:** %d\n", app.Stars))
-	if app.Language != "" {
-		sb.WriteString(fmt.Sprintf("- **Language:** %s\n", app.Language))
-	}
-	if app.License != "" {
-		sb.WriteString(fmt.Sprintf("- **License:** %s\n", app.License))
-	}
-	sb.WriteString("\n")
-
-	if app.InstallSpec != nil {
-		if cmd := app.InstallSpec.Shell(); cmd != "" {
-			sb.WriteString("## Install\n\n")
-			sb.WriteString(fmt.Sprintf("```sh\n# %s\n%s\n```\n\n", app.InstallSpec.Type, cmd))
-		}
-	}
-
-	sb.WriteString("---\n\n")
-	sb.WriteString("GitHub: [github.com/" + app.Repo + "](https://github.com/" + app.Repo + ")\n\n")
-	sb.WriteString("*Press `esc` or `q` to return to the list.*\n")
-	return sb.String()
+	return "# " + app.Name + "\n\n*fetching from github…*\n"
 }
 
 func renderMarkdown(md string, termWidth int) string {

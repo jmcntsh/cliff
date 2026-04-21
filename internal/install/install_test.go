@@ -21,8 +21,8 @@ func sampleApp() *catalog.App {
 	}
 }
 
-func TestRun_OK(t *testing.T) {
-	res := Run(context.Background(), sampleApp())
+func TestStream_OK(t *testing.T) {
+	res := Stream(context.Background(), sampleApp(), nil)
 	if res.Err != nil {
 		t.Fatalf("err: %v (output=%q)", res.Err, res.Output)
 	}
@@ -34,10 +34,10 @@ func TestRun_OK(t *testing.T) {
 	}
 }
 
-func TestRun_Failure(t *testing.T) {
+func TestStream_Failure(t *testing.T) {
 	app := sampleApp()
 	app.InstallSpec.Command = "exit 7"
-	res := Run(context.Background(), app)
+	res := Stream(context.Background(), app, nil)
 	if res.Err == nil {
 		t.Fatal("expected error")
 	}
@@ -46,8 +46,8 @@ func TestRun_Failure(t *testing.T) {
 	}
 }
 
-func TestRun_NoSpec(t *testing.T) {
-	res := Run(context.Background(), &catalog.App{Name: "x"})
+func TestStream_NoSpec(t *testing.T) {
+	res := Stream(context.Background(), &catalog.App{Name: "x"}, nil)
 	if res.Err == nil {
 		t.Fatal("expected error for missing spec")
 	}
