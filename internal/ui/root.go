@@ -42,6 +42,7 @@ const (
 	modeUpgradeRunning
 	modeUpgradeResult
 	modeFixPath // confirm + result screen for auto-adding a dir to $PATH
+	modeSubmit  // confirm screen for opening the registry submit form in a browser
 )
 
 // pkgOp is the active package operation for the shared install/uninstall
@@ -134,6 +135,20 @@ type Root struct {
 	// rather than silently swallowing it.
 	launchMethod launcher.Method
 	launchErr    error
+
+	// Submit-flow state for modeSubmit. Populated when `+` is pressed
+	// from any mode that allows submission; cleared when the overlay
+	// closes. submitReturnMode is the mode we bounce back to on esc
+	// (browse or readme, depending on where `+` was pressed);
+	// submitOpened flips after a successful browser.Open so the modal
+	// can show the "opened in your browser" confirmation rather than
+	// the initial "about to open" preview, without switching modes.
+	// submitErr holds the browser.Open error so the post-open phase
+	// can fall back to showing the URL for manual paste.
+	submitReturnMode mode
+	submitOpened     bool
+	submitErr        error
+	submitURL        string
 
 	// Manage-picker state for modeManage. Populated when Enter is
 	// pressed on an installed app; emptied when the picker closes.

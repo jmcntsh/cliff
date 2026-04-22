@@ -20,6 +20,8 @@ func main() {
 			os.Exit(cmdUninstall(os.Args[2:]))
 		case "upgrade":
 			os.Exit(cmdUpgrade(os.Args[2:]))
+		case "submit":
+			os.Exit(cmdSubmit(os.Args[2:]))
 		case "completions":
 			os.Exit(cmdCompletions(os.Args[2:]))
 		case "version", "--version", "-v":

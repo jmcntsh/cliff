@@ -44,7 +44,7 @@ func helpRightFor(layout layoutMode, from mode) []helpSection {
 	return []helpSection{
 		{"FIND", find},
 		{"DO", do},
-		{"APP", []key.Binding{keys.Help, keys.Quit}},
+		{"APP", []key.Binding{keys.Submit, keys.Help, keys.Quit}},
 	}
 }
 

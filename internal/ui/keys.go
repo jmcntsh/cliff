@@ -24,6 +24,7 @@ type keyMap struct {
 	Escape       key.Binding
 	Left         key.Binding
 	Right        key.Binding
+	Submit       key.Binding
 }
 
 var keys = keyMap{
@@ -48,4 +49,9 @@ var keys = keyMap{
 	Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 	Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 	Escape:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "back / cancel")),
+	// `+` is the submit-an-app hotkey. Picked for its universal
+	// "add" mnemonic — same finger memory as `+` in most tools
+	// that mean "new thing." `=` (the unshifted key on US
+	// layouts) also binds so users don't need to hold shift.
+	Submit: key.NewBinding(key.WithKeys("+", "="), key.WithHelp("+", "submit an app")),
 }
