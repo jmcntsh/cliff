@@ -94,7 +94,14 @@ func (s *InstallSpec) UninstallShell(binary string) string {
 		if binary == "" {
 			return ""
 		}
-		return `rm -f "${GOBIN:-${GOPATH:-$HOME/go}/bin}/` + binary + `"`
+		// Ask `go env` at runtime — asdf and other toolchain managers set
+		// GOBIN/GOPATH per-process, not in the user's shell, so shell
+		// expansion of those vars ends up wrong (e.g. asdf users would
+		// rm from ~/go/bin when the real binary lives under ~/.asdf).
+		// The guard on empty $b prevents rm'ing /<binary> if `go` itself
+		// isn't installed. The actual "did it work" gate is the post-
+		// uninstall Detect check in cmd/cliff/pkgverbs.go.
+		return `b="$(go env GOBIN)"; [ -z "$b" ] && b="$(go env GOPATH)/bin"; [ -n "$b" ] && rm -f "$b/` + binary + `"`
 	}
 	return ""
 }
