@@ -35,6 +35,17 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.readme = r.readme.applyFetch(m)
 		return r, nil
 
+	case reelTickMsg:
+		// Reel ticks only drive the reel strip inside the readme view.
+		// We route them unconditionally (not gated on r.mode == modeReadme)
+		// so a brief mode switch — opening the help overlay from the
+		// readme, for instance — doesn't pause or reset the animation.
+		// Advance is cheap and tolerates being called on a zero-value
+		// strip, so this is safe when no strip is active.
+		var cmd tea.Cmd
+		r.readme, cmd = r.readme.Update(m)
+		return r, cmd
+
 	case installStartedMsg:
 		r.installCancel = m.Cancel
 		return r, nil
@@ -221,7 +232,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			r.readme = newReadme(app, r.width, r.height)
 			r.mode = modeReadme
-			return r, fetchReadmeCmd(app)
+			return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit())
 		}
 		return r, nil
 	case key.Matches(msg, keys.Install):
@@ -673,7 +684,7 @@ func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if app != nil {
 				r.readme = newReadme(app, r.width, r.height)
 				r.mode = modeReadme
-				return r, fetchReadmeCmd(app)
+				return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit())
 			}
 			r.mode = r.installReturnMode
 			return r, nil

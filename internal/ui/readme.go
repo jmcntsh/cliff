@@ -51,12 +51,27 @@ type readmeModel struct {
 	notFound       bool
 	fetchErr       error
 	fromCache      bool
+	reel           reelStrip
 }
 
 func newReadme(app *catalog.App, width, height int) readmeModel {
 	raw := placeholderMarkdown(app)
-	m := readmeModel{app: app, raw: raw, loading: true}
+	m := readmeModel{
+		app:     app,
+		raw:     raw,
+		loading: true,
+		reel:    newReelStripForApp(app.Name, width),
+	}
 	return m.resize(width, height)
+}
+
+// ReelInit returns the tea.Cmd that starts the reel-strip's tick
+// loop if the current app has an embedded reel, or nil otherwise.
+// Callers entering modeReadme should batch this with the existing
+// fetchReadmeCmd so the strip starts animating at the same moment
+// the network fetch is kicked off.
+func (m readmeModel) ReelInit() tea.Cmd {
+	return m.reel.Init()
 }
 
 func fetchReadmeCmd(app *catalog.App) tea.Cmd {
@@ -104,7 +119,17 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) readmeModel {
 func (m readmeModel) resize(width, height int) readmeModel {
 	m.width = width
 	m.height = height
-	m.viewport = viewport.New(width, max(height-3, 1))
+	// Reserve 3 rows for header + footer + the separating blank line
+	// between the viewport and footer that JoinVertical produces at
+	// these widths; reserve extra rows for the reel strip if one is
+	// attached. The strip's height is zero for apps without an
+	// embedded reel, so non-cliff readmes keep the previous layout.
+	reelRows := m.reel.Height()
+	if reelRows > 0 {
+		m.reel.width = width
+	}
+	vpHeight := max(height-3-reelRows, 1)
+	m.viewport = viewport.New(width, vpHeight)
 	rendered := renderMarkdown(m.raw, width)
 	m.viewport.SetContent(rendered)
 	m.ready = true
@@ -118,6 +143,14 @@ func (m readmeModel) resize(width, height int) readmeModel {
 const scrollStep = 5
 
 func (m readmeModel) Update(msg tea.Msg) (readmeModel, tea.Cmd) {
+	// Reel tick messages go to the strip and nowhere else. Handle
+	// them before the key/viewport dispatch so the animation keeps
+	// running regardless of what else the readme model is doing.
+	if _, isTick := msg.(reelTickMsg); isTick {
+		var reelCmd tea.Cmd
+		m.reel, reelCmd = m.reel.Update(msg)
+		return m, reelCmd
+	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
 		case "up", "k":
@@ -139,6 +172,9 @@ func (m readmeModel) View() string {
 	}
 	header := m.renderHeader()
 	footer := m.renderFooter()
+	if m.reel.Height() > 0 {
+		return lipgloss.JoinVertical(lipgloss.Left, header, m.reel.View(), m.viewport.View(), footer)
+	}
 	return lipgloss.JoinVertical(lipgloss.Left, header, m.viewport.View(), footer)
 }
 
