@@ -8,6 +8,24 @@ Last updated: 2026-04-22.
 
 ## Latest change
 
+`v0.1.9` (2026-04-22): open installed apps in a new tab. After a
+successful install, pressing ⏎ now launches the just-installed app
+in a new terminal tab while cliff keeps running in the original
+one — no manual terminal-switching, no lost context. Works in
+tmux, WezTerm, Kitty (with `allow_remote_control`), and iTerm2;
+terminals with no safe tab-spawn API (Terminal.app, Alacritty,
+Ghostty, vscode) fall back to copying the command to the
+clipboard via `pbcopy`/`xclip`/`wl-copy` (native tool first,
+OSC52 escape sequence as a last-resort fallback for SSH sessions
+and unusual setups). The copy-to-clipboard path is now honest:
+if the copy actually fails it says so and shows the command,
+rather than flashing "copied" over an empty clipboard. Same
+launch affordance also lands at the end of the fix-PATH flow,
+so an off-PATH install → ⏎ fix PATH → ⏎ open in new tab chains
+into a single gesture — and because the new tab's shell sources
+the freshly edited rc, the app runs without the user thinking
+about `source` or reopening anything.
+
 `v0.1.8` (2026-04-22): catalog up to 43 apps. Added 14 flashy/indie
 TUIs biased toward games, visualizers, and music — the things that
 make someone screenshot their terminal. Games: balatro-tui,

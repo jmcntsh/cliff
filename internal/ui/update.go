@@ -421,7 +421,9 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
 			bin := r.installApp.BinaryName()
 			if bin != "" {
-				clipboard.WriteOSC52(bin)
+				if err := clipboard.Write(bin); err != nil {
+					return r.flash("couldn't copy — run: " + bin), clearFlashCmd()
+				}
 				return r.flash("copied: " + bin), clearFlashCmd()
 			}
 		}
@@ -511,17 +513,26 @@ func (r Root) updateUninstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // tryLaunchOrCopy runs the post-install "open in new tab" action.
 // When the host terminal exposes a tab-spawn mechanism we call it and,
 // on success, dismiss the modal and return the user to the catalog —
-// their new app is now running next door. On failure (or when the
-// launcher is unsupported for this terminal) we copy the command to
-// the clipboard via OSC52 and flash a "copied" toast. Either way the
-// user has one keystroke to "go try it", which is the whole point.
+// their new app is now running next door. When no launcher is
+// available, we copy the command to the clipboard (native tool
+// preferred, OSC52 fallback) and flash an honest toast based on
+// whether the copy actually worked. Either way the user gets a single
+// keystroke path to "go try it," which is the whole point.
 func (r Root) tryLaunchOrCopy(bin string) (tea.Model, tea.Cmd) {
 	if r.launchMethod == launcher.MethodUnsupported {
-		clipboard.WriteOSC52(bin)
+		err := clipboard.Write(bin)
 		r.mode = modeBrowse
 		r.installApp = nil
 		r.installRes = nil
 		r.launchErr = nil
+		if err != nil {
+			// Copy failed — don't claim it worked. Show the command
+			// so the user can copy it by hand (or by mouse) from the
+			// toast. Keeping it short so it doesn't overflow the
+			// flash line: the full command is still on the modal
+			// behind, so this is supplementary.
+			return r.flash("couldn't copy — run: " + bin), clearFlashCmd()
+		}
 		return r.flash("copied: " + bin + " — paste in a new terminal"), clearFlashCmd()
 	}
 	if err := launcher.Launch(r.launchMethod, bin); err != nil {
