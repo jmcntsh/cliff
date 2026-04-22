@@ -8,8 +8,10 @@ Last updated: 2026-04-22.
 
 ## Latest change
 
-`v0.1.10` (2026-04-22): manage picker + in-TUI update. Pressing ⏎ on
-an already-installed app now opens a small horizontal picker —
+`v0.1.10` (2026-04-22): manage picker, in-TUI update, and an
+Installed sidebar row. Two changes that tighten the loop for apps
+you already have. First: pressing ⏎ on an already-installed app
+now opens a small horizontal picker —
 `[ Update ]  Uninstall  Readme` — with Update default-selected
 (leftmost, benign) and arrow keys moving the cursor. This replaces
 the old "⏎ = readme regardless" behavior, which made the most
@@ -21,7 +23,14 @@ Script-type manifests without author-provided `[upgrade]` /
 `[uninstall]` blocks get an honest "no recipe for this install
 type" message rather than running the wrong command, and the
 footer now leads with `U update · ⏎ manage` when the cursor is on
-an installed app instead of the old `u uninstall`.
+an installed app instead of the old `u uninstall`. Second: a new
+"Installed" row pinned in the sidebar under "All" filters the grid
+to just the apps cliff detects on your `$PATH` or in the known
+manager bin dirs — your personal slice of the catalog, one
+keypress away. Count stays live through install/uninstall. No disk
+state: it's a runtime scan, same source of truth as the `✓`
+markers, so it picks up pre-cliff installs and survives external
+uninstalls.
 
 `v0.1.9` (2026-04-22): open installed apps in a new tab. After a
 successful install, pressing ⏎ now launches the just-installed app
