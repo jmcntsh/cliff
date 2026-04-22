@@ -4,9 +4,21 @@ What's actually shipped right now. Updated on every ship. Source of
 truth for "is X live?" — principles docs ([`CLAUDE.md`](CLAUDE.md))
 describe intent, not state.
 
-Last updated: 2026-04-21.
+Last updated: 2026-04-22.
 
 ## Latest change
+
+`v0.1.8` (2026-04-22): catalog up to 43 apps. Added 14 flashy/indie
+TUIs biased toward games, visualizers, and music — the things that
+make someone screenshot their terminal. Games: balatro-tui,
+setrixtui. Visualizers: cava (audio), weathr (animated weather),
+gitlogue (cinematic git replay), syscgo-tui (matrix/fire/fireworks).
+Music: spotify-player, kew, termusic, rmpc. Infra: bottom (btm),
+impala (wifi), bluetui. Typing: toofan. Quality bar held: active
+repo, explicit license, installable via brew/cargo/go (no
+source-only builds, no API-key walls, no server setup). Shipped in
+[cliff-registry#3](https://github.com/jmcntsh/cliff-registry/pull/3);
+embedded snapshot refreshed to match.
 
 `v0.1.7` (2026-04-21): auto-fix PATH from inside cliff. Builds on
 v0.1.6's warning — instead of making the user quit cliff, open
@@ -35,13 +47,15 @@ doesn't disappear after a successful off-PATH install.
 - **`registry.cliff.sh/index.json`** — GitHub Pages, HTTPS enforced.
   Built by CI in [`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)
   on every merge to main. DNS + cert live since 2026-04-21.
-- **Catalog: 28 apps**, indie-first with a flashy games section
-  (rebels-in-the-sky, tetrigo, chess-tui, plastic NES emulator,
-  etc.). 13 categories. Seeded 2026-04-21 in
-  [cliff-registry#1](https://github.com/jmcntsh/cliff-registry/pull/1).
+- **Catalog: 43 apps**, indie-first and games/visualizer-heavy.
+  Highlights: rebels-in-the-sky, tetrigo, plastic (NES emulator),
+  balatro-tui, setrixtui, cava, weathr, gitlogue, syscgo-tui,
+  spotify-player, kew, bottom, impala. 14 categories. Seeded in
+  [cliff-registry#1](https://github.com/jmcntsh/cliff-registry/pull/1);
+  expanded in [#3](https://github.com/jmcntsh/cliff-registry/pull/3).
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index.
-- **GitHub releases** — latest `v0.1.7` (2026-04-21). Darwin and
+- **GitHub releases** — latest `v0.1.8` (2026-04-22). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
