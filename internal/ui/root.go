@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
+	"github.com/jmcntsh/cliff/internal/launcher"
 	"github.com/jmcntsh/cliff/internal/pathfix"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
@@ -32,7 +33,20 @@ const (
 	modeInstallConfirm
 	modeInstallRunning
 	modeInstallResult
+	modeUninstallConfirm
+	modeUninstallRunning
+	modeUninstallResult
 	modeFixPath // confirm + result screen for auto-adding a dir to $PATH
+)
+
+// pkgOp is the active package operation for the shared install/uninstall
+// state machine. Install is the zero value so existing code paths that
+// leave it unset stay on the install side by default.
+type pkgOp int
+
+const (
+	pkgOpInstall pkgOp = iota
+	pkgOpUninstall
 )
 
 type sortMode int
@@ -74,11 +88,17 @@ type Root struct {
 	flashExpiry time.Time
 
 	installed       map[string]bool    // repo -> installed, derived from $PATH via install.Detect
-	installCancel   context.CancelFunc // non-nil while an install is running
-	installLines    []string           // streamed output from the running install (source of truth)
+	installCancel   context.CancelFunc // non-nil while an install/uninstall is running
+	installLines    []string           // streamed output from the running op (source of truth)
 	installViewport viewport.Model     // derived view for scrolling logs
 	installApp   *catalog.App
 	installRes   *install.Result
+	// installOp distinguishes the package operation in flight: install vs
+	// uninstall. The running/result modes share one state machine (same
+	// command streamer, same viewport, same Result), but the modals need
+	// to render different verbs and the install-side-only follow-ups
+	// (PathWarning, launcher) must stay suppressed when uninstalling.
+	installOp pkgOp
 
 	// Fix-PATH follow-up flow. When a post-install PathWarning fires,
 	// Enter on the result modal lifts us into modeFixPath with a
@@ -91,6 +111,16 @@ type Root struct {
 	fixErr             error
 	fixApplied         bool
 	fixAlreadyPresent  bool
+
+	// Post-install launcher state. launchMethod is detected once at
+	// startup (via launcher.Detect on CurrentEnv) so every install's
+	// result screen can render the right affordance — "⏎ open in new
+	// tab" when we can do that, "⏎ copy command" otherwise — without
+	// re-detecting on every keypress. launchErr holds the last spawn
+	// error if Launch failed, so the result view can surface a hint
+	// rather than silently swallowing it.
+	launchMethod launcher.Method
+	launchErr    error
 }
 
 func New(c *catalog.Catalog) Root {
@@ -110,6 +140,7 @@ func New(c *catalog.Catalog) Root {
 		search:          ti,
 		installed:       install.InstalledApps(c.Apps),
 		installViewport: viewport.New(installLogWidth, installLogHeight),
+		launchMethod:    launcher.Detect(launcher.CurrentEnv()),
 	}
 	r = r.refilter()
 	return r

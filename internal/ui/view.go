@@ -81,11 +81,23 @@ func (r Root) View() string {
 	}
 	if r.mode == modeInstallResult {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			installResultView(r.installRes, r.installViewport, r.width))
+			installResultView(r.installRes, r.installViewport, r.launchMethod, r.launchErr, r.width))
+	}
+	if r.mode == modeUninstallConfirm {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			uninstallConfirmView(r.installApp, r.width))
+	}
+	if r.mode == modeUninstallRunning {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			uninstallRunningView(r.installApp, r.installViewport, len(r.installLines) > 0, r.width))
+	}
+	if r.mode == modeUninstallResult {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			uninstallResultView(r.installRes, r.installViewport, r.width))
 	}
 	if r.mode == modeFixPath {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.width))
+			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.installApp, r.launchMethod, r.launchErr, r.width))
 	}
 
 	return body + "\n" + r.footer()
@@ -133,9 +145,17 @@ func (r Root) footer() string {
 	// Footer hints lead with the action verbs you actually want to use
 	// from this mode. Arrows + ⏎ + esc are universal and don't need to
 	// be listed every time; ? always gets you the full reference.
-	hints := "/ search · s sort · i install · ⏎ readme · ? help · q quit"
+	// When the selected app is already installed, swap `i install` for
+	// `u uninstall` — it's the action that's actually available, and
+	// keeping the footer to a single verb avoids the noise of showing
+	// both when only one applies.
+	installVerb := "i install"
+	if app := r.selectedApp(); app != nil && r.installed[app.Repo] {
+		installVerb = "u uninstall"
+	}
+	hints := "/ search · s sort · " + installVerb + " · ⏎ readme · ? help · q quit"
 	if r.layout == layoutNarrow {
-		hints = "/ search · c categories · i install · ? help · q quit"
+		hints = "/ search · c categories · " + installVerb + " · ? help · q quit"
 	}
 	switch r.mode {
 	case modeSidebarOverlay:
@@ -145,7 +165,11 @@ func (r Root) footer() string {
 	case modeHelp:
 		hints = "? or esc to close"
 	case modeReadme:
-		hints = "⏎ install · o github · ? help · ← back"
+		readmeVerb := "⏎ install"
+		if app := r.selectedApp(); app != nil && r.installed[app.Repo] {
+			readmeVerb = "u uninstall · ⏎ reinstall"
+		}
+		hints = readmeVerb + " · o github · ? help · ← back"
 	case modeInstallConfirm:
 		hints = "⏎ run · esc cancel"
 	case modeInstallRunning:
@@ -156,6 +180,12 @@ func (r Root) footer() string {
 		} else {
 			hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
 		}
+	case modeUninstallConfirm:
+		hints = "⏎ run · esc cancel"
+	case modeUninstallRunning:
+		hints = "↑↓ scroll logs  esc cancel uninstall"
+	case modeUninstallResult:
+		hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
 	case modeFixPath:
 		if r.fixApplied {
 			hints = "⏎ or esc close"

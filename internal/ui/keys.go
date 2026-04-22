@@ -14,6 +14,7 @@ type keyMap struct {
 	OpenGithub   key.Binding
 	CopyInstall  key.Binding
 	Install      key.Binding
+	Uninstall    key.Binding
 	Search       key.Binding
 	Sort         key.Binding
 	Categories   key.Binding
@@ -38,6 +39,7 @@ var keys = keyMap{
 	OpenGithub:  key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "open on github")),
 	CopyInstall: key.NewBinding(key.WithKeys("y"), key.WithHelp("y", "copy install cmd")),
 	Install:     key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "install")),
+	Uninstall:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "uninstall (if installed)")),
 	Search:      key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "search")),
 	Sort:        key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "cycle sort")),
 	Categories:  key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "categories")),

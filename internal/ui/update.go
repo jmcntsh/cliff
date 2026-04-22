@@ -8,6 +8,7 @@ import (
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/clipboard"
 	"github.com/jmcntsh/cliff/internal/install"
+	"github.com/jmcntsh/cliff/internal/launcher"
 	"github.com/jmcntsh/cliff/internal/pathfix"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -59,7 +60,13 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		res := m.Result
 		r.installRes = &res
 		r.installCancel = nil
-		r.mode = modeInstallResult
+		if r.installOp == pkgOpUninstall {
+			r.mode = modeUninstallResult
+		} else {
+			r.mode = modeInstallResult
+		}
+		// Reset per-modal transient error from any previous install.
+		r.launchErr = nil
 		// Replace with the canonical full output from Result — Stream's
 		// onLine callback misses any partial final line (no trailing \n),
 		// and having the result view show the same bytes Result.Output
@@ -68,9 +75,11 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.installViewport.GotoTop()
 		if res.Err == nil && res.App != nil {
 			// Re-scan $PATH rather than blindly marking res.App.Repo
-			// installed. This keeps the ✓ markers honest: if the install
-			// reported success but didn't actually land a binary on PATH
-			// (unusual but possible for odd scripts), we don't lie.
+			// installed or uninstalled. This keeps the ✓ markers honest:
+			// if an install reported success but didn't actually land a
+			// binary on PATH (unusual but possible for odd scripts), or
+			// if an uninstall "succeeded" but the binary is still there
+			// (wrong GOBIN, asdf, etc.), we don't lie.
 			r.installed = install.InstalledApps(r.catalog.Apps)
 			r = r.refilter()
 		}
@@ -101,6 +110,12 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateInstallRunning(m)
 		case modeInstallResult:
 			return r.updateInstallResult(m)
+		case modeUninstallConfirm:
+			return r.updateUninstallConfirm(m)
+		case modeUninstallRunning:
+			return r.updateUninstallRunning(m)
+		case modeUninstallResult:
+			return r.updateUninstallResult(m)
 		case modeFixPath:
 			return r.updateFixPath(m)
 		default:
@@ -153,8 +168,22 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Install):
 		if app := r.selectedApp(); app != nil {
 			r.installApp = app
+			r.installOp = pkgOpInstall
 			r.installReturnMode = modeBrowse
 			r.mode = modeInstallConfirm
+		}
+		return r, nil
+	case key.Matches(msg, keys.Uninstall):
+		// `u` is only meaningful when the selected app is actually
+		// installed. Silently no-op otherwise: showing a confirm
+		// modal for "uninstall something you don't have" would just
+		// confuse, and making `u` flash-warn on every stray press
+		// would be noisy.
+		if app := r.selectedApp(); app != nil && r.installed[app.Repo] {
+			r.installApp = app
+			r.installOp = pkgOpUninstall
+			r.installReturnMode = modeBrowse
+			r.mode = modeUninstallConfirm
 		}
 		return r, nil
 	case key.Matches(msg, keys.CopyInstall):
@@ -245,8 +274,18 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, keys.Enter, keys.Install) {
 		if app := r.selectedApp(); app != nil {
 			r.installApp = app
+			r.installOp = pkgOpInstall
 			r.installReturnMode = modeReadme
 			r.mode = modeInstallConfirm
+			return r, nil
+		}
+	}
+	if key.Matches(msg, keys.Uninstall) {
+		if app := r.selectedApp(); app != nil && r.installed[app.Repo] {
+			r.installApp = app
+			r.installOp = pkgOpUninstall
+			r.installReturnMode = modeReadme
+			r.mode = modeUninstallConfirm
 			return r, nil
 		}
 	}
@@ -335,15 +374,16 @@ func (r Root) updateInstallRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// Two dismissal flavors with different intent:
-	//   ⏎       = "I'm done, what's next" — normally lands in the grid.
-	//             EXCEPTION: when the install produced a PathWarning,
-	//             Enter is more useful as "yes, fix my PATH" since
-	//             that's the only remaining step between install and
-	//             the app actually running. The user can still back
-	//             out with esc/q/← in that case.
-	//   esc/q/← = "back out" → return to whatever called the install
-	//             (grid or readme), keeping the spatial model intact.
+	// Enter has three different meanings depending on the install
+	// outcome, so the footer view labels them explicitly and this
+	// switch branches on the same conditions:
+	//
+	//   1. PathWarning pending → "fix PATH" (jump into modeFixPath).
+	//   2. Clean success + launcher supported → "open in new tab".
+	//   3. Clean success + launcher unsupported → "copy command".
+	//   4. Install failed or no binary → plain dismiss.
+	//
+	// esc/q/← always means "back out" to whatever called the install.
 	if key.Matches(msg, keys.Enter) {
 		if r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
 			plan, err := pathfix.Detect(r.installRes.PathWarning.Dir)
@@ -356,23 +396,151 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				r.fixAlreadyPresent = false
 			}
 			r.mode = modeFixPath
+			r.launchErr = nil
 			return r, nil
 		}
+		// Clean success path: try to launch.
+		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
+			bin := r.installApp.BinaryName()
+			if bin != "" {
+				return r.tryLaunchOrCopy(bin)
+			}
+		}
+		// Fallback: plain dismiss (install failed, or no binary).
 		r.mode = modeBrowse
 		r.installApp = nil
 		r.installRes = nil
+		r.launchErr = nil
+		return r, nil
+	}
+	// `c` as an explicit "copy command" shortcut — labeled in the
+	// footer when the launch affordance is also available, so users
+	// can choose the fallback without triggering a tab they don't
+	// want. Harmless no-op when there's no binary.
+	if msg.String() == "c" {
+		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
+			bin := r.installApp.BinaryName()
+			if bin != "" {
+				clipboard.WriteOSC52(bin)
+				return r.flash("copied: " + bin), clearFlashCmd()
+			}
+		}
 		return r, nil
 	}
 	if key.Matches(msg, keys.Escape, keys.Quit, keys.Left) {
 		r.mode = r.installReturnMode
 		r.installApp = nil
 		r.installRes = nil
+		r.launchErr = nil
 		return r, nil
 	}
 	// Everything else scrolls the log viewport.
 	var cmd tea.Cmd
 	r.installViewport, cmd = r.installViewport.Update(msg)
 	return r, cmd
+}
+
+// updateUninstallConfirm handles the "Uninstall <app>?" modal. ⏎ runs
+// the derived UninstallCommand via StreamCmd; esc backs out. Mirrors
+// updateInstallConfirm except there's no PathWarning / launcher flow
+// to worry about on the result side.
+func (r Root) updateUninstallConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, keys.Escape, keys.Quit):
+		r.mode = r.installReturnMode
+		r.installApp = nil
+		return r, nil
+	case key.Matches(msg, keys.Enter):
+		if r.installApp == nil {
+			r.mode = r.installReturnMode
+			r.installApp = nil
+			return r, nil
+		}
+		cmd := r.installApp.UninstallCommand()
+		if cmd == "" {
+			// No uninstall recipe available (script-type without
+			// manifest [uninstall] block). The view will have
+			// already communicated that; bail on ⏎ as a dismiss.
+			r.mode = r.installReturnMode
+			r.installApp = nil
+			return r, nil
+		}
+		app := r.installApp
+		r.installLines = nil
+		r.installViewport.SetContent("")
+		r.installViewport.GotoTop()
+		r.mode = modeUninstallRunning
+		return r, runUninstallCmd(app, cmd)
+	}
+	return r, nil
+}
+
+// updateUninstallRunning is the direct analog of updateInstallRunning:
+// esc cancels the in-flight process (via context), everything else
+// scrolls the log viewport. Completion arrives as installResultMsg,
+// which the receiver routes to modeUninstallResult because r.installOp
+// is pkgOpUninstall.
+func (r Root) updateUninstallRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if key.Matches(msg, keys.Escape, keys.Quit) {
+		if r.installCancel != nil {
+			r.installCancel()
+		}
+		return r, nil
+	}
+	var cmd tea.Cmd
+	r.installViewport, cmd = r.installViewport.Update(msg)
+	return r, cmd
+}
+
+// updateUninstallResult shows the final state of an uninstall. There's
+// no PathWarning / launcher branching here — once the app is gone, the
+// only hand-off is "close the modal", so ⏎ and esc both dismiss.
+func (r Root) updateUninstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
+		r.mode = r.installReturnMode
+		r.installApp = nil
+		r.installRes = nil
+		r.installOp = pkgOpInstall
+		return r, nil
+	}
+	var cmd tea.Cmd
+	r.installViewport, cmd = r.installViewport.Update(msg)
+	return r, cmd
+}
+
+// tryLaunchOrCopy runs the post-install "open in new tab" action.
+// When the host terminal exposes a tab-spawn mechanism we call it and,
+// on success, dismiss the modal and return the user to the catalog —
+// their new app is now running next door. On failure (or when the
+// launcher is unsupported for this terminal) we copy the command to
+// the clipboard via OSC52 and flash a "copied" toast. Either way the
+// user has one keystroke to "go try it", which is the whole point.
+func (r Root) tryLaunchOrCopy(bin string) (tea.Model, tea.Cmd) {
+	if r.launchMethod == launcher.MethodUnsupported {
+		clipboard.WriteOSC52(bin)
+		r.mode = modeBrowse
+		r.installApp = nil
+		r.installRes = nil
+		r.launchErr = nil
+		return r.flash("copied: " + bin + " — paste in a new terminal"), clearFlashCmd()
+	}
+	if err := launcher.Launch(r.launchMethod, bin); err != nil {
+		// Leave the modal open, record the error, let the view
+		// surface it alongside the "run this yourself" fallback.
+		// We deliberately don't also copy-to-clipboard on error —
+		// that would steal the user's clipboard after a failed
+		// action; better to show the hint and let them retry or
+		// press `c` to copy explicitly.
+		r.launchErr = err
+		return r, nil
+	}
+	// Success: dismiss back to the catalog. The newly spawned tab has
+	// the app running in it; cliff stays open here.
+	r.mode = modeBrowse
+	r.installApp = nil
+	r.installRes = nil
+	r.launchErr = nil
+	return r.flash("launched " + bin + " in new tab"), clearFlashCmd()
 }
 
 // updateFixPath runs the modeFixPath screen. It has two phases:
@@ -387,11 +555,33 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // accidentally double-apply by holding Enter.
 func (r Root) updateFixPath(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if r.fixApplied {
-		if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
+		// Post-apply, Enter means "open in new tab" (if we can) and
+		// esc/q/← means "done, back to the catalog". This mirrors
+		// updateInstallResult — after a successful hand-off step,
+		// Enter is always "forward motion," never just dismiss.
+		if key.Matches(msg, keys.Enter) {
+			if r.fixErr == nil && r.installApp != nil {
+				bin := r.installApp.BinaryName()
+				if bin != "" {
+					// clearFixPath first so the modeBrowse fall-through
+					// in tryLaunchOrCopy doesn't land on a stale plan.
+					r = r.clearFixPath()
+					return r.tryLaunchOrCopy(bin)
+				}
+			}
+			// No launch possible — plain dismiss (existing behavior).
 			r = r.clearFixPath()
 			r.mode = modeBrowse
 			r.installApp = nil
 			r.installRes = nil
+			return r, nil
+		}
+		if key.Matches(msg, keys.Escape, keys.Quit, keys.Left) {
+			r = r.clearFixPath()
+			r.mode = modeBrowse
+			r.installApp = nil
+			r.installRes = nil
+			r.launchErr = nil
 			return r, nil
 		}
 		return r, nil

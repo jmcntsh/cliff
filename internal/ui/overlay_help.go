@@ -37,7 +37,7 @@ func helpRightFor(layout layoutMode, from mode) []helpSection {
 	if layout == layoutNarrow {
 		find = append(find, keys.Categories)
 	}
-	do := []key.Binding{keys.Install, keys.CopyInstall}
+	do := []key.Binding{keys.Install, keys.Uninstall, keys.CopyInstall}
 	if from == modeReadme {
 		do = append(do, keys.OpenGithub)
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
+	"github.com/jmcntsh/cliff/internal/launcher"
 	"github.com/jmcntsh/cliff/internal/pathfix"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
@@ -58,6 +59,28 @@ func runInstallCmd(app *catalog.App) tea.Cmd {
 			// context's internal goroutine per install.
 			defer cancel()
 			res := install.Stream(ctx, app, func(line string) {
+				if program != nil {
+					program.Send(installLineMsg{Line: line})
+				}
+			})
+			if program != nil {
+				program.Send(installResultMsg{Result: res})
+			}
+		}()
+		return installStartedMsg{Cancel: cancel}
+	}
+}
+
+// runUninstallCmd mirrors runInstallCmd but drives UninstallCommand
+// through StreamCmd. Shares the same installLineMsg/installResultMsg
+// envelope so the running/result views can consume one stream. The
+// receiver decides which verb to render based on r.installOp.
+func runUninstallCmd(app *catalog.App, cmd string) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			defer cancel()
+			res := install.StreamCmd(ctx, app, cmd, func(line string) {
 				if program != nil {
 					program.Send(installLineMsg{Line: line})
 				}
@@ -129,7 +152,7 @@ func installRunningView(app *catalog.App, vp viewport.Model, hasOutput bool, wid
 	return modalBox(width, strings.Join(body, "\n"))
 }
 
-func installResultView(res *install.Result, vp viewport.Model, width int) string {
+func installResultView(res *install.Result, vp viewport.Model, launchMethod launcher.Method, launchErr error, width int) string {
 	if res == nil {
 		return modalBox(width, "no result")
 	}
@@ -174,24 +197,56 @@ func installResultView(res *install.Result, vp viewport.Model, width int) string
 			theme.MutedText.Render(prompt),
 		)
 	}
+
+	// Clean success with no PathWarning: offer to launch the app in
+	// a new tab (when the host terminal supports it). This is the
+	// zero-friction finish line — install → ⏎ → running in the next
+	// tab while cliff stays open in this one. When we can't spawn a
+	// tab, fall back to "copy command" so the user still has a single
+	// keystroke path to trying the app out.
+	showLaunch := res.Err == nil && res.PathWarning == nil && app != nil && app.BinaryName() != ""
+	if showLaunch {
+		bin := app.BinaryName()
+		if launchErr != nil {
+			// The previous Launch attempt on this modal failed.
+			// Surface the error in-line so the user sees why their
+			// tab didn't open, and leave the affordance as "copy"
+			// so a second Enter does something useful.
+			body = append(body,
+				"",
+				theme.ErrorText.Render("× Couldn't open a new tab: "+launchErr.Error()),
+				theme.MutedText.Render("Run this in any terminal: "+bin),
+			)
+		} else if launchMethod == launcher.MethodUnsupported {
+			body = append(body,
+				"",
+				theme.MutedText.Render("Run ")+theme.FocusText.Render(bin)+theme.MutedText.Render(" in a new terminal tab to try it out."),
+			)
+		} else {
+			body = append(body,
+				"",
+				theme.MutedText.Render("Try it: ")+theme.FocusText.Render(bin),
+			)
+		}
+	}
+
 	body = append(body,
 		"",
 		theme.MutedText.Render(res.Command),
 		"",
 		outputBlock,
 	)
-	// Footer hint depends on whether there's a pending PathWarning
-	// action — Enter means two different things, so we label them.
-	if res.Err == nil && res.PathWarning != nil {
-		body = append(body,
-			"",
-			theme.MutedText.Render("⏎ fix PATH  ↑↓/jk scroll  esc close"),
-		)
-	} else {
-		body = append(body,
-			"",
-			theme.MutedText.Render("↑↓/jk scroll  pgup/pgdn page  esc close"),
-		)
+	// Footer hint: three mutually exclusive cases, labeled so ⏎ never
+	// does a surprise thing.
+	switch {
+	case res.Err == nil && res.PathWarning != nil:
+		body = append(body, "", theme.MutedText.Render("⏎ fix PATH  ↑↓/jk scroll  esc close"))
+	case showLaunch && launchErr == nil && launchMethod != launcher.MethodUnsupported:
+		body = append(body, "", theme.MutedText.Render("⏎ open in new tab  c copy  ↑↓/jk scroll  esc close"))
+	case showLaunch:
+		body = append(body, "", theme.MutedText.Render("⏎ copy command  ↑↓/jk scroll  esc close"))
+	default:
+		body = append(body, "", theme.MutedText.Render("↑↓/jk scroll  pgup/pgdn page  esc close"))
 	}
 	return modalBox(width, strings.Join(body, "\n"))
 }
@@ -207,7 +262,7 @@ func installResultView(res *install.Result, vp viewport.Model, width int) string
 // taken at Detect time, so the post-apply screen can distinguish
 // "just added" from "was already in the rc" after Apply has flipped
 // Plan.Present unconditionally.
-func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, width int) string {
+func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, app *catalog.App, launchMethod launcher.Method, launchErr error, width int) string {
 	if plan == nil {
 		return modalBox(width, theme.ErrorText.Render("internal error: no path-fix plan"))
 	}
@@ -291,8 +346,6 @@ func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, wi
 		body = append(body,
 			theme.OKText.Render("✓ Already configured."),
 			theme.MutedText.Render(plan.Line+" is already in "+plan.RcPath+"."),
-			"",
-			theme.MutedText.Render("Open a new terminal to use the tool."),
 		)
 	default:
 		body = append(body,
@@ -300,16 +353,66 @@ func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, wi
 			"",
 			theme.MutedText.Render("Appended:"),
 			theme.FocusText.Render("  "+plan.Line),
-			"",
-			theme.MutedText.Render("Open a new terminal (or `source "+plan.RcPath+"`)"),
-			theme.MutedText.Render("to pick it up."),
 		)
 	}
 
-	body = append(body,
-		"",
-		theme.MutedText.Render("⏎ or esc close"),
-	)
+	// Post-apply success path: the rc change is written, but the
+	// current cliff shell won't see it (cliff was started before the
+	// edit). A new tab will source the edited rc and have the binary
+	// on PATH, so "open in new tab" is precisely the right hand-off.
+	//
+	// We only offer it when Apply actually succeeded (err == nil).
+	// ErrShellUnsupported means the rc wasn't touched, so a new tab
+	// still wouldn't have PATH set — no point spawning one.
+	showLaunch := err == nil && app != nil && app.BinaryName() != ""
+	if showLaunch {
+		bin := app.BinaryName()
+		if launchErr != nil {
+			body = append(body,
+				"",
+				theme.ErrorText.Render("× Couldn't open a new tab: "+launchErr.Error()),
+				theme.MutedText.Render("Run this in any terminal: "+bin),
+			)
+		} else if launchMethod == launcher.MethodUnsupported {
+			body = append(body,
+				"",
+				theme.MutedText.Render("Open a new terminal and run: ")+theme.FocusText.Render(bin),
+			)
+		} else {
+			body = append(body,
+				"",
+				theme.MutedText.Render("Try it: ")+theme.FocusText.Render(bin),
+			)
+		}
+	} else {
+		// No launch affordance (no app context, or the apply path
+		// isn't "clean success"); keep the pre-launcher hint so the
+		// user still knows the next step.
+		switch {
+		case err == pathfix.ErrShellUnsupported,
+			err != nil:
+			// Already shown above in the per-case switch.
+		case alreadyPresent:
+			body = append(body, "", theme.MutedText.Render("Open a new terminal to use the tool."))
+		default:
+			body = append(body,
+				"",
+				theme.MutedText.Render("Open a new terminal (or `source "+plan.RcPath+"`)"),
+				theme.MutedText.Render("to pick it up."),
+			)
+		}
+	}
+
+	// Footer keybinds. When we can open a tab, Enter is the launch
+	// action; otherwise Enter is a plain dismiss (same as before).
+	switch {
+	case showLaunch && launchErr == nil && launchMethod != launcher.MethodUnsupported:
+		body = append(body, "", theme.MutedText.Render("⏎ open in new tab  esc close"))
+	case showLaunch && launchMethod == launcher.MethodUnsupported:
+		body = append(body, "", theme.MutedText.Render("⏎ copy command  esc close"))
+	default:
+		body = append(body, "", theme.MutedText.Render("⏎ or esc close"))
+	}
 	return modalBox(width, strings.Join(body, "\n"))
 }
 
