@@ -85,7 +85,18 @@ func (s sidebar) update(msg tea.Msg) (sidebar, bool) {
 
 func (s sidebar) view(height int) string {
 	var lines []string
-	lines = append(lines, theme.TitleStyle.Render("CATEGORIES"))
+	// Header flips to accent-on-panel when the sidebar is focused —
+	// a title-bar treatment that matches the focused-row fill below
+	// and makes it unambiguous which pane input is going to. When
+	// unfocused, the header stays plain accent text so the sidebar
+	// still reads as labeled but visually recedes.
+	headerStyle := theme.TitleStyle
+	if s.focused {
+		headerStyle = theme.TitleStyle.
+			Background(theme.ColorPanel).
+			Padding(0, 1)
+	}
+	lines = append(lines, headerStyle.Render("CATEGORIES"))
 	lines = append(lines, "")
 
 	nameBudget := sidebarWidth - 2 // 2 cols for prefix; count appended after truncation
@@ -109,8 +120,19 @@ func (s sidebar) view(height int) string {
 		style := lipgloss.NewStyle().Foreground(theme.ColorMuted)
 		switch {
 		case selected && s.focused:
+			// Focused+selected: stack three cues the way the card grid
+			// does — accent ▸ prefix, bold focus-color text, and a
+			// panel-background bar that extends across the full
+			// sidebar width. The bar is the peripheral-vision cue;
+			// without it, a focus change reads as "one row got
+			// slightly bolder somewhere" and is easy to miss when
+			// your eyes are on the grid.
 			prefix = theme.SelectionPrefix
-			style = lipgloss.NewStyle().Foreground(theme.ColorFocus).Bold(true)
+			style = lipgloss.NewStyle().
+				Foreground(theme.ColorFocus).
+				Background(theme.ColorPanel).
+				Bold(true).
+				Width(nameBudget)
 		case selected:
 			prefix = "▸ "
 			style = lipgloss.NewStyle().Foreground(theme.ColorText)
