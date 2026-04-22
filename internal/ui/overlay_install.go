@@ -93,6 +93,29 @@ func runUninstallCmd(app *catalog.App, cmd string) tea.Cmd {
 	}
 }
 
+// runUpgradeCmd is the upgrade-specific analog of the runners above.
+// Structurally identical to runUninstallCmd — same StreamCmd, same
+// envelope — but takes the pre-derived UpgradeCommand string. Lives
+// beside its siblings so the three package-op runners read as one
+// shape with one parameter changed.
+func runUpgradeCmd(app *catalog.App, cmd string) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			defer cancel()
+			res := install.StreamCmd(ctx, app, cmd, func(line string) {
+				if program != nil {
+					program.Send(installLineMsg{Line: line})
+				}
+			})
+			if program != nil {
+				program.Send(installResultMsg{Result: res})
+			}
+		}()
+		return installStartedMsg{Cancel: cancel}
+	}
+}
+
 // installConfirmView is the modal shown after `i`. It displays the exact
 // shell command that will run and a stronger warning for script-type
 // installs (per CLAUDE.md §3 and notes/manifest.md).

@@ -8,6 +8,21 @@ Last updated: 2026-04-22.
 
 ## Latest change
 
+`v0.1.10` (2026-04-22): manage picker + in-TUI update. Pressing ⏎ on
+an already-installed app now opens a small horizontal picker —
+`[ Update ]  Uninstall  Readme` — with Update default-selected
+(leftmost, benign) and arrow keys moving the cursor. This replaces
+the old "⏎ = readme regardless" behavior, which made the most
+common next action on an installed tool (update it) cost four
+keystrokes. Disabled actions dim themselves and are skipped by the
+cursor so ⏎ never becomes a silent no-op. Direct keybind `U`
+(shift-u) runs upgrade without the picker for muscle-memory users.
+Script-type manifests without author-provided `[upgrade]` /
+`[uninstall]` blocks get an honest "no recipe for this install
+type" message rather than running the wrong command, and the
+footer now leads with `U update · ⏎ manage` when the cursor is on
+an installed app instead of the old `u uninstall`.
+
 `v0.1.9` (2026-04-22): open installed apps in a new tab. After a
 successful install, pressing ⏎ now launches the just-installed app
 in a new terminal tab while cliff keeps running in the original
