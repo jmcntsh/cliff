@@ -81,7 +81,7 @@ func (r Root) View() string {
 	}
 	if r.mode == modeInstallResult {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			installResultView(r.installRes, r.installViewport, r.launchMethod, r.launchErr, r.width))
+			installResultView(r.installRes, r.installViewport, r.launchMethod, r.launchErr, r.binOverrides, r.width))
 	}
 	if r.mode == modeUninstallConfirm {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
@@ -113,7 +113,7 @@ func (r Root) View() string {
 	}
 	if r.mode == modeFixPath {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.installApp, r.launchMethod, r.launchErr, r.width))
+			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.installApp, r.launchMethod, r.launchErr, r.binOverrides, r.width))
 	}
 
 	return body + "\n" + r.footer()

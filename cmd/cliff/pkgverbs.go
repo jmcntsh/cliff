@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jmcntsh/cliff/internal/binmap"
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/pathfix"
@@ -31,7 +32,7 @@ func cmdInstall(args []string) int {
 		fmt.Fprintln(os.Stderr, "cliff:", err)
 		return 2
 	}
-	return runPkgVerb("install", installArgs, func(app *catalog.App) string {
+	return runPkgVerb("install", installArgs, func(app *catalog.App, _ map[string]string) string {
 		return app.InstallSpec.Shell()
 	}, mode)
 }
@@ -76,7 +77,9 @@ func parseInstallFlags(args []string) (positional []string, mode fixPathMode, er
 // Returns "" for script-type installs without a [uninstall] block —
 // those require author-provided recipes (enforced at registry CI).
 func cmdUninstall(args []string) int {
-	return runPkgVerb("uninstall", args, (*catalog.App).UninstallCommand, fixPathPromptNone)
+	return runPkgVerb("uninstall", args, func(app *catalog.App, overrides map[string]string) string {
+		return app.UninstallCommandWithOverrides(overrides)
+	}, fixPathPromptNone)
 }
 
 // cmdUpgrade runs `cliff upgrade <pkg>`. Manager-authoritative: we ask
@@ -84,7 +87,9 @@ func cmdUninstall(args []string) int {
 // there's no cliff-side state of record (see commit 82c2833). Prefers
 // the manifest's [upgrade] block when present.
 func cmdUpgrade(args []string) int {
-	return runPkgVerb("upgrade", args, (*catalog.App).UpgradeCommand, fixPathPromptNone)
+	return runPkgVerb("upgrade", args, func(app *catalog.App, _ map[string]string) string {
+		return app.UpgradeCommand()
+	}, fixPathPromptNone)
 }
 
 // runPkgVerb is the shared body of install/uninstall/upgrade. The
@@ -92,7 +97,7 @@ func cmdUpgrade(args []string) int {
 // app; a "" return means the verb isn't supported for that install type
 // (e.g. uninstalling a script-type install, or upgrading anything with
 // type=script).
-func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string, fixMode fixPathMode) int {
+func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App, map[string]string) string, fixMode fixPathMode) int {
 	if len(args) != 1 {
 		fmt.Fprintf(os.Stderr, "usage: cliff %s <pkg>\n", verb)
 		return 2
@@ -112,7 +117,9 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string, fi
 		return 1
 	}
 
-	cmd := cmdFor(app)
+	overrides := binmap.Load()
+
+	cmd := cmdFor(app, overrides)
 	if cmd == "" {
 		fmt.Fprintf(os.Stderr, "cliff: %s is not supported for %s (install type: %s)\n",
 			verb, app.Name, installTypeOrUnknown(app))
@@ -133,8 +140,22 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string, fi
 
 	fmt.Println()
 	if result.ExitCode == 0 && result.Err == nil {
+		// Learn (or forget) the binary name based on the verb. On
+		// install, remember the first detected binary so the next
+		// run — and the next uninstall — use the right name. On
+		// uninstall, forget the repo so a stale override doesn't
+		// outlive the binary. Best-effort: a binmap write failure
+		// must never fail a successful package op.
+		switch verb {
+		case "install":
+			if len(result.DetectedBinaries) > 0 {
+				_ = binmap.Remember(app.Repo, result.DetectedBinaries[0], app.BinaryName())
+			}
+		case "uninstall":
+			_ = binmap.Forget(app.Repo)
+		}
 		if verb == "uninstall" {
-			if code := verifyUninstalled(app); code != 0 {
+			if code := verifyUninstalled(app, overrides); code != 0 {
 				return code
 			}
 		}
@@ -161,8 +182,8 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string, fi
 // into a loud failure with a pointer to where the binary still lives.
 // We flag any lingering location (on $PATH or in a manager default
 // dir) because either case means the recipe didn't fully remove it.
-func verifyUninstalled(app *catalog.App) int {
-	bin := app.BinaryName()
+func verifyUninstalled(app *catalog.App, overrides map[string]string) int {
+	bin := app.ResolvedBinaryName(overrides)
 	if bin == "" {
 		return 0
 	}

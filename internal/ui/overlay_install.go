@@ -175,7 +175,7 @@ func installRunningView(app *catalog.App, vp viewport.Model, hasOutput bool, wid
 	return modalBox(width, strings.Join(body, "\n"))
 }
 
-func installResultView(res *install.Result, vp viewport.Model, launchMethod launcher.Method, launchErr error, width int) string {
+func installResultView(res *install.Result, vp viewport.Model, launchMethod launcher.Method, launchErr error, overrides map[string]string, width int) string {
 	if res == nil {
 		return modalBox(width, "no result")
 	}
@@ -227,9 +227,9 @@ func installResultView(res *install.Result, vp viewport.Model, launchMethod laun
 	// tab while cliff stays open in this one. When we can't spawn a
 	// tab, fall back to "copy command" so the user still has a single
 	// keystroke path to trying the app out.
-	showLaunch := res.Err == nil && res.PathWarning == nil && app != nil && app.BinaryName() != ""
+	showLaunch := res.Err == nil && res.PathWarning == nil && app != nil && app.ResolvedBinaryName(overrides) != ""
 	if showLaunch {
-		bin := app.BinaryName()
+		bin := app.ResolvedBinaryName(overrides)
 		if launchErr != nil {
 			// The previous Launch attempt on this modal failed.
 			// Surface the error in-line so the user sees why their
@@ -285,7 +285,7 @@ func installResultView(res *install.Result, vp viewport.Model, launchMethod laun
 // taken at Detect time, so the post-apply screen can distinguish
 // "just added" from "was already in the rc" after Apply has flipped
 // Plan.Present unconditionally.
-func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, app *catalog.App, launchMethod launcher.Method, launchErr error, width int) string {
+func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, app *catalog.App, launchMethod launcher.Method, launchErr error, overrides map[string]string, width int) string {
 	if plan == nil {
 		return modalBox(width, theme.ErrorText.Render("internal error: no path-fix plan"))
 	}
@@ -387,9 +387,9 @@ func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, ap
 	// We only offer it when Apply actually succeeded (err == nil).
 	// ErrShellUnsupported means the rc wasn't touched, so a new tab
 	// still wouldn't have PATH set — no point spawning one.
-	showLaunch := err == nil && app != nil && app.BinaryName() != ""
+	showLaunch := err == nil && app != nil && app.ResolvedBinaryName(overrides) != ""
 	if showLaunch {
-		bin := app.BinaryName()
+		bin := app.ResolvedBinaryName(overrides)
 		if launchErr != nil {
 			body = append(body,
 				"",

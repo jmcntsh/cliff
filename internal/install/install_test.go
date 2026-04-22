@@ -311,6 +311,121 @@ func TestStream_AttachesPathWarning(t *testing.T) {
 	}
 }
 
+// TestStream_DetectsBinaryViaDirDiff covers the cross-installer
+// fallback path: an install that drops a brand-new executable into
+// a manager bin dir (here: $GOBIN) should be detected even when its
+// output is mute — the dir-diff catches what output-scraping cannot.
+// This is the exact case that broke for minesweep (cargo package
+// minesweep vs. repo basename minesweep-rs) before we added
+// detection.
+func TestStream_DetectsBinaryViaDirDiff(t *testing.T) {
+	pathDir := t.TempDir()
+	gobin := t.TempDir()
+	t.Setenv("PATH", pathDir+":/bin:/usr/bin")
+	isolateManagerDirs(t)
+	t.Setenv("GOBIN", gobin)
+
+	app := &catalog.App{
+		Name: "phantom",
+		Repo: "u/phantom-extra-suffix",
+		InstallSpec: &catalog.InstallSpec{
+			Type:    "script",
+			Command: `printf '#!/bin/sh\nexit 0\n' > ` + filepath.Join(gobin, "phantom") + ` && chmod +x ` + filepath.Join(gobin, "phantom"),
+		},
+	}
+	res := Stream(context.Background(), app, nil)
+	if res.Err != nil {
+		t.Fatalf("install failed: %v", res.Err)
+	}
+	if len(res.DetectedBinaries) == 0 {
+		t.Fatal("expected DetectedBinaries to be populated via dir-diff, got empty")
+	}
+	found := false
+	for _, b := range res.DetectedBinaries {
+		if b == "phantom" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected 'phantom' in DetectedBinaries, got %v", res.DetectedBinaries)
+	}
+}
+
+// TestStream_EmptyDetectedOnMute covers the negative case: an
+// install that produces no new binary (e.g. the file already existed
+// in the manager dir and the installer overwrote it silently)
+// leaves DetectedBinaries empty rather than inventing a false name.
+// Empty lets ResolvedBinaryName fall through to the manifest-derived
+// guess, which is the right behavior.
+func TestStream_EmptyDetectedOnMute(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("PATH", dir+":/bin:/usr/bin")
+	isolateManagerDirs(t)
+
+	app := &catalog.App{
+		Name: "silent",
+		Repo: "u/silent",
+		InstallSpec: &catalog.InstallSpec{
+			Type:    "script",
+			Command: "echo doing nothing",
+		},
+	}
+	res := Stream(context.Background(), app, nil)
+	if res.Err != nil {
+		t.Fatalf("install failed: %v", res.Err)
+	}
+	if len(res.DetectedBinaries) != 0 {
+		t.Errorf("expected empty DetectedBinaries, got %v", res.DetectedBinaries)
+	}
+}
+
+// TestScrapeBinaries_Cargo pins the regex against real cargo output.
+// The formats tested here are the ones stable across cargo versions
+// circa 1.80+; a silent break in cargo's output would fail this test
+// and prompt us to update the pattern rather than silently drop to
+// the dir-diff fallback (which still works but is coarser).
+func TestScrapeBinaries_Cargo(t *testing.T) {
+	output := `    Updating crates.io index
+  Downloaded minesweep v0.5.7
+   Compiling minesweep v0.5.7
+    Finished release [optimized] target(s) in 4.2s
+  Installing /Users/u/.cargo/bin/minesweep
+   Installed package ` + "`minesweep v0.5.7`" + ` (executable 'minesweep')
+`
+	got := scrapeBinaries("cargo", output)
+	if len(got) == 0 || got[0] != "minesweep" {
+		t.Errorf("cargo scrape = %v, want [minesweep]", got)
+	}
+}
+
+// TestScrapeBinaries_CargoMulti covers multi-binary crates, which
+// cargo reports with the plural (executables 'a', 'b') form.
+func TestScrapeBinaries_CargoMulti(t *testing.T) {
+	output := `   Installed package ` + "`tool v1.0.0`" + ` (executables 'tool-a', 'tool-b')`
+	got := scrapeBinaries("cargo", output)
+	if len(got) != 2 || got[0] != "tool-a" || got[1] != "tool-b" {
+		t.Errorf("cargo multi scrape = %v, want [tool-a tool-b]", got)
+	}
+}
+
+// TestScrapeBinaries_Pipx covers the block-consume logic — only
+// the hyphen-bullets immediately under "These apps are now globally
+// available" should be picked up, not every dashed line in the output.
+func TestScrapeBinaries_Pipx(t *testing.T) {
+	output := `installed package httpie 3.2.1, installed using Python 3.11.5
+These apps are now globally available:
+  - http
+  - https
+  - httpie
+done! ✨ 🌟 ✨
+`
+	got := scrapeBinaries("pipx", output)
+	if len(got) != 3 || got[0] != "http" || got[1] != "https" || got[2] != "httpie" {
+		t.Errorf("pipx scrape = %v, want [http https httpie]", got)
+	}
+}
+
 // TestStream_NoPathWarningWhenOnPATH is the negative case: when the
 // install drops the binary into a dir already on $PATH, no warning
 // should fire.
