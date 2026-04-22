@@ -8,6 +8,36 @@ Last updated: 2026-04-22.
 
 ## Latest change
 
+`v0.1.12` (2026-04-22): looping reel preview above the readme view,
+plus two supporting fixes. First in-TUI use of
+[`jmcntsh/reel`](https://github.com/jmcntsh/reel) — the terminal
+session recorder whose whole point is safe, redraw-based playback
+embeddable inside another TUI. Opening the readme for the cliff
+entry in the catalog now plays a hand-recorded 80×24 tour of the
+app above the rendered markdown, framed by a subtle rounded border
+and looped indefinitely. Reel's own format/screen/player packages
+are public API as of its latest push; cliff depends on the latter
+and owns only a small bubbletea adapter (`internal/ui/reel_strip.go`)
+that drives the player's `Advance(dt)` / `Screen()` pull API and a
+lipgloss cell renderer that coalesces same-styled runs per row. The
+.reel file is embedded in the binary rather than fetched — first
+contact with the feature has no network dependency, and the hosting
+/ manifest-field questions ("where do other apps' reels live, who
+ships them") stay deferred until the in-TUI UX has proved out. Every
+non-cliff readme renders identically to before (the strip reports
+zero height when no embedded reel matches the app slug, and the
+layout math treats zero strips as absent). Supporting fixes in the
+same ship: (a) disabled binmap detection for brew-type installs,
+which previously could latch onto a transitive dependency's binary
+and cache the wrong "run this" name (classic case: `brew install
+cava` learned `fftwf-wisdom` because fftw's binaries landed in the
+same shared bin dir); the brew path now trusts the manifest, every
+other manager's detection is unchanged. (b) Added cliff to its own
+catalog so the readme-view reel has somewhere to attach — visible
+today through the embedded snapshot, and pending on `registry.cliff.sh`
+until the matching `apps/cliff.toml` lands in
+[`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry).
+
 `v0.1.11` (2026-04-22): submit flow. cliff now has a first-class way
 for users to nominate an app for the catalog without leaving the
 terminal first. New `+` keybind (also `=`) in browse and readme modes
@@ -113,15 +143,17 @@ doesn't disappear after a successful off-PATH install.
 - **`registry.cliff.sh/index.json`** — GitHub Pages, HTTPS enforced.
   Built by CI in [`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)
   on every merge to main. DNS + cert live since 2026-04-21.
-- **Catalog: 43 apps**, indie-first and games/visualizer-heavy.
+- **Catalog: 44 apps**, indie-first and games/visualizer-heavy.
   Highlights: rebels-in-the-sky, tetrigo, plastic (NES emulator),
   balatro-tui, setrixtui, cava, weathr, gitlogue, syscgo-tui,
-  spotify-player, kew, bottom, impala. 14 categories. Seeded in
+  spotify-player, kew, bottom, impala, and now cliff itself
+  (reel-previewed). 14 categories. Seeded in
   [cliff-registry#1](https://github.com/jmcntsh/cliff-registry/pull/1);
   expanded in [#3](https://github.com/jmcntsh/cliff-registry/pull/3).
   Embedded snapshot in `internal/catalog/data/index.json` matches
-  the live index.
-- **GitHub releases** — latest `v0.1.11` (2026-04-22). Darwin and
+  the live index except for the cliff entry, which lands on
+  registry.cliff.sh as soon as the `apps/cliff.toml` PR merges.
+- **GitHub releases** — latest `v0.1.12` (2026-04-22). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
