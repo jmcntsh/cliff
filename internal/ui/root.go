@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
+	"github.com/jmcntsh/cliff/internal/pathfix"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -31,6 +32,7 @@ const (
 	modeInstallConfirm
 	modeInstallRunning
 	modeInstallResult
+	modeFixPath // confirm + result screen for auto-adding a dir to $PATH
 )
 
 type sortMode int
@@ -77,6 +79,18 @@ type Root struct {
 	installViewport viewport.Model     // derived view for scrolling logs
 	installApp   *catalog.App
 	installRes   *install.Result
+
+	// Fix-PATH follow-up flow. When a post-install PathWarning fires,
+	// Enter on the result modal lifts us into modeFixPath with a
+	// plan ready to apply. fixApplied flips to true once we've
+	// written the rc file (success or error). fixAlreadyPresent
+	// snapshots Plan.Present at Detect time so the result screen can
+	// distinguish "just added" from "was already there" after Apply
+	// has clobbered Plan.Present to true.
+	fixPlan            *pathfix.Plan
+	fixErr             error
+	fixApplied         bool
+	fixAlreadyPresent  bool
 }
 
 func New(c *catalog.Catalog) Root {

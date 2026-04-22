@@ -7,6 +7,7 @@ import (
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
+	"github.com/jmcntsh/cliff/internal/pathfix"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -157,30 +158,172 @@ func installResultView(res *install.Result, vp viewport.Model, width int) string
 	}
 	// Successful install but the binary landed off $PATH. The ✓
 	// marker reflects the filesystem (honest), but the user's shell
-	// still can't run the app until they add the dir to PATH, so we
-	// tell them exactly what line to stick in ~/.zshrc (or ~/.bashrc).
+	// still can't run the app until the dir is on $PATH. We offer to
+	// do the dotfile edit in-place (see modeFixPath) — "press ⏎" is
+	// the prompt because it's the only remaining step between "app
+	// installed" and "I can type its name in a new terminal."
 	if res.Err == nil && res.PathWarning != nil {
 		pw := res.PathWarning
-		msg := fmt.Sprintf(
-			"Installed to %s, but that directory isn't on your $PATH.\n"+
-				"Add this to your shell rc (~/.zshrc or ~/.bashrc), then reopen the terminal:\n"+
-				"  export PATH=\"%s:$PATH\"",
-			pw.Dir, pw.Dir)
+		headline := fmt.Sprintf("Installed to %s, but that directory isn't on your $PATH.", pw.Dir)
+		prompt := "Press ⏎ to add it automatically, or esc to dismiss."
 		body = append(body,
 			"",
 			lipgloss.NewStyle().
 				Foreground(theme.ColorWarn).
-				Render(msg))
+				Render(headline),
+			theme.MutedText.Render(prompt),
+		)
 	}
 	body = append(body,
 		"",
 		theme.MutedText.Render(res.Command),
 		"",
 		outputBlock,
+	)
+	// Footer hint depends on whether there's a pending PathWarning
+	// action — Enter means two different things, so we label them.
+	if res.Err == nil && res.PathWarning != nil {
+		body = append(body,
+			"",
+			theme.MutedText.Render("⏎ fix PATH  ↑↓/jk scroll  esc close"),
+		)
+	} else {
+		body = append(body,
+			"",
+			theme.MutedText.Render("↑↓/jk scroll  pgup/pgdn page  esc close"),
+		)
+	}
+	return modalBox(width, strings.Join(body, "\n"))
+}
+
+// fixPathView draws the "add <dir> to $PATH?" prompt and, once the
+// user has confirmed and we've written the rc, the success (or
+// fallback) result. Two screens sharing one view function because
+// they wear the same modal chrome and only differ in body + keybinds.
+//
+// The single err argument carries the Detect error in the pre-apply
+// phase and the Apply error post-apply (the Root overwrites fixErr
+// when it calls Apply). alreadyPresent is the snapshot of Plan.Present
+// taken at Detect time, so the post-apply screen can distinguish
+// "just added" from "was already in the rc" after Apply has flipped
+// Plan.Present unconditionally.
+func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, width int) string {
+	if plan == nil {
+		return modalBox(width, theme.ErrorText.Render("internal error: no path-fix plan"))
+	}
+
+	if !applied {
+		// Confirm phase: preview the exact file and line before writing.
+		header := theme.AccentBold.Render("Add to $PATH?")
+
+		var body []string
+		body = append(body, header, "")
+
+		if err == pathfix.ErrShellUnsupported {
+			// Fish or an unknown shell. We can't auto-edit safely —
+			// show the line the user would have to add by hand and
+			// let them dismiss.
+			body = append(body,
+				theme.WarnText.Render("cliff can't auto-edit your shell config."),
+				theme.MutedText.Render("Shell detected: "+shellLabel(plan.Shell)),
+				"",
+				theme.MutedText.Render("Add this line yourself, then reopen the terminal:"),
+				theme.FocusText.Render("  "+plan.Line),
+				"",
+				theme.MutedText.Render(fmt.Sprintf("File: %s", plan.RcPath)),
+				"",
+				theme.MutedText.Render("esc close"),
+			)
+			return modalBox(width, strings.Join(body, "\n"))
+		}
+
+		body = append(body,
+			theme.MutedText.Render("cliff will append this line to:"),
+			theme.FocusText.Render("  "+plan.RcPath),
+			"",
+			theme.MutedText.Render("Line:"),
+			theme.FocusText.Render("  "+plan.Line),
+			"",
+		)
+		if plan.Present {
+			body = append(body,
+				theme.OKText.Render("Already present — this will be a no-op."),
+				"",
+			)
+		} else {
+			body = append(body,
+				theme.MutedText.Render("Open a new terminal (or `source` the file) to pick it up."),
+				"",
+			)
+		}
+		body = append(body,
+			theme.MutedText.Render("⏎ apply     esc cancel"),
+		)
+		return modalBox(width, strings.Join(body, "\n"))
+	}
+
+	// Result phase.
+	header := theme.AccentBold.Render("$PATH")
+	var body []string
+	body = append(body, header, "")
+
+	switch {
+	case err == pathfix.ErrShellUnsupported:
+		// Reachable when the user hit Enter on a fish/unknown shell
+		// anyway (Apply returns ErrShellUnsupported rather than
+		// writing bash syntax into config.fish).
+		body = append(body,
+			theme.WarnText.Render("Shell not supported for auto-edit."),
+			"",
+			theme.MutedText.Render("Add this line yourself, then reopen the terminal:"),
+			theme.FocusText.Render("  "+plan.Line),
+		)
+	case err != nil:
+		body = append(body,
+			theme.ErrorText.Render("× Couldn't update "+plan.RcPath),
+			"",
+			theme.MutedText.Render(err.Error()),
+			"",
+			theme.MutedText.Render("Line to add by hand:"),
+			theme.FocusText.Render("  "+plan.Line),
+		)
+	case alreadyPresent:
+		body = append(body,
+			theme.OKText.Render("✓ Already configured."),
+			theme.MutedText.Render(plan.Line+" is already in "+plan.RcPath+"."),
+			"",
+			theme.MutedText.Render("Open a new terminal to use the tool."),
+		)
+	default:
+		body = append(body,
+			theme.OKText.Render("✓ Added to "+plan.RcPath),
+			"",
+			theme.MutedText.Render("Appended:"),
+			theme.FocusText.Render("  "+plan.Line),
+			"",
+			theme.MutedText.Render("Open a new terminal (or `source "+plan.RcPath+"`)"),
+			theme.MutedText.Render("to pick it up."),
+		)
+	}
+
+	body = append(body,
 		"",
-		theme.MutedText.Render("↑↓/jk scroll  pgup/pgdn page  esc close"),
+		theme.MutedText.Render("⏎ or esc close"),
 	)
 	return modalBox(width, strings.Join(body, "\n"))
+}
+
+func shellLabel(k pathfix.ShellKind) string {
+	switch k {
+	case pathfix.ShellZsh:
+		return "zsh"
+	case pathfix.ShellBash:
+		return "bash"
+	case pathfix.ShellFish:
+		return "fish"
+	default:
+		return "unknown"
+	}
 }
 
 // renderLogViewport boxes the scrollable viewport for the install log

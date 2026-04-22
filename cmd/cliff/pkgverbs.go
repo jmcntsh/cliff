@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,17 +11,64 @@ import (
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
+	"github.com/jmcntsh/cliff/internal/pathfix"
 
+	"github.com/mattn/go-isatty"
 	"github.com/sahilm/fuzzy"
 )
 
 // cmdInstall runs `cliff install <pkg>`. Looks up the app in the
 // catalog, prints the exact command that will run (same honesty the
 // TUI's confirm modal gives), then streams the install.
+//
+// Accepts --fix-path / --no-fix-path flags. When neither is given
+// and stdin is a terminal, we prompt interactively; otherwise we
+// fall back to just printing the hint (old v0.1.6 behavior), keeping
+// non-interactive pipelines deterministic.
 func cmdInstall(args []string) int {
-	return runPkgVerb("install", args, func(app *catalog.App) string {
+	installArgs, mode, err := parseInstallFlags(args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "cliff:", err)
+		return 2
+	}
+	return runPkgVerb("install", installArgs, func(app *catalog.App) string {
 		return app.InstallSpec.Shell()
-	})
+	}, mode)
+}
+
+// fixPathMode controls how runPkgVerb handles a PathWarning from a
+// successful install. Only meaningful for the install verb —
+// uninstall/upgrade pass fixPathPromptNone.
+type fixPathMode int
+
+const (
+	fixPathPromptNone  fixPathMode = iota // print hint only, never prompt or apply
+	fixPathPromptAuto                     // prompt if TTY, else print hint
+	fixPathAlwaysApply                    // --fix-path: apply without prompting
+	fixPathNeverApply                     // --no-fix-path: always print hint, never prompt
+)
+
+// parseInstallFlags is a small hand-rolled flag parser so we don't
+// pull in flag.Parse and its side effects on the global flagset.
+// Recognized flags: --fix-path, --no-fix-path. Positional args are
+// the package name. Extra flags are rejected rather than silently
+// passed through, since the rest of the CLI doesn't take any.
+func parseInstallFlags(args []string) (positional []string, mode fixPathMode, err error) {
+	mode = fixPathPromptAuto
+	for _, a := range args {
+		switch a {
+		case "--fix-path":
+			mode = fixPathAlwaysApply
+		case "--no-fix-path":
+			mode = fixPathNeverApply
+		default:
+			if strings.HasPrefix(a, "-") {
+				return nil, mode, fmt.Errorf("unknown flag: %s", a)
+			}
+			positional = append(positional, a)
+		}
+	}
+	return positional, mode, nil
 }
 
 // cmdUninstall runs `cliff uninstall <pkg>`. Prefers the manifest's
@@ -27,7 +76,7 @@ func cmdInstall(args []string) int {
 // Returns "" for script-type installs without a [uninstall] block —
 // those require author-provided recipes (enforced at registry CI).
 func cmdUninstall(args []string) int {
-	return runPkgVerb("uninstall", args, (*catalog.App).UninstallCommand)
+	return runPkgVerb("uninstall", args, (*catalog.App).UninstallCommand, fixPathPromptNone)
 }
 
 // cmdUpgrade runs `cliff upgrade <pkg>`. Manager-authoritative: we ask
@@ -35,7 +84,7 @@ func cmdUninstall(args []string) int {
 // there's no cliff-side state of record (see commit 82c2833). Prefers
 // the manifest's [upgrade] block when present.
 func cmdUpgrade(args []string) int {
-	return runPkgVerb("upgrade", args, (*catalog.App).UpgradeCommand)
+	return runPkgVerb("upgrade", args, (*catalog.App).UpgradeCommand, fixPathPromptNone)
 }
 
 // runPkgVerb is the shared body of install/uninstall/upgrade. The
@@ -43,7 +92,7 @@ func cmdUpgrade(args []string) int {
 // app; a "" return means the verb isn't supported for that install type
 // (e.g. uninstalling a script-type install, or upgrading anything with
 // type=script).
-func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string) int {
+func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string, fixMode fixPathMode) int {
 	if len(args) != 1 {
 		fmt.Fprintf(os.Stderr, "usage: cliff %s <pkg>\n", verb)
 		return 2
@@ -91,9 +140,7 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string) in
 		}
 		fmt.Printf("✓ %sed %s\n", strings.TrimSuffix(verb, "e"), app.Name)
 		if pw := result.PathWarning; pw != nil {
-			fmt.Printf("\nInstalled to %s, but that directory isn't on your $PATH.\n", pw.Dir)
-			fmt.Printf("Add this to your shell rc (~/.zshrc or ~/.bashrc), then reopen the terminal:\n")
-			fmt.Printf("  export PATH=\"%s:$PATH\"\n", pw.Dir)
+			handlePathWarning(pw, fixMode)
 		}
 		return 0
 	}
@@ -184,6 +231,95 @@ func installTypeOrUnknown(app *catalog.App) string {
 		return "unknown"
 	}
 	return app.InstallSpec.Type
+}
+
+// handlePathWarning is the CLI counterpart of the TUI's modeFixPath
+// flow. Given a PathWarning and the user's requested mode, it either
+// prints the hint (default safe path), prompts y/N on a TTY, or just
+// applies. Failures fall back to printing the line to add by hand so
+// the user is never left stuck.
+func handlePathWarning(pw *install.PathWarning, mode fixPathMode) {
+	if mode == fixPathPromptNone {
+		return
+	}
+	plan, detectErr := pathfix.Detect(pw.Dir)
+	if errors.Is(detectErr, pathfix.ErrShellUnsupported) {
+		printPathHintFallback(plan, pw.Dir)
+		return
+	}
+	if detectErr != nil || plan == nil {
+		printPathHintFallback(plan, pw.Dir)
+		return
+	}
+
+	shouldApply := false
+	switch mode {
+	case fixPathAlwaysApply:
+		shouldApply = true
+	case fixPathNeverApply:
+		shouldApply = false
+	case fixPathPromptAuto:
+		// Only prompt when stdin is an interactive terminal AND
+		// stdout is too (both matter: we need to read a keystroke
+		// and be able to show the prompt). On pipes/redirects we
+		// fall back to the non-interactive hint for reproducible
+		// scripted use.
+		if isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd()) {
+			shouldApply = promptYesNo(
+				fmt.Sprintf("Add %s to your $PATH via %s? [y/N] ", pw.Dir, plan.RcPath),
+				false,
+			)
+		}
+	}
+
+	if !shouldApply {
+		printPathHintFallback(plan, pw.Dir)
+		return
+	}
+
+	if err := pathfix.Apply(plan); err != nil {
+		fmt.Fprintf(os.Stderr, "\ncouldn't update %s: %v\n", plan.RcPath, err)
+		printPathHintFallback(plan, pw.Dir)
+		return
+	}
+	fmt.Printf("\n✓ Added to %s:\n  %s\n", plan.RcPath, plan.Line)
+	fmt.Printf("Open a new terminal (or `source %s`) to use the tool.\n", plan.RcPath)
+}
+
+// printPathHintFallback is the "here, do it yourself" message when
+// we don't or can't auto-edit: fish shells, errors, --no-fix-path,
+// declined prompts, or non-TTY with no flag.
+func printPathHintFallback(plan *pathfix.Plan, dir string) {
+	fmt.Printf("\nInstalled to %s, but that directory isn't on your $PATH.\n", dir)
+	if plan != nil && plan.Line != "" {
+		fmt.Printf("Add this to %s (or your shell's rc file), then reopen the terminal:\n", plan.RcPath)
+		fmt.Printf("  %s\n", plan.Line)
+		return
+	}
+	fmt.Printf("Add this to your shell rc (~/.zshrc or ~/.bashrc), then reopen the terminal:\n")
+	fmt.Printf("  export PATH=\"%s:$PATH\"\n", dir)
+}
+
+// promptYesNo reads a single line from stdin and returns true iff
+// the user typed y/yes. Empty/EOF/anything else uses dflt. We use
+// bufio.NewReader rather than bufio.NewScanner here because Scanner
+// strips the trailing newline, which we don't care about, and the
+// Reader variant is a wafer thinner.
+func promptYesNo(prompt string, dflt bool) bool {
+	fmt.Print(prompt)
+	r := bufio.NewReader(os.Stdin)
+	line, err := r.ReadString('\n')
+	if err != nil {
+		return dflt
+	}
+	switch strings.ToLower(strings.TrimSpace(line)) {
+	case "y", "yes":
+		return true
+	case "n", "no":
+		return false
+	default:
+		return dflt
+	}
 }
 
 func verbGerund(verb string) string {
