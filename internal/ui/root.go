@@ -219,7 +219,25 @@ func (r Root) resize() Root {
 	if r.layout == layoutNarrow && r.focus == focusSidebar {
 		r.focus = focusGrid
 	}
+	r = r.syncFocus()
+	return r
+}
+
+// setFocus is the one place that changes which pane has input and
+// keeps the two panes' focused flags in sync. Callers used to update
+// r.focus and r.sidebar.setFocused by hand; they forgot the grid
+// flag when it was added, which is the exact class of bug this
+// helper exists to prevent.
+func (r Root) setFocus(f focusState) Root {
+	r.focus = f
+	return r.syncFocus()
+}
+
+// syncFocus pushes r.focus down to the grid and sidebar. Idempotent;
+// safe to call whenever focus may have moved.
+func (r Root) syncFocus() Root {
 	r.sidebar = r.sidebar.setFocused(r.focus == focusSidebar)
+	r.grid = r.grid.setFocused(r.focus == focusGrid)
 	return r
 }
 

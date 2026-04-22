@@ -23,9 +23,23 @@ type grid struct {
 	rows       int
 	cardWidth  int
 	cardHeight int
+
+	// focused mirrors whether the grid is the active pane. Set by
+	// Root.resize alongside sidebar.setFocused so the two flags stay
+	// in sync. Consumed only by View → renderCard to decide whether
+	// the selected card gets the full accent treatment or the dimmed
+	// "you're here, but input is elsewhere" treatment.
+	focused bool
 }
 
-func newGrid() grid { return grid{} }
+func newGrid() grid { return grid{focused: true} }
+
+// setFocused flips the grid's active-pane flag. Mirrors
+// sidebar.setFocused so the two are wired symmetrically.
+func (g grid) setFocused(b bool) grid {
+	g.focused = b
+	return g
+}
 
 func (g grid) setApps(apps []catalog.App, installed map[string]bool) grid {
 	g.apps = apps
@@ -170,7 +184,7 @@ func (g grid) View() string {
 			app := g.apps[idx]
 			selected := idx == g.cursor
 			installed := g.installed[app.Repo]
-			rowCards = append(rowCards, renderCard(app, g.cardWidth, g.cardHeight, selected, installed))
+			rowCards = append(rowCards, renderCard(app, g.cardWidth, g.cardHeight, selected, installed, g.focused))
 		}
 		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, joinWithGap(rowCards, cardHGap)...))
 	}

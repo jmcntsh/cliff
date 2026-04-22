@@ -28,17 +28,35 @@ func formatStars(n int) string {
 // height is fixed at cardHeightCompact for unselected cards. Selected
 // cards share the same outer height (so neighbors don't shift) but use
 // a different border + accent treatment to stand out.
-func renderCard(app catalog.App, width, height int, selected, installed bool) string {
+//
+// focused tracks whether the grid is the active pane. When the user
+// moves focus to the sidebar, the selection mark stays put (so they
+// know where they'll land when they return) but drops the accent
+// color: the thick border and the panel fill go away, and the border
+// falls back to ColorText — "black on a light terminal, white on a
+// dark one". This keeps the accent pink meaningful: it only appears
+// where input is actually going.
+func renderCard(app catalog.App, width, height int, selected, installed, focused bool) string {
 	// Selection cues are stacked on purpose: shape (thick vs. rounded
 	// border), color (accent vs. muted border), and a panel background
 	// fill. Any one of these alone is easy to lose track of on a busy
 	// grid or a low-contrast terminal; together they're unmissable
 	// without making unselected cards look noisy.
+	//
+	// active means "selected AND the grid has focus" — this is the
+	// fully-lit treatment. A merely-selected card (grid unfocused)
+	// keeps the thick border shape but drops color and fill.
+	active := selected && focused
+
 	border := lipgloss.RoundedBorder()
 	borderColor := theme.ColorBorder
-	if selected {
+	switch {
+	case active:
 		border = lipgloss.ThickBorder()
 		borderColor = theme.ColorAccent
+	case selected:
+		border = lipgloss.ThickBorder()
+		borderColor = theme.ColorText
 	}
 
 	innerW := width - 2 // border on left+right
@@ -51,20 +69,20 @@ func renderCard(app catalog.App, width, height int, selected, installed bool) st
 		name = "✓ " + name
 	}
 	nameStyle := lipgloss.NewStyle().Bold(true)
-	if selected {
+	if active {
 		nameStyle = nameStyle.Foreground(theme.ColorAccent)
 	} else {
 		nameStyle = nameStyle.Foreground(theme.ColorText)
 	}
 	nameLine := nameStyle.Render(runewidth.Truncate(name, innerW, "…"))
 
-	// Every styled chunk in the meta row needs the panel bg on a
-	// selected card. Each Render call emits a trailing ANSI reset that
+	// Every styled chunk in the meta row needs the panel bg on an
+	// active card. Each Render call emits a trailing ANSI reset that
 	// drops the box's inherited Background for subsequent cells, so
 	// separators and plain-text tails (like the language name) render
 	// on terminal bg otherwise. applyBG threads the conditional once.
 	applyBG := func(s lipgloss.Style) lipgloss.Style {
-		if selected {
+		if active {
 			return s.Background(theme.ColorPanel)
 		}
 		return s
@@ -79,9 +97,11 @@ func renderCard(app catalog.App, width, height int, selected, installed bool) st
 	meta := strings.Join(metaParts, sep)
 
 	descColor := theme.ColorMuted
-	if selected {
-		// Lift the description out of muted-grey on the selected card so
-		// the whole tile reads as "lit up", not just its frame.
+	if active {
+		// Lift the description out of muted-grey on the active card so
+		// the whole tile reads as "lit up", not just its frame. When
+		// the grid is unfocused we leave the description muted — the
+		// card shouldn't shout while input is going somewhere else.
 		descColor = theme.ColorText
 	}
 	desc := wrapTextColored(app.Description, innerW, 2, descColor)
@@ -107,9 +127,11 @@ func renderCard(app catalog.App, width, height int, selected, installed bool) st
 		BorderForeground(borderColor).
 		Width(innerW).
 		Height(innerH)
-	if selected {
+	if active {
 		// Background fill on the body and border catches peripheral
-		// vision in a way color-only changes don't.
+		// vision in a way color-only changes don't. Only applied when
+		// the grid is the focused pane; a selected-but-unfocused card
+		// keeps just the thick-border shape.
 		box = box.Background(theme.ColorPanel).BorderBackground(theme.ColorPanel)
 	}
 

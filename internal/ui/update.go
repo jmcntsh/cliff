@@ -147,11 +147,10 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return r, nil
 		}
 		if r.focus == focusGrid {
-			r.focus = focusSidebar
+			r = r.setFocus(focusSidebar)
 		} else {
-			r.focus = focusGrid
+			r = r.setFocus(focusGrid)
 		}
-		r.sidebar = r.sidebar.setFocused(r.focus == focusSidebar)
 		return r, nil
 	case key.Matches(msg, keys.Categories):
 		if r.layout == layoutNarrow {
@@ -244,8 +243,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Mirrors the leftmost-column-Left behavior in gridNav so the
 		// two panes feel like one continuous 2D space.
 		if key.Matches(msg, keys.Right) {
-			r.focus = focusGrid
-			r.sidebar = r.sidebar.setFocused(false)
+			r = r.setFocus(focusGrid)
 			return r, nil
 		}
 		newSB, changed := r.sidebar.update(msg)
@@ -272,9 +270,7 @@ func (r Root) gridNav(msg tea.KeyMsg) Root {
 	case key.Matches(msg, keys.Left):
 		_, col := r.grid.cursorRowCol()
 		if col == 0 && r.layout != layoutNarrow {
-			r.focus = focusSidebar
-			r.sidebar = r.sidebar.setFocused(true)
-			return r
+			return r.setFocus(focusSidebar)
 		}
 		r.grid = r.grid.move(0, -1)
 	case key.Matches(msg, keys.Right):
@@ -847,11 +843,11 @@ func (r Root) updateSidebarOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Escape, keys.Categories):
 		r.mode = modeBrowse
-		r.sidebar = r.sidebar.setFocused(false)
+		r = r.syncFocus()
 		return r, nil
 	case key.Matches(msg, keys.Enter):
 		r.mode = modeBrowse
-		r.sidebar = r.sidebar.setFocused(false)
+		r = r.syncFocus()
 		r = r.refilter()
 		return r, nil
 	}
