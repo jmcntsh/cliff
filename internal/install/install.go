@@ -102,9 +102,19 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 	// Only relevant for the "this IS an install" path; uninstall and
 	// upgrade callers re-enter StreamCmd with a non-install cmd, and
 	// the DetectedBinaries field is ignored for those.
+	//
+	// Brew is exempt: a single `brew install` drops the primary
+	// package AND every transitive dep into the same shared bin dir,
+	// and neither stdout scraping nor dir-diffing can tell them apart
+	// (e.g. `brew install cava` also deposits fftw's fftw-wisdom /
+	// fftwf-wisdom / fftwl-wisdom, which the diff happily reports as
+	// "cava's binary"). Detection for brew does strictly more harm
+	// than good; for brew installs the manifest is the source of
+	// truth (package + optional `binary` override).
 	var preSnap map[string]struct{}
 	isInstall := app != nil && app.InstallSpec != nil && cmd == app.InstallSpec.Shell()
-	if isInstall {
+	detectable := isInstall && app.InstallSpec.Type != "brew"
+	if detectable {
 		preSnap = snapshotBinDirs()
 	}
 
@@ -154,13 +164,17 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 	if isInstall {
 		// Detect which executables this install actually produced.
 		// Two signals, unioned in a stable order: output scrape first
-		// (it names the primary binary cargo/pipx/brew care about),
-		// then dir-diff fallback (catches go install + script + any
-		// mute installer). The first entry becomes the canonical
-		// "run this" name the UI shows.
-		detected := scrapeBinaries(app.InstallSpec.Type, res.Output)
-		detected = appendUnique(detected, diffBinDirs(preSnap, snapshotBinDirs())...)
-		res.DetectedBinaries = detected
+		// (it names the primary binary cargo/pipx care about), then
+		// dir-diff fallback (catches go install + script + any mute
+		// installer). The first entry becomes the canonical "run
+		// this" name the UI shows. Brew is intentionally excluded —
+		// see the comment next to `detectable` above.
+		var detected []string
+		if detectable {
+			detected = scrapeBinaries(app.InstallSpec.Type, res.Output)
+			detected = appendUnique(detected, diffBinDirs(preSnap, snapshotBinDirs())...)
+			res.DetectedBinaries = detected
+		}
 
 		// Post-install PATH sanity check. If the install reported
 		// success but the binary ended up in a known off-PATH dir
@@ -492,11 +506,13 @@ func diffBinDirs(before, after map[string]struct{}) []string {
 //   - cargo: "Installed package '<pkg> v...' (executable '<bin>')"
 //     and the "(executables 'a', 'b')" multi-binary variant.
 //   - pipx:  "These apps are now globally available:\n  - <bin>"
-//   - brew:  "==> Caveats\n..." is not useful; instead we rely on
-//     brew's post-install listing "<prefix>/bin/<bin>" lines. brew
-//     output varies enough that the dir-diff fallback is more
-//     reliable for this manager; the regex here catches the
-//     common "/bin/<name>" line if present.
+//   - brew:  no stdout scrape — dir-diff only. Brew's output
+//     mentions `/bin/<name>` paths for every transitive dependency
+//     (e.g. `brew install cava` surfaces fftw's `fftwl-wisdom`),
+//     and there's no reliable way to tell the primary package's
+//     bins apart from a dep's without reparsing brew's graph. The
+//     dir-diff against the manager's bin dirs only sees the files
+//     that actually landed on $PATH, which is the right answer.
 //   - go:    no reliable stdout signal; rely on the diff fallback.
 //   - npm:   no reliable stdout signal either (the "added <pkg>@<ver>"
 //     line is the package name, not the binary name); diff fallback.
@@ -541,10 +557,6 @@ func scrapeBinaries(installType, output string) []string {
 				inBlock = false
 			}
 		}
-	case "brew":
-		for _, m := range reBrewBinLine.FindAllStringSubmatch(output, -1) {
-			out = appendUnique(out, m[1])
-		}
 	}
 	return out
 }
@@ -554,5 +566,4 @@ var (
 	reCargoExecutables = regexp.MustCompile(`\(executables ([^)]+)\)`)
 	reCargoReplacing   = regexp.MustCompile(`Replacing\s+(\S+)`)
 	rePipxBullet       = regexp.MustCompile(`^\s*-\s+(\S+)\s*$`)
-	reBrewBinLine      = regexp.MustCompile(`^.*/bin/([A-Za-z0-9._+-]+)\s*$`)
 )
