@@ -8,17 +8,32 @@ import (
 	"github.com/sahilm/fuzzy"
 )
 
+// categoryInstalled is the sentinel the sidebar uses for the
+// "Installed" pseudo-category. It isn't a real catalog.Category —
+// it filters by runtime install state rather than manifest metadata.
+// The value is deliberately unlikely to collide with any real
+// category string coming out of the registry.
+const categoryInstalled = "__installed__"
+
 type filterCriteria struct {
-	category string
-	query    string
-	sort     sortMode
+	category  string
+	query     string
+	sort      sortMode
+	installed map[string]bool // required when category == categoryInstalled
 }
 
 func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 	filtered := make([]catalog.App, 0, len(apps))
 	for _, app := range apps {
-		if c.category != "" && app.Category != c.category {
-			continue
+		switch {
+		case c.category == categoryInstalled:
+			if !c.installed[app.Repo] {
+				continue
+			}
+		case c.category != "":
+			if app.Category != c.category {
+				continue
+			}
 		}
 		filtered = append(filtered, app)
 	}

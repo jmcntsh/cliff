@@ -74,3 +74,46 @@ func TestSearch_NoMatch(t *testing.T) {
 		t.Errorf("expected 0 matches for 'xyzzy', got %d", len(got))
 	}
 }
+
+func TestFilter_Installed(t *testing.T) {
+	installed := map[string]bool{
+		"jesseduffield/lazygit": true,
+		"sxyazi/yazi":           true,
+	}
+	got := filterAndSort(sample(), filterCriteria{
+		category:  categoryInstalled,
+		installed: installed,
+	})
+	if len(got) != 2 {
+		t.Fatalf("expected 2 installed apps, got %d", len(got))
+	}
+	for _, app := range got {
+		if !installed[app.Repo] {
+			t.Errorf("filter returned non-installed app: %s", app.Repo)
+		}
+	}
+}
+
+func TestFilter_Installed_Empty(t *testing.T) {
+	got := filterAndSort(sample(), filterCriteria{
+		category:  categoryInstalled,
+		installed: map[string]bool{},
+	})
+	if len(got) != 0 {
+		t.Errorf("expected 0 apps when nothing installed, got %d", len(got))
+	}
+}
+
+func TestFilter_Installed_SpansCategories(t *testing.T) {
+	installed := map[string]bool{
+		"cli/cli":     true,
+		"sxyazi/yazi": true,
+	}
+	got := filterAndSort(sample(), filterCriteria{
+		category:  categoryInstalled,
+		installed: installed,
+	})
+	if len(got) != 2 {
+		t.Fatalf("expected 2 apps across categories, got %d", len(got))
+	}
+}

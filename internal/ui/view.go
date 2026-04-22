@@ -95,6 +95,22 @@ func (r Root) View() string {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
 			uninstallResultView(r.installRes, r.installViewport, r.width))
 	}
+	if r.mode == modeManage {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			manageView(r.installApp, r.manageActions, r.manageCursor, r.width))
+	}
+	if r.mode == modeUpgradeConfirm {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			upgradeConfirmView(r.installApp, r.width))
+	}
+	if r.mode == modeUpgradeRunning {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			upgradeRunningView(r.installApp, r.installViewport, len(r.installLines) > 0, r.width))
+	}
+	if r.mode == modeUpgradeResult {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			upgradeResultView(r.installRes, r.installViewport, r.width))
+	}
 	if r.mode == modeFixPath {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
 			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.installApp, r.launchMethod, r.launchErr, r.width))
@@ -146,16 +162,20 @@ func (r Root) footer() string {
 	// from this mode. Arrows + ⏎ + esc are universal and don't need to
 	// be listed every time; ? always gets you the full reference.
 	// When the selected app is already installed, swap `i install` for
-	// `u uninstall` — it's the action that's actually available, and
-	// keeping the footer to a single verb avoids the noise of showing
-	// both when only one applies.
-	installVerb := "i install"
+	// `U update` — upgrade is the most common "do something with this
+	// installed thing" action, so the direct keybind gets the footer
+	// slot. Uninstall is reachable via ⏎ (manage picker) or `u`, but
+	// showing all three verbs in the footer would be noisy; the help
+	// overlay has the complete list.
+	primaryVerb := "i install"
+	enterVerb := "⏎ readme"
 	if app := r.selectedApp(); app != nil && r.installed[app.Repo] {
-		installVerb = "u uninstall"
+		primaryVerb = "U update"
+		enterVerb = "⏎ manage"
 	}
-	hints := "/ search · s sort · " + installVerb + " · ⏎ readme · ? help · q quit"
+	hints := "/ search · s sort · " + primaryVerb + " · " + enterVerb + " · ? help · q quit"
 	if r.layout == layoutNarrow {
-		hints = "/ search · c categories · " + installVerb + " · ? help · q quit"
+		hints = "/ search · c categories · " + primaryVerb + " · ? help · q quit"
 	}
 	switch r.mode {
 	case modeSidebarOverlay:
@@ -167,7 +187,7 @@ func (r Root) footer() string {
 	case modeReadme:
 		readmeVerb := "⏎ install"
 		if app := r.selectedApp(); app != nil && r.installed[app.Repo] {
-			readmeVerb = "u uninstall · ⏎ reinstall"
+			readmeVerb = "⏎ manage · U update · u uninstall"
 		}
 		hints = readmeVerb + " · o github · ? help · ← back"
 	case modeInstallConfirm:
@@ -185,6 +205,14 @@ func (r Root) footer() string {
 	case modeUninstallRunning:
 		hints = "↑↓ scroll logs  esc cancel uninstall"
 	case modeUninstallResult:
+		hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
+	case modeManage:
+		hints = "←→ move · ⏎ go · esc cancel"
+	case modeUpgradeConfirm:
+		hints = "⏎ run · esc cancel"
+	case modeUpgradeRunning:
+		hints = "↑↓ scroll logs  esc cancel update"
+	case modeUpgradeResult:
 		hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
 	case modeFixPath:
 		if r.fixApplied {

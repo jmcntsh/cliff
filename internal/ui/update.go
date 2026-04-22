@@ -60,9 +60,12 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		res := m.Result
 		r.installRes = &res
 		r.installCancel = nil
-		if r.installOp == pkgOpUninstall {
+		switch r.installOp {
+		case pkgOpUninstall:
 			r.mode = modeUninstallResult
-		} else {
+		case pkgOpUpgrade:
+			r.mode = modeUpgradeResult
+		default:
 			r.mode = modeInstallResult
 		}
 		// Reset per-modal transient error from any previous install.
@@ -81,6 +84,7 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// if an uninstall "succeeded" but the binary is still there
 			// (wrong GOBIN, asdf, etc.), we don't lie.
 			r.installed = install.InstalledApps(r.catalog.Apps)
+			r.sidebar = r.sidebar.setInstalled(r.installed)
 			r = r.refilter()
 		}
 		return r, nil
@@ -116,6 +120,14 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateUninstallRunning(m)
 		case modeUninstallResult:
 			return r.updateUninstallResult(m)
+		case modeManage:
+			return r.updateManage(m)
+		case modeUpgradeConfirm:
+			return r.updateUpgradeConfirm(m)
+		case modeUpgradeRunning:
+			return r.updateUpgradeRunning(m)
+		case modeUpgradeResult:
+			return r.updateUpgradeResult(m)
 		case modeFixPath:
 			return r.updateFixPath(m)
 		default:
@@ -160,6 +172,19 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return r, nil
 	case key.Matches(msg, keys.Enter):
 		if app := r.selectedApp(); app != nil {
+			// Installed apps open the manage picker instead of the
+			// readme. The assumption is that if you've installed it,
+			// your next Enter is almost always "change something
+			// about it" (update, uninstall) rather than "re-read the
+			// README"; the picker still exposes Readme as the third
+			// option for the "wait, I wanted to skim docs again" case.
+			if r.installed[app.Repo] {
+				r.installApp = app
+				r.installReturnMode = modeBrowse
+				r.manageActions, r.manageCursor = manageActionsFor(app)
+				r.mode = modeManage
+				return r, nil
+			}
 			r.readme = newReadme(app, r.width, r.height)
 			r.mode = modeReadme
 			return r, fetchReadmeCmd(app)
@@ -171,6 +196,18 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installOp = pkgOpInstall
 			r.installReturnMode = modeBrowse
 			r.mode = modeInstallConfirm
+		}
+		return r, nil
+	case key.Matches(msg, keys.Upgrade):
+		// Direct-keybind path for "update" — skips the manage picker
+		// for users who know they want to upgrade. Only meaningful
+		// when the app is both installed and has an upgrade recipe;
+		// silently no-ops otherwise (same pattern as `u`).
+		if app := r.selectedApp(); app != nil && r.installed[app.Repo] && app.UpgradeCommand() != "" {
+			r.installApp = app
+			r.installOp = pkgOpUpgrade
+			r.installReturnMode = modeBrowse
+			r.mode = modeUpgradeConfirm
 		}
 		return r, nil
 	case key.Matches(msg, keys.Uninstall):
@@ -268,15 +305,43 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.mode = modeBrowse
 		return r, nil
 	}
-	// In the readme, ⏎ is "go deeper" = install. There's no further
-	// drill-down available, so promoting ⏎ to the primary action keeps
-	// the spatial model consistent. `i` still works for muscle memory.
-	if key.Matches(msg, keys.Enter, keys.Install) {
+	// In the readme, ⏎ is "go deeper" = install for uninstalled apps,
+	// or the manage picker for installed ones. Keeping ⏎ = primary
+	// action is consistent with browse mode and keeps the spatial
+	// model intact. `i` always triggers install (even on installed
+	// apps — counts as reinstall); `U`/`u` give direct access to
+	// update/uninstall without routing through the picker.
+	if key.Matches(msg, keys.Enter) {
+		if app := r.selectedApp(); app != nil {
+			if r.installed[app.Repo] {
+				r.installApp = app
+				r.installReturnMode = modeReadme
+				r.manageActions, r.manageCursor = manageActionsFor(app)
+				r.mode = modeManage
+				return r, nil
+			}
+			r.installApp = app
+			r.installOp = pkgOpInstall
+			r.installReturnMode = modeReadme
+			r.mode = modeInstallConfirm
+			return r, nil
+		}
+	}
+	if key.Matches(msg, keys.Install) {
 		if app := r.selectedApp(); app != nil {
 			r.installApp = app
 			r.installOp = pkgOpInstall
 			r.installReturnMode = modeReadme
 			r.mode = modeInstallConfirm
+			return r, nil
+		}
+	}
+	if key.Matches(msg, keys.Upgrade) {
+		if app := r.selectedApp(); app != nil && r.installed[app.Repo] && app.UpgradeCommand() != "" {
+			r.installApp = app
+			r.installOp = pkgOpUpgrade
+			r.installReturnMode = modeReadme
+			r.mode = modeUpgradeConfirm
 			return r, nil
 		}
 	}
@@ -498,6 +563,160 @@ func (r Root) updateUninstallRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // no PathWarning / launcher branching here — once the app is gone, the
 // only hand-off is "close the modal", so ⏎ and esc both dismiss.
 func (r Root) updateUninstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
+		r.mode = r.installReturnMode
+		r.installApp = nil
+		r.installRes = nil
+		r.installOp = pkgOpInstall
+		return r, nil
+	}
+	var cmd tea.Cmd
+	r.installViewport, cmd = r.installViewport.Update(msg)
+	return r, cmd
+}
+
+// updateManage drives the horizontal picker shown when ⏎ is pressed on
+// an installed app. Left/Right (and h/l) move the cursor between
+// actions, skipping disabled ones so the user can't pick a no-op.
+// Enter runs the focused action, routing to the appropriate confirm/
+// readme mode. esc backs out to whatever opened the picker.
+func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, keys.Escape, keys.Quit):
+		r.mode = r.installReturnMode
+		r.installApp = nil
+		r.manageActions = nil
+		r.manageCursor = 0
+		return r, nil
+	case key.Matches(msg, keys.Left):
+		r.manageCursor = manageStep(r.manageActions, r.manageCursor, -1)
+		return r, nil
+	case key.Matches(msg, keys.Right):
+		r.manageCursor = manageStep(r.manageActions, r.manageCursor, +1)
+		return r, nil
+	case key.Matches(msg, keys.Enter):
+		if r.manageCursor < 0 || r.manageCursor >= len(r.manageActions) {
+			return r, nil
+		}
+		a := r.manageActions[r.manageCursor]
+		if !a.enabled {
+			// Shouldn't happen (manageStep skips disabled), but
+			// guard anyway — silently no-op rather than running the
+			// wrong command.
+			return r, nil
+		}
+		app := r.installApp
+		switch a.kind {
+		case manageUpdate:
+			r.installOp = pkgOpUpgrade
+			r.manageActions = nil
+			r.manageCursor = 0
+			r.mode = modeUpgradeConfirm
+			return r, nil
+		case manageUninstall:
+			r.installOp = pkgOpUninstall
+			r.manageActions = nil
+			r.manageCursor = 0
+			r.mode = modeUninstallConfirm
+			return r, nil
+		case manageReadme:
+			// The manage picker might have been opened from readme
+			// mode itself (when the user pressed ⏎ on an installed
+			// app from the readme). Going back there on "Readme" is
+			// a no-op; open a fresh readme anyway to guarantee a
+			// refetched copy. Cheap and keeps the behavior uniform.
+			r.manageActions = nil
+			r.manageCursor = 0
+			if app != nil {
+				r.readme = newReadme(app, r.width, r.height)
+				r.mode = modeReadme
+				return r, fetchReadmeCmd(app)
+			}
+			r.mode = r.installReturnMode
+			return r, nil
+		}
+	}
+	return r, nil
+}
+
+// manageStep advances the manage-picker cursor by delta (±1), skipping
+// disabled actions so the user can't land on a dimmed option. Clamps
+// at the ends rather than wrapping — wrapping in a 3-item horizontal
+// row is surprising ("I pressed Right and the cursor jumped to the
+// leftmost one?"), and the picker is small enough that clamping never
+// gets in the way.
+func manageStep(actions []manageAction, cursor, delta int) int {
+	if len(actions) == 0 {
+		return 0
+	}
+	i := cursor + delta
+	for i >= 0 && i < len(actions) {
+		if actions[i].enabled {
+			return i
+		}
+		i += delta
+	}
+	// Off the end without finding an enabled slot — stay put.
+	return cursor
+}
+
+// updateUpgradeConfirm mirrors updateUninstallConfirm — ⏎ runs the
+// upgrade command via StreamCmd, esc backs out to whatever opened the
+// confirm modal. Structurally identical to the uninstall path because
+// upgrade is "install but with a different command string."
+func (r Root) updateUpgradeConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, keys.Escape, keys.Quit):
+		r.mode = r.installReturnMode
+		r.installApp = nil
+		r.installOp = pkgOpInstall
+		return r, nil
+	case key.Matches(msg, keys.Enter):
+		if r.installApp == nil {
+			r.mode = r.installReturnMode
+			r.installApp = nil
+			r.installOp = pkgOpInstall
+			return r, nil
+		}
+		cmd := r.installApp.UpgradeCommand()
+		if cmd == "" {
+			// No upgrade recipe. The view surfaces this; ⏎ here is
+			// a dismiss.
+			r.mode = r.installReturnMode
+			r.installApp = nil
+			r.installOp = pkgOpInstall
+			return r, nil
+		}
+		app := r.installApp
+		r.installLines = nil
+		r.installViewport.SetContent("")
+		r.installViewport.GotoTop()
+		r.mode = modeUpgradeRunning
+		return r, runUpgradeCmd(app, cmd)
+	}
+	return r, nil
+}
+
+// updateUpgradeRunning: esc cancels the child process via context, all
+// other keys scroll the log viewport. Completion arrives via
+// installResultMsg which the top-level receiver routes to
+// modeUpgradeResult based on r.installOp == pkgOpUpgrade.
+func (r Root) updateUpgradeRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if key.Matches(msg, keys.Escape, keys.Quit) {
+		if r.installCancel != nil {
+			r.installCancel()
+		}
+		return r, nil
+	}
+	var cmd tea.Cmd
+	r.installViewport, cmd = r.installViewport.Update(msg)
+	return r, cmd
+}
+
+// updateUpgradeResult mirrors updateUninstallResult: no launcher or
+// PathWarning branching (the app was already on PATH pre-upgrade, so
+// there's no "open in new tab" load-bearing step), ⏎ and esc dismiss.
+func (r Root) updateUpgradeResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
 		r.mode = r.installReturnMode
 		r.installApp = nil

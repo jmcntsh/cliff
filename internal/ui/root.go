@@ -30,12 +30,16 @@ const (
 	modeSearch
 	modeHelp
 	modeReadme
+	modeManage // picker: Update / Uninstall / Readme for installed apps
 	modeInstallConfirm
 	modeInstallRunning
 	modeInstallResult
 	modeUninstallConfirm
 	modeUninstallRunning
 	modeUninstallResult
+	modeUpgradeConfirm
+	modeUpgradeRunning
+	modeUpgradeResult
 	modeFixPath // confirm + result screen for auto-adding a dir to $PATH
 )
 
@@ -47,6 +51,7 @@ type pkgOp int
 const (
 	pkgOpInstall pkgOp = iota
 	pkgOpUninstall
+	pkgOpUpgrade
 )
 
 type sortMode int
@@ -121,7 +126,37 @@ type Root struct {
 	// rather than silently swallowing it.
 	launchMethod launcher.Method
 	launchErr    error
+
+	// Manage-picker state for modeManage. Populated when Enter is
+	// pressed on an installed app; emptied when the picker closes.
+	// The picker is a horizontal row of actions (Update / Uninstall /
+	// Readme), with Update default-selected because it's the most
+	// common "what do I want to do with this installed thing" and is
+	// benign. Uninstall is destructive so never default; Readme is
+	// the escape hatch for "I meant to re-read docs, not manage."
+	manageActions []manageAction
+	manageCursor  int
 }
+
+// manageAction is one choice on the manage picker. Kind drives what
+// happens on Enter; enabled gates arrow navigation and dimming
+// (Update is disabled when the app has no UpgradeCommand; Uninstall
+// is disabled when the app has no uninstall recipe). The Readme
+// action is always enabled and is always the third/last slot, because
+// it's the fallback "I meant to read about it, not change it."
+type manageAction struct {
+	kind    manageKind
+	label   string
+	enabled bool
+}
+
+type manageKind int
+
+const (
+	manageUpdate manageKind = iota
+	manageUninstall
+	manageReadme
+)
 
 func New(c *catalog.Catalog) Root {
 	ti := textinput.New()
@@ -133,12 +168,13 @@ func New(c *catalog.Catalog) Root {
 	ti.PlaceholderStyle = theme.MutedItalic
 	ti.Cursor.Style = theme.AccentText
 
+	installed := install.InstalledApps(c.Apps)
 	r := Root{
 		catalog:         c,
 		grid:            newGrid(),
-		sidebar:         newSidebar(c),
+		sidebar:         newSidebar(c, installed),
 		search:          ti,
-		installed:       install.InstalledApps(c.Apps),
+		installed:       installed,
 		installViewport: viewport.New(installLogWidth, installLogHeight),
 		launchMethod:    launcher.Detect(launcher.CurrentEnv()),
 	}
@@ -197,9 +233,10 @@ func (r Root) refilter() Root {
 	}
 
 	apps := filterAndSort(r.catalog.Apps, filterCriteria{
-		category: r.sidebar.selected(),
-		query:    r.search.Value(),
-		sort:     r.sort,
+		category:  r.sidebar.selected(),
+		query:     r.search.Value(),
+		sort:      r.sort,
+		installed: r.installed,
 	})
 
 	r.grid = r.grid.setApps(apps, r.installed)

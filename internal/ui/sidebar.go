@@ -13,7 +13,7 @@ import (
 )
 
 type sidebarItem struct {
-	name  string // "" means "All"
+	name  string // "" means "All", categoryInstalled means "Installed"
 	count int
 }
 
@@ -23,12 +23,32 @@ type sidebar struct {
 	focused bool
 }
 
-func newSidebar(c *catalog.Catalog) sidebar {
-	items := []sidebarItem{{name: "", count: len(c.Apps)}}
+// newSidebar builds the sidebar with All + Installed pinned at the top,
+// then every catalog category in registry order. Installed's count is
+// derived from the runtime install map and refreshed via setInstalled
+// whenever the user installs or uninstalls something.
+func newSidebar(c *catalog.Catalog, installed map[string]bool) sidebar {
+	items := []sidebarItem{
+		{name: "", count: len(c.Apps)},
+		{name: categoryInstalled, count: len(installed)},
+	}
 	for _, cat := range c.Categories {
 		items = append(items, sidebarItem{name: cat.Name, count: cat.Count})
 	}
 	return sidebar{items: items}
+}
+
+// setInstalled refreshes the Installed pseudo-category's count after an
+// install or uninstall. No-op if there is no Installed row (shouldn't
+// happen post-newSidebar, but cheap to guard).
+func (s sidebar) setInstalled(installed map[string]bool) sidebar {
+	for i, item := range s.items {
+		if item.name == categoryInstalled {
+			s.items[i].count = len(installed)
+			break
+		}
+	}
+	return s
 }
 
 func (s sidebar) selected() string {
@@ -71,8 +91,11 @@ func (s sidebar) view(height int) string {
 	nameBudget := sidebarWidth - 2 // 2 cols for prefix; count appended after truncation
 	for i, item := range s.items {
 		name := item.name
-		if name == "" {
+		switch name {
+		case "":
 			name = "All"
+		case categoryInstalled:
+			name = "Installed"
 		}
 		countStr := fmt.Sprintf(" (%d)", item.count)
 		nameMax := nameBudget - runewidth.StringWidth(countStr)
