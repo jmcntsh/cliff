@@ -1,0 +1,89 @@
+# Issue template to drop into the registry repo as
+#   .github/ISSUE_TEMPLATE/new-app.yml
+#
+# This is the server side of the `cliff submit` / `+` flow in the
+# client. Field ids here must match the query-param names in
+# internal/submit/submit.go (`name`, `repo`, `description`, `notes`);
+# renaming one without the other silently stops prefilling that
+# field. Keep them in sync.
+#
+# If this file is missing or renamed on the registry side, the
+# client's prefill URL still works — GitHub falls back to a blank
+# issue with just the title prefilled. The template exists to give
+# curators structured intake, not to be load-bearing on the client.
+
+name: Submit an app
+description: Nominate a CLI or TUI for the cliff catalog.
+title: "Submit: <app name>"
+labels: ["submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sending one in. cliff is curated — not every
+        submission lands — but every one gets looked at. See the
+        manifest schema in `notes/manifest.md` (cliff repo) for
+        what a listed app looks like.
+
+  - type: input
+    id: name
+    attributes:
+      label: Name / slug
+      description: Lowercase, hyphens allowed, e.g. `lazygit`.
+      placeholder: lazygit
+    validations:
+      required: true
+
+  - type: input
+    id: repo
+    attributes:
+      label: GitHub repo
+      description: "`owner/name`, or a full URL is fine too."
+      placeholder: jesseduffield/lazygit
+    validations:
+      required: true
+
+  - type: input
+    id: description
+    attributes:
+      label: One-line description
+      description: What does it do? One line, ≤120 chars.
+      placeholder: Simple terminal UI for git commands
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_type
+    attributes:
+      label: Install type
+      description: How does it install on an average Mac/Linux box?
+      options:
+        - brew
+        - cargo
+        - npm
+        - pipx
+        - go
+        - script
+        - not sure
+    validations:
+      required: true
+
+  - type: input
+    id: install_string
+    attributes:
+      label: Install package or command
+      description: |
+        For brew/cargo/npm/pipx: the package name.
+        For go: `github.com/.../cmd/foo@latest`.
+        For script: the full curl-pipe-sh command.
+      placeholder: "e.g. lazygit   or   github.com/x/y/cmd/z@latest"
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
+      description: |
+        Why should cliff list this? Anything unusual about building
+        or installing it? Links to demos, screenshots, blog posts,
+        etc. are all welcome.
+      placeholder: (optional)

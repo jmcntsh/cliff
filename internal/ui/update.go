@@ -11,6 +11,7 @@ import (
 	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/launcher"
 	"github.com/jmcntsh/cliff/internal/pathfix"
+	"github.com/jmcntsh/cliff/internal/submit"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -150,6 +151,8 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateUpgradeResult(m)
 		case modeFixPath:
 			return r.updateFixPath(m)
+		case modeSubmit:
+			return r.updateSubmit(m)
 		default:
 			return r.updateBrowse(m)
 		}
@@ -188,6 +191,18 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Help):
 		r.helpReturnMode = modeBrowse
 		r.mode = modeHelp
+		return r, nil
+	case key.Matches(msg, keys.Submit):
+		// From browse, submit with no app context — we don't assume
+		// the currently-cursored app is "the one to submit" because
+		// a user hitting `+` is usually thinking of something that
+		// _isn't_ in the catalog. Blank fields; the curator sorts it
+		// out from the issue form.
+		r.submitReturnMode = modeBrowse
+		r.submitURL = submit.Request{}.URL()
+		r.submitOpened = false
+		r.submitErr = nil
+		r.mode = modeSubmit
 		return r, nil
 	case key.Matches(msg, keys.Enter):
 		if app := r.selectedApp(); app != nil {
@@ -380,6 +395,18 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, keys.Help) {
 		r.helpReturnMode = modeReadme
 		r.mode = modeHelp
+		return r, nil
+	}
+	if key.Matches(msg, keys.Submit) {
+		// `+` from readme is the same blank-submit as from browse.
+		// The currently-readme'd app is already in the catalog, so
+		// we don't prefill its repo — submit is always "cliff should
+		// also list <X>" where X is whatever the user just thought of.
+		r.submitReturnMode = modeReadme
+		r.submitURL = submit.Request{}.URL()
+		r.submitOpened = false
+		r.submitErr = nil
+		r.mode = modeSubmit
 		return r, nil
 	}
 	var cmd tea.Cmd
@@ -857,6 +884,41 @@ func (r Root) clearFixPath() Root {
 	r.fixApplied = false
 	r.fixAlreadyPresent = false
 	return r
+}
+
+// updateSubmit drives the "open the registry submit form" overlay.
+// Two phases share one mode, gated on submitOpened:
+//
+//   - pre-open: ⏎ opens the URL in the user's browser, esc/q/← backs
+//     out without navigating anywhere (so the `+` keypress is never
+//     load-bearing — you can always cancel before the browser hop).
+//   - post-open: ⏎ or esc dismisses back to where `+` was pressed.
+//
+// We don't block the UI on browser.Open because it Start()s and
+// returns; the overlay just flips into the "opened" phase, and shows
+// the URL as a copy-by-hand fallback if Open errored.
+func (r Root) updateSubmit(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if r.submitOpened {
+		if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
+			r.mode = r.submitReturnMode
+			r.submitOpened = false
+			r.submitErr = nil
+			r.submitURL = ""
+			return r, nil
+		}
+		return r, nil
+	}
+	switch {
+	case key.Matches(msg, keys.Escape, keys.Quit, keys.Left):
+		r.mode = r.submitReturnMode
+		r.submitURL = ""
+		return r, nil
+	case key.Matches(msg, keys.Enter):
+		r.submitErr = browser.Open(r.submitURL)
+		r.submitOpened = true
+		return r, nil
+	}
+	return r, nil
 }
 
 func (r Root) updateSidebarOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
