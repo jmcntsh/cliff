@@ -203,6 +203,29 @@
       "last_commit": "2026-04-19T12:31:34Z"
     },
     {
+      "name": "cliff",
+      "repo": "jmcntsh/cliff",
+      "description": "A terminal-native directory for CLIs and TUIs. Browse, read READMEs, install in one keystroke.",
+      "category": "Developer tools",
+      "language": "Go",
+      "license": "MIT",
+      "stars": 0,
+      "homepage": "https://github.com/jmcntsh/cliff",
+      "author": "jmcntsh",
+      "readme": "https://raw.githubusercontent.com/jmcntsh/cliff/main/README.md",
+      "tags": [
+        "directory",
+        "discovery",
+        "installer",
+        "tui"
+      ],
+      "install_spec": {
+        "type": "brew",
+        "package": "jmcntsh/tap/cliff"
+      },
+      "last_commit": "2026-04-22T19:44:06Z"
+    },
+    {
       "name": "crossword",
       "repo": "MatrixFrog/crossword",
       "description": "Play crossword puzzles in your terminal",
