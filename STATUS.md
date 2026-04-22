@@ -121,9 +121,8 @@ doesn't disappear after a successful off-PATH install.
   expanded in [#3](https://github.com/jmcntsh/cliff-registry/pull/3).
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index.
-- **GitHub releases** — latest `v0.1.10` (2026-04-22). Darwin and
-  linux, amd64 and arm64, via goreleaser. `v0.1.11` (submit flow)
-  is in-repo and pending tag.
+- **GitHub releases** — latest `v0.1.11` (2026-04-22). Darwin and
+  linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
   `~/.local/bin`.
@@ -137,12 +136,10 @@ doesn't disappear after a successful off-PATH install.
 ## Pending
 
 - **Phase 2** — curation surfaces. Submit flow landed in v0.1.11
-  (TUI `+` keybind and `cliff submit`). Still pending: a "new this
-  week" surface in the TUI, the weekly digest, and dropping the
-  issue template (`notes/registry-new-app-template.yml`) into the
-  registry repo as `.github/ISSUE_TEMPLATE/new-app.yml` for
-  structured submissions — without it the flow still works,
-  just unstructured.
+  (TUI `+` keybind and `cliff submit`); registry-side issue
+  template open in [cliff-registry#4](https://github.com/jmcntsh/cliff-registry/pull/4).
+  Still pending: a "new this week" surface in the TUI, and the
+  weekly digest.
 
 ## Known issues / gotchas
 
