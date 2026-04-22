@@ -8,6 +8,30 @@ Last updated: 2026-04-22.
 
 ## Latest change
 
+`v0.1.11` (2026-04-22): submit flow. cliff now has a first-class way
+for users to nominate an app for the catalog without leaving the
+terminal first. New `+` keybind (also `=`) in browse and readme modes
+opens a small confirm overlay showing the exact URL that's about to
+open — a prefilled GitHub issue on
+[`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)
+with a `submission` label — and a second ⏎ hands off to the user's
+browser. The overlay's post-open phase surfaces the full URL as a
+fallback if `browser.Open` errored, so a headless/weird-terminal
+setup never leaves the user stuck. Empty search results now show
+`+ submit this app to cliff` as a secondary hint — the moment a
+query returns zero is exactly when a user is most likely to want the
+button. New `cliff submit [<name>|<owner/repo>]` subcommand mirrors
+the TUI flow from the CLI, with `--print` for non-interactive use
+and auto-detect (if stdout isn't a TTY, just prints the URL rather
+than spawning a GUI window out of a CI job). Auth, storage, and
+triage are all GitHub's — cliff hosts no form, runs no backend, and
+adds no account system. The registry-side issue template
+(`notes/registry-new-app-template.yml`) drops into the registry repo
+as `.github/ISSUE_TEMPLATE/new-app.yml` for structured intake (name
+/ repo / description / install type / install string / notes);
+without it, GitHub falls back to a blank issue with the title
+prefilled and the flow still works end-to-end.
+
 `v0.1.10` (2026-04-22): manage picker, in-TUI update, and an
 Installed sidebar row. Two changes that tighten the loop for apps
 you already have. First: pressing ⏎ on an already-installed app
@@ -97,8 +121,9 @@ doesn't disappear after a successful off-PATH install.
   expanded in [#3](https://github.com/jmcntsh/cliff-registry/pull/3).
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index.
-- **GitHub releases** — latest `v0.1.8` (2026-04-22). Darwin and
-  linux, amd64 and arm64, via goreleaser.
+- **GitHub releases** — latest `v0.1.10` (2026-04-22). Darwin and
+  linux, amd64 and arm64, via goreleaser. `v0.1.11` (submit flow)
+  is in-repo and pending tag.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
   `~/.local/bin`.
@@ -111,8 +136,13 @@ doesn't disappear after a successful off-PATH install.
 
 ## Pending
 
-- **Phase 2** — curation surfaces (hand-picked seed, "new this
-  week", submit flow, weekly digest). Not started.
+- **Phase 2** — curation surfaces. Submit flow landed in v0.1.11
+  (TUI `+` keybind and `cliff submit`). Still pending: a "new this
+  week" surface in the TUI, the weekly digest, and dropping the
+  issue template (`notes/registry-new-app-template.yml`) into the
+  registry repo as `.github/ISSUE_TEMPLATE/new-app.yml` for
+  structured submissions — without it the flow still works,
+  just unstructured.
 
 ## Known issues / gotchas
 
@@ -125,6 +155,14 @@ doesn't disappear after a successful off-PATH install.
   to `~/.cliff/installed.json`. This is intentional (survives
   external uninstalls, recognizes pre-cliff installs) but `CLAUDE.md`
   used to imply otherwise; that's been cleaned up.
+- `~/.cliff/cache/binmap.json` is a *cache*, not state: it remembers
+  repo→binary-name overrides learned by scraping installer output
+  (e.g. `cargo install minesweep` actually produces `minesweep`,
+  not `minesweep-rs` as the repo basename would suggest). Deleting
+  it is safe — installed-state detection still works, we just lose
+  the right-name hint until the next install. `~/.cliff/logs/
+  bin-audit.log` is an append-only record of every detected ≠
+  derived event, for back-filling `binary` fields into the registry.
 
 ## How to update this file
 

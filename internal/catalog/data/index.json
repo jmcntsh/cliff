@@ -501,6 +501,7 @@
         "minesweeper",
         "tui"
       ],
+      "binary": "minesweep",
       "install_spec": {
         "type": "cargo",
         "package": "minesweep"

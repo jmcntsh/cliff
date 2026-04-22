@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmcntsh/cliff/internal/binmap"
 	"github.com/jmcntsh/cliff/internal/browser"
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/clipboard"
@@ -77,13 +78,32 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.installViewport.SetContent(strings.TrimRight(res.Output, "\n"))
 		r.installViewport.GotoTop()
 		if res.Err == nil && res.App != nil {
+			// Learn/forget the binary-name override before re-scanning
+			// so the fresh InstalledAppsWithOverrides call sees the
+			// correct name and the ✓ lights up immediately, even when
+			// the manifest's derived BinaryName() is wrong. Best-
+			// effort: we ignore write errors so an unwritable
+			// ~/.cliff can't wedge the TUI.
+			switch r.installOp {
+			case pkgOpInstall:
+				if len(res.DetectedBinaries) > 0 {
+					_ = binmap.Remember(res.App.Repo, res.DetectedBinaries[0], res.App.BinaryName())
+					if r.binOverrides == nil {
+						r.binOverrides = map[string]string{}
+					}
+					r.binOverrides[res.App.Repo] = res.DetectedBinaries[0]
+				}
+			case pkgOpUninstall:
+				_ = binmap.Forget(res.App.Repo)
+				delete(r.binOverrides, res.App.Repo)
+			}
 			// Re-scan $PATH rather than blindly marking res.App.Repo
 			// installed or uninstalled. This keeps the ✓ markers honest:
 			// if an install reported success but didn't actually land a
 			// binary on PATH (unusual but possible for odd scripts), or
 			// if an uninstall "succeeded" but the binary is still there
 			// (wrong GOBIN, asdf, etc.), we don't lie.
-			r.installed = install.InstalledApps(r.catalog.Apps)
+			r.installed = install.InstalledAppsWithOverrides(r.catalog.Apps, r.binOverrides)
 			r.sidebar = r.sidebar.setInstalled(r.installed)
 			r = r.refilter()
 		}
@@ -462,7 +482,7 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		// Clean success path: try to launch.
 		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
-			bin := r.installApp.BinaryName()
+			bin := r.installApp.ResolvedBinaryName(r.binOverrides)
 			if bin != "" {
 				return r.tryLaunchOrCopy(bin)
 			}
@@ -480,7 +500,7 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// want. Harmless no-op when there's no binary.
 	if msg.String() == "c" {
 		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
-			bin := r.installApp.BinaryName()
+			bin := r.installApp.ResolvedBinaryName(r.binOverrides)
 			if bin != "" {
 				if err := clipboard.Write(bin); err != nil {
 					return r.flash("couldn't copy — run: " + bin), clearFlashCmd()
@@ -787,7 +807,7 @@ func (r Root) updateFixPath(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Enter is always "forward motion," never just dismiss.
 		if key.Matches(msg, keys.Enter) {
 			if r.fixErr == nil && r.installApp != nil {
-				bin := r.installApp.BinaryName()
+				bin := r.installApp.ResolvedBinaryName(r.binOverrides)
 				if bin != "" {
 					// clearFixPath first so the modeBrowse fall-through
 					// in tryLaunchOrCopy doesn't land on a stale plan.

@@ -142,6 +142,31 @@ func goLatestPath(pkg string) string {
 	return pkg + "@latest"
 }
 
+// ResolvedBinaryName returns the best answer we have for "what will
+// the user type to run this?". Precedence, strongest to weakest:
+//
+//  1. An override learned from a previous install's scraped output
+//     (internal/binmap). This wins over everything because it's
+//     ground truth — we saw the installer produce that file.
+//  2. The manifest's explicit Binary field.
+//  3. The repo basename.
+//
+// The override argument is the caller's in-memory copy of the binmap
+// (usually loaded once at startup and passed around). Missing keys
+// are fine — they just fall through to the manifest/basename path,
+// which is the pre-binmap behavior.
+func (a *App) ResolvedBinaryName(overrides map[string]string) string {
+	if a == nil {
+		return ""
+	}
+	if overrides != nil {
+		if b, ok := overrides[a.Repo]; ok && b != "" {
+			return b
+		}
+	}
+	return a.BinaryName()
+}
+
 // BinaryName returns the expected executable name for the app. If the
 // manifest sets an explicit Binary, that wins; otherwise we fall back
 // to the repo basename (charmbracelet/glow → "glow"), which matches
@@ -166,13 +191,24 @@ func (a *App) BinaryName() string {
 // manifest lint enforces that UninstallSpec is present for them), and
 // how authors override the derived command for known managers.
 func (a *App) UninstallCommand() string {
+	return a.UninstallCommandWithOverrides(nil)
+}
+
+// UninstallCommandWithOverrides is UninstallCommand but uses a
+// binmap-style overrides map to pick the binary name passed to
+// UninstallShell. Matters for type=go where the derived uninstall
+// command `rm -f $GOBIN/<name>` needs the *actual* binary name —
+// not the repo basename — or it silently removes nothing. The CLI
+// uninstall path consults this so a repo-basename mismatch (e.g.
+// minesweep-rs → minesweep) doesn't cause a phantom-success.
+func (a *App) UninstallCommandWithOverrides(overrides map[string]string) string {
 	if a == nil {
 		return ""
 	}
 	if a.UninstallSpec != nil && a.UninstallSpec.Command != "" {
 		return a.UninstallSpec.Command
 	}
-	return a.InstallSpec.UninstallShell(a.BinaryName())
+	return a.InstallSpec.UninstallShell(a.ResolvedBinaryName(overrides))
 }
 
 // UpgradeCommand returns the shell command to upgrade the app, or ""

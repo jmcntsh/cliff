@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/jmcntsh/cliff/internal/binmap"
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/launcher"
@@ -93,6 +94,13 @@ type Root struct {
 	flashExpiry time.Time
 
 	installed       map[string]bool    // repo -> installed, derived from $PATH via install.Detect
+	// binOverrides is a repo→binary-name map learned from previous
+	// installs (internal/binmap). It corrects manifest-derived
+	// BinaryName() guesses when they're wrong (e.g. cargo crate
+	// "minesweep" installed from repo "cpcloud/minesweep-rs" ships
+	// as `minesweep`, not `minesweep-rs`). Loaded once at startup,
+	// mutated on successful install, written through binmap.Remember.
+	binOverrides    map[string]string
 	installCancel   context.CancelFunc // non-nil while an install/uninstall is running
 	installLines    []string           // streamed output from the running op (source of truth)
 	installViewport viewport.Model     // derived view for scrolling logs
@@ -168,13 +176,15 @@ func New(c *catalog.Catalog) Root {
 	ti.PlaceholderStyle = theme.MutedItalic
 	ti.Cursor.Style = theme.AccentText
 
-	installed := install.InstalledApps(c.Apps)
+	overrides := binmap.Load()
+	installed := install.InstalledAppsWithOverrides(c.Apps, overrides)
 	r := Root{
 		catalog:         c,
 		grid:            newGrid(),
 		sidebar:         newSidebar(c, installed),
 		search:          ti,
 		installed:       installed,
+		binOverrides:    overrides,
 		installViewport: viewport.New(installLogWidth, installLogHeight),
 		launchMethod:    launcher.Detect(launcher.CurrentEnv()),
 	}

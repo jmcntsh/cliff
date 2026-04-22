@@ -33,6 +33,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 )
@@ -54,6 +55,18 @@ type Result struct {
 	Output      string // combined stdout+stderr
 	Err         error
 	PathWarning *PathWarning // non-nil when install OK but binary isn't on $PATH
+	// DetectedBinaries names executables that the install actually
+	// produced. Populated on success by two independent signals:
+	// (a) scraping installer output for phrases like cargo's
+	//     "executable 'foo'" or pipx's "These apps are now globally
+	//     available"; (b) diffing the contents of manager bin dirs
+	//     before vs. after the install (catches `go install`,
+	//     `script`, and anything else that's mute on stdout).
+	// Order is not semantically meaningful; first entry is what
+	// callers should present as the canonical "run this" name.
+	// Empty when detection couldn't confirm anything — fall back to
+	// catalog.App.BinaryName() in that case.
+	DetectedBinaries []string
 }
 
 // Stream runs the install command and invokes onLine for each line of
@@ -84,6 +97,16 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 		return res
 	}
 	res.Command = cmd
+
+	// Snapshot bin dirs before the install so we can diff after.
+	// Only relevant for the "this IS an install" path; uninstall and
+	// upgrade callers re-enter StreamCmd with a non-install cmd, and
+	// the DetectedBinaries field is ignored for those.
+	var preSnap map[string]struct{}
+	isInstall := app != nil && app.InstallSpec != nil && cmd == app.InstallSpec.Shell()
+	if isInstall {
+		preSnap = snapshotBinDirs()
+	}
 
 	c := exec.CommandContext(ctx, "sh", "-c", cmd)
 	var output bytes.Buffer
@@ -127,21 +150,63 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 		return res
 	}
 	res.ExitCode = 0
-	// Post-install PATH sanity check. If the install reported success
-	// but the binary ended up in a known off-PATH dir (classic
-	// `go install` → ~/go/bin on a fresh machine), surface it so the
-	// user doesn't silently think cliff or the app is broken when
-	// they try to run it. We only do this for install (not uninstall
-	// or upgrade) — it'd be nonsense to warn "uninstall succeeded but
-	// the binary isn't on your PATH".
-	if app != nil && app.InstallSpec != nil && cmd == app.InstallSpec.Shell() {
-		if bin := app.BinaryName(); bin != "" {
-			if dir, onPath := LocateBinary(bin); dir != "" && !onPath {
-				res.PathWarning = &PathWarning{Binary: bin, Dir: dir}
+
+	if isInstall {
+		// Detect which executables this install actually produced.
+		// Two signals, unioned in a stable order: output scrape first
+		// (it names the primary binary cargo/pipx/brew care about),
+		// then dir-diff fallback (catches go install + script + any
+		// mute installer). The first entry becomes the canonical
+		// "run this" name the UI shows.
+		detected := scrapeBinaries(app.InstallSpec.Type, res.Output)
+		detected = appendUnique(detected, diffBinDirs(preSnap, snapshotBinDirs())...)
+		res.DetectedBinaries = detected
+
+		// Post-install PATH sanity check. If the install reported
+		// success but the binary ended up in a known off-PATH dir
+		// (classic `go install` → ~/go/bin on a fresh machine),
+		// surface it so the user doesn't silently think cliff or
+		// the app is broken when they try to run it. Prefer the
+		// detected name over the manifest-derived guess — that's
+		// the whole point of detection.
+		warnBin := firstNonEmpty(detected...)
+		if warnBin == "" {
+			warnBin = app.BinaryName()
+		}
+		if warnBin != "" {
+			if dir, onPath := LocateBinary(warnBin); dir != "" && !onPath {
+				res.PathWarning = &PathWarning{Binary: warnBin, Dir: dir}
 			}
 		}
 	}
 	return res
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+func appendUnique(into []string, more ...string) []string {
+	seen := make(map[string]struct{}, len(into)+len(more))
+	for _, s := range into {
+		seen[s] = struct{}{}
+	}
+	for _, s := range more {
+		if s == "" {
+			continue
+		}
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		into = append(into, s)
+	}
+	return into
 }
 
 // toolHints maps install.Type → a human-readable diagnosis for the case
@@ -333,3 +398,161 @@ func InstalledApps(apps []catalog.App) map[string]bool {
 	}
 	return out
 }
+
+// InstalledAppsWithOverrides is InstalledApps but consults a
+// repo→binary override map learned from previous installs (see
+// internal/binmap). The override wins when present; otherwise we
+// fall back to BinaryName(). This is what keeps the ✓ accurate for
+// apps whose manifest-derived binary name is wrong (cargo package
+// minesweep vs. repo basename minesweep-rs) without requiring every
+// such manifest to be hand-edited.
+func InstalledAppsWithOverrides(apps []catalog.App, overrides map[string]string) map[string]bool {
+	bins := Detect()
+	for _, d := range managerBinDirs() {
+		addExecutables(bins, d)
+	}
+	out := map[string]bool{}
+	for i := range apps {
+		name := apps[i].BinaryName()
+		if o, ok := overrides[apps[i].Repo]; ok && o != "" {
+			name = o
+		}
+		if bins[name] {
+			out[apps[i].Repo] = true
+		}
+	}
+	return out
+}
+
+// snapshotBinDirs returns the set of executable basenames currently
+// present across $PATH + manager default dirs. diffBinDirs compares
+// a before/after pair to find newly-created executables, which is
+// the installer-agnostic way to learn what a `go install` or
+// `script` install produced (neither is chatty about file names).
+//
+// We deliberately don't restrict to the dir the installer targets
+// because we don't always know it (script installs can drop
+// binaries anywhere; `cargo install --root` exists; etc.). A global
+// diff is noisier but strictly more correct; the noise is bounded
+// by "what else happened on this machine in the second the install
+// took," which in practice is nothing.
+func snapshotBinDirs() map[string]struct{} {
+	out := map[string]struct{}{}
+	dirs := filepath.SplitList(os.Getenv("PATH"))
+	dirs = append(dirs, managerBinDirs()...)
+	seen := map[string]struct{}{}
+	for _, d := range dirs {
+		if d == "" {
+			continue
+		}
+		if _, ok := seen[d]; ok {
+			continue
+		}
+		seen[d] = struct{}{}
+		entries, err := os.ReadDir(d)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil || info.Mode()&0o111 == 0 {
+				continue
+			}
+			out[e.Name()] = struct{}{}
+		}
+	}
+	return out
+}
+
+// diffBinDirs returns basenames present in after but not in before.
+func diffBinDirs(before, after map[string]struct{}) []string {
+	if before == nil {
+		return nil
+	}
+	var out []string
+	for name := range after {
+		if _, ok := before[name]; !ok {
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
+// scrapeBinaries extracts executable names from an installer's
+// stdout+stderr, keyed by install type. The patterns are narrow on
+// purpose: only the exact phrase each manager emits on the happy
+// path is matched. False positives here would mislead the "Try it"
+// hint, which is the one place where an authoritative-looking name
+// is wrong-worse-than-missing.
+//
+// Patterns:
+//   - cargo: "Installed package '<pkg> v...' (executable '<bin>')"
+//     and the "(executables 'a', 'b')" multi-binary variant.
+//   - pipx:  "These apps are now globally available:\n  - <bin>"
+//   - brew:  "==> Caveats\n..." is not useful; instead we rely on
+//     brew's post-install listing "<prefix>/bin/<bin>" lines. brew
+//     output varies enough that the dir-diff fallback is more
+//     reliable for this manager; the regex here catches the
+//     common "/bin/<name>" line if present.
+//   - go:    no reliable stdout signal; rely on the diff fallback.
+//   - npm:   no reliable stdout signal either (the "added <pkg>@<ver>"
+//     line is the package name, not the binary name); diff fallback.
+//   - script: unknown by construction; diff fallback.
+func scrapeBinaries(installType, output string) []string {
+	var out []string
+	switch installType {
+	case "cargo":
+		for _, m := range reCargoExecutable.FindAllStringSubmatch(output, -1) {
+			out = appendUnique(out, m[1])
+		}
+		for _, m := range reCargoExecutables.FindAllStringSubmatch(output, -1) {
+			for _, part := range strings.Split(m[1], ",") {
+				name := strings.Trim(strings.TrimSpace(part), "'")
+				out = appendUnique(out, name)
+			}
+		}
+		for _, m := range reCargoReplacing.FindAllStringSubmatch(output, -1) {
+			out = appendUnique(out, filepath.Base(m[1]))
+		}
+	case "pipx":
+		// "These apps are now globally available:" followed by
+		// "  - name" lines, one per binary. Consume until the first
+		// non-matching line, so trailing pipx chatter doesn't get
+		// slurped as a binary name.
+		sc := bufio.NewScanner(strings.NewReader(output))
+		inBlock := false
+		for sc.Scan() {
+			line := sc.Text()
+			if strings.Contains(line, "These apps are now globally available") {
+				inBlock = true
+				continue
+			}
+			if inBlock {
+				if m := rePipxBullet.FindStringSubmatch(line); m != nil {
+					out = appendUnique(out, m[1])
+					continue
+				}
+				if strings.TrimSpace(line) == "" {
+					continue
+				}
+				inBlock = false
+			}
+		}
+	case "brew":
+		for _, m := range reBrewBinLine.FindAllStringSubmatch(output, -1) {
+			out = appendUnique(out, m[1])
+		}
+	}
+	return out
+}
+
+var (
+	reCargoExecutable  = regexp.MustCompile(`\(executable '([^']+)'\)`)
+	reCargoExecutables = regexp.MustCompile(`\(executables ([^)]+)\)`)
+	reCargoReplacing   = regexp.MustCompile(`Replacing\s+(\S+)`)
+	rePipxBullet       = regexp.MustCompile(`^\s*-\s+(\S+)\s*$`)
+	reBrewBinLine      = regexp.MustCompile(`^.*/bin/([A-Za-z0-9._+-]+)\s*$`)
+)

@@ -26,6 +26,44 @@ func TestAppBinaryName(t *testing.T) {
 	}
 }
 
+func TestResolvedBinaryName_OverridesWin(t *testing.T) {
+	app := App{Repo: "cpcloud/minesweep-rs"} // derived = "minesweep-rs"
+	overrides := map[string]string{"cpcloud/minesweep-rs": "minesweep"}
+	if got := app.ResolvedBinaryName(overrides); got != "minesweep" {
+		t.Errorf("overrides should win, got %q", got)
+	}
+}
+
+func TestResolvedBinaryName_FallbackWhenNoOverride(t *testing.T) {
+	app := App{Repo: "charmbracelet/glow"}
+	if got := app.ResolvedBinaryName(nil); got != "glow" {
+		t.Errorf("nil overrides should fall through to BinaryName, got %q", got)
+	}
+	if got := app.ResolvedBinaryName(map[string]string{"other/repo": "x"}); got != "glow" {
+		t.Errorf("non-matching overrides should fall through, got %q", got)
+	}
+}
+
+// TestUninstallCommandWithOverrides_GoUsesDetectedBinary pins the
+// bug this whole plumbing was built to fix: for a go-install whose
+// manifest-derived binary name is wrong, the derived `rm -f` recipe
+// must target the name we actually saw installed, not the repo
+// basename. Without this, uninstall silently removes nothing.
+func TestUninstallCommandWithOverrides_GoUsesDetectedBinary(t *testing.T) {
+	app := App{
+		Repo:        "author/repo-with-weird-suffix",
+		InstallSpec: &InstallSpec{Type: "go", Package: "example.com/author/repo-with-weird-suffix@latest"},
+	}
+	overrides := map[string]string{"author/repo-with-weird-suffix": "actualbin"}
+	got := app.UninstallCommandWithOverrides(overrides)
+	if !strings.Contains(got, "/actualbin") {
+		t.Errorf("expected uninstall to target /actualbin, got %q", got)
+	}
+	if strings.Contains(got, "/repo-with-weird-suffix") {
+		t.Errorf("uninstall should NOT target the stale derived name, got %q", got)
+	}
+}
+
 func TestAppUninstallCommand_OverrideWins(t *testing.T) {
 	app := App{
 		Repo:          "foo/bar",
