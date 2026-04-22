@@ -8,6 +8,18 @@ Last updated: 2026-04-21.
 
 ## Latest change
 
+`v0.1.7` (2026-04-21): auto-fix PATH from inside cliff. Builds on
+v0.1.6's warning — instead of making the user quit cliff, open
+their `~/.zshrc`, paste a line, and reopen the terminal, pressing
+⏎ on the post-install warning screen now opens a confirm dialog
+showing the exact file and exact line; a second ⏎ appends it
+(idempotent, with a `# added by cliff` marker). CLI gets
+`cliff install --fix-path` / `--no-fix-path` plus an interactive
+`[y/N]` prompt when stdin is a TTY, with non-interactive pipelines
+falling back to the hint so scripts stay deterministic. Supports
+zsh + bash today; fish is detected and shown the hand-edit line
+rather than getting bash syntax written to `config.fish`.
+
 `v0.1.6` (2026-04-21): post-install PATH warning. When an install
 lands a binary in a known manager dir that isn't on `$PATH`
 (classic `go install` → `~/go/bin`, `cargo install` →
@@ -29,7 +41,7 @@ doesn't disappear after a successful off-PATH install.
   [cliff-registry#1](https://github.com/jmcntsh/cliff-registry/pull/1).
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index.
-- **GitHub releases** — latest `v0.1.6` (2026-04-21). Darwin and
+- **GitHub releases** — latest `v0.1.7` (2026-04-21). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or

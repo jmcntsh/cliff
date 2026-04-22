@@ -8,6 +8,7 @@ import (
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/clipboard"
 	"github.com/jmcntsh/cliff/internal/install"
+	"github.com/jmcntsh/cliff/internal/pathfix"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -100,6 +101,8 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateInstallRunning(m)
 		case modeInstallResult:
 			return r.updateInstallResult(m)
+		case modeFixPath:
+			return r.updateFixPath(m)
 		default:
 			return r.updateBrowse(m)
 		}
@@ -333,11 +336,28 @@ func (r Root) updateInstallRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Two dismissal flavors with different intent:
-	//   ⏎       = "I'm done, what's next" → always land in the grid so
-	//             the user can pick another app to browse/install.
+	//   ⏎       = "I'm done, what's next" — normally lands in the grid.
+	//             EXCEPTION: when the install produced a PathWarning,
+	//             Enter is more useful as "yes, fix my PATH" since
+	//             that's the only remaining step between install and
+	//             the app actually running. The user can still back
+	//             out with esc/q/← in that case.
 	//   esc/q/← = "back out" → return to whatever called the install
 	//             (grid or readme), keeping the spatial model intact.
 	if key.Matches(msg, keys.Enter) {
+		if r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
+			plan, err := pathfix.Detect(r.installRes.PathWarning.Dir)
+			r.fixPlan = plan
+			r.fixErr = err
+			r.fixApplied = false
+			if plan != nil {
+				r.fixAlreadyPresent = plan.Present
+			} else {
+				r.fixAlreadyPresent = false
+			}
+			r.mode = modeFixPath
+			return r, nil
+		}
 		r.mode = modeBrowse
 		r.installApp = nil
 		r.installRes = nil
@@ -353,6 +373,54 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	r.installViewport, cmd = r.installViewport.Update(msg)
 	return r, cmd
+}
+
+// updateFixPath runs the modeFixPath screen. It has two phases:
+//
+//   - !fixApplied: we're asking "OK to append this line to <rc>?"
+//     Enter confirms and runs Apply; esc/q/← backs out without
+//     writing anything.
+//   - fixApplied: we've written (or tried). Enter or esc dismisses
+//     back to the grid.
+//
+// Split into phases so the keybinds stay simple and the user can't
+// accidentally double-apply by holding Enter.
+func (r Root) updateFixPath(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if r.fixApplied {
+		if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
+			r = r.clearFixPath()
+			r.mode = modeBrowse
+			r.installApp = nil
+			r.installRes = nil
+			return r, nil
+		}
+		return r, nil
+	}
+	if key.Matches(msg, keys.Enter) {
+		// Only Apply for shells we support. Detect already returned
+		// ErrShellUnsupported for fish/unknown — honor that and show
+		// the user the hand-edit fallback rather than writing bash
+		// syntax into a fish config.
+		if r.fixErr == nil && r.fixPlan != nil {
+			r.fixErr = pathfix.Apply(r.fixPlan)
+		}
+		r.fixApplied = true
+		return r, nil
+	}
+	if key.Matches(msg, keys.Escape, keys.Quit, keys.Left) {
+		r = r.clearFixPath()
+		r.mode = modeInstallResult
+		return r, nil
+	}
+	return r, nil
+}
+
+func (r Root) clearFixPath() Root {
+	r.fixPlan = nil
+	r.fixErr = nil
+	r.fixApplied = false
+	r.fixAlreadyPresent = false
+	return r
 }
 
 func (r Root) updateSidebarOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd) {

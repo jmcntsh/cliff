@@ -83,6 +83,10 @@ func (r Root) View() string {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
 			installResultView(r.installRes, r.installViewport, r.width))
 	}
+	if r.mode == modeFixPath {
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.width))
+	}
 
 	return body + "\n" + r.footer()
 }
@@ -147,7 +151,17 @@ func (r Root) footer() string {
 	case modeInstallRunning:
 		hints = "↑↓ scroll logs  esc cancel install"
 	case modeInstallResult:
-		hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
+		if r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
+			hints = "⏎ fix PATH · esc close"
+		} else {
+			hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
+		}
+	case modeFixPath:
+		if r.fixApplied {
+			hints = "⏎ or esc close"
+		} else {
+			hints = "⏎ apply · esc cancel"
+		}
 	}
 	if r.flashMsg != "" && time.Now().Before(r.flashExpiry) {
 		return theme.AccentText.Render(r.flashMsg)
