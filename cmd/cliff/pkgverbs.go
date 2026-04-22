@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jmcntsh/cliff/internal/catalog"
@@ -83,6 +84,11 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string) in
 
 	fmt.Println()
 	if result.ExitCode == 0 && result.Err == nil {
+		if verb == "uninstall" {
+			if code := verifyUninstalled(app); code != 0 {
+				return code
+			}
+		}
 		fmt.Printf("✓ %sed %s\n", strings.TrimSuffix(verb, "e"), app.Name)
 		if pw := result.PathWarning; pw != nil {
 			fmt.Printf("\nInstalled to %s, but that directory isn't on your $PATH.\n", pw.Dir)
@@ -99,6 +105,34 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App) string) in
 		return 1
 	}
 	return result.ExitCode
+}
+
+// verifyUninstalled checks that the app's binary is no longer reachable
+// after an uninstall command reports success. Silent success from
+// `rm -f` is a common source of "cliff thinks it uninstalled but
+// didn't" — wrong GOBIN, asdf toolchain, etc. A post-check turns that
+// into a loud failure with a pointer to where the binary still lives.
+// We flag any lingering location (on $PATH or in a manager default
+// dir) because either case means the recipe didn't fully remove it.
+func verifyUninstalled(app *catalog.App) int {
+	bin := app.BinaryName()
+	if bin == "" {
+		return 0
+	}
+	dir, onPath := install.LocateBinary(bin)
+	if dir == "" {
+		return 0
+	}
+	loc := filepath.Join(dir, bin)
+	if onPath {
+		fmt.Fprintf(os.Stderr, "× %s is still callable at %s — uninstall didn't take effect\n", bin, loc)
+	} else {
+		fmt.Fprintf(os.Stderr, "× %s still exists at %s (off $PATH, but the uninstall recipe missed it)\n", bin, loc)
+	}
+	if strings.Contains(loc, "/.asdf/shims/") {
+		fmt.Fprintln(os.Stderr, "  looks like an asdf shim; try: asdf reshim")
+	}
+	return 1
 }
 
 // lookupApp finds an app by case-insensitive match against Name, the

@@ -1,6 +1,9 @@
 package catalog
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAppBinaryName(t *testing.T) {
 	cases := []struct {
@@ -59,6 +62,27 @@ func TestAppUpgradeCommand_GoLatestPathRewrite(t *testing.T) {
 	}
 	if got := app.UpgradeCommand(); got != "go install github.com/x/y@latest" {
 		t.Errorf("go @version should be rewritten to @latest, got %q", got)
+	}
+}
+
+func TestAppUninstallCommand_GoUsesRuntimeGoEnv(t *testing.T) {
+	// The go-type uninstall must resolve GOBIN/GOPATH at runtime via
+	// `go env` — shell-side $GOBIN/$GOPATH are empty for asdf users
+	// and a naive shell fallback would point at ~/go/bin where the
+	// binary doesn't actually live. Regression guard for that bug.
+	app := App{
+		Repo:        "foo/bar",
+		InstallSpec: &InstallSpec{Type: "go", Package: "github.com/foo/bar@latest"},
+	}
+	got := app.UninstallCommand()
+	if !strings.Contains(got, "go env GOBIN") {
+		t.Errorf("go-uninstall must use `go env GOBIN` at runtime, got %q", got)
+	}
+	if !strings.Contains(got, "/bar") {
+		t.Errorf("go-uninstall should target the binary name, got %q", got)
+	}
+	if strings.Contains(got, "$HOME/go") {
+		t.Errorf("go-uninstall should not shell-expand to $HOME/go (breaks under asdf), got %q", got)
 	}
 }
 
