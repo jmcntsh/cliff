@@ -1,1033 +1,1076 @@
 {
-  "schema_version": 1,
-  "generated_at": "2026-04-22T16:25:52.768775862Z",
-  "source_commit": "eaa2f6aa9aef27c0a7fc49b24a2aa28722657bb2",
   "apps": [
     {
-      "name": "atac",
-      "repo": "Julien-cpsn/ATAC",
-      "description": "A feature-full TUI API client — Postman, but in your terminal",
-      "category": "HTTP clients",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 3571,
-      "homepage": "https://github.com/Julien-cpsn/ATAC",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "Julien-cpsn",
+      "category": "HTTP clients",
+      "description": "A feature-full TUI API client — Postman, but in your terminal",
+      "homepage": "https://github.com/Julien-cpsn/ATAC",
+      "install_spec": {
+        "package": "atac",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-03-09T07:09:22Z",
+      "license": "MIT",
+      "name": "atac",
       "readme": "https://raw.githubusercontent.com/Julien-cpsn/ATAC/main/README.md",
+      "repo": "Julien-cpsn/ATAC",
+      "stars": 3576,
       "tags": [
         "http",
         "api",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "atac"
-      },
-      "last_commit": "2026-03-09T07:09:22Z"
+      ]
     },
     {
-      "name": "atuin",
-      "repo": "atuinsh/atuin",
-      "description": "Magical shell history — SQLite-backed, searchable, syncable across machines",
-      "category": "Shell utilities",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 29432,
-      "homepage": "https://github.com/atuinsh/atuin",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "atuinsh",
+      "category": "Shell utilities",
+      "description": "Magical shell history — SQLite-backed, searchable, syncable across machines",
+      "homepage": "https://github.com/atuinsh/atuin",
+      "install_spec": {
+        "package": "atuin",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-23T05:03:29Z",
+      "license": "MIT",
+      "name": "atuin",
       "readme": "https://raw.githubusercontent.com/atuinsh/atuin/main/README.md",
+      "repo": "atuinsh/atuin",
+      "stars": 29440,
       "tags": [
         "shell",
         "history",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "atuin"
-      },
-      "last_commit": "2026-04-22T06:00:27Z"
+      ]
     },
     {
-      "name": "balatro-tui",
-      "repo": "Passeriform/BalatroTUI",
-      "description": "Balatro-inspired poker-roguelike played entirely in your terminal",
-      "category": "Games",
-      "language": "Rust",
-      "license": "GPL-3.0",
-      "stars": 177,
-      "homepage": "https://github.com/Passeriform/BalatroTUI",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "Passeriform",
+      "binary": "balatro_tui",
+      "category": "Games",
+      "description": "Balatro-inspired poker-roguelike played entirely in your terminal",
+      "homepage": "https://github.com/Passeriform/BalatroTUI",
+      "install_spec": {
+        "package": "balatro_tui",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2025-06-25T18:39:01Z",
+      "license": "GPL-3.0",
+      "name": "balatro-tui",
       "readme": "https://raw.githubusercontent.com/Passeriform/BalatroTUI/main/README.md",
+      "repo": "Passeriform/BalatroTUI",
+      "stars": 177,
       "tags": [
         "game",
         "cards",
         "roguelike"
-      ],
-      "binary": "balatro_tui",
-      "install_spec": {
-        "type": "cargo",
-        "package": "balatro_tui"
-      },
-      "last_commit": "2025-06-25T18:39:01Z"
+      ]
     },
     {
-      "name": "binsider",
-      "repo": "orhun/binsider",
-      "description": "Analyze ELF binaries in your terminal — strings, headers, hex, and live disassembly",
-      "category": "Developer tools",
-      "language": "Rust",
-      "license": "Apache-2.0",
-      "stars": 4162,
-      "homepage": "https://github.com/orhun/binsider",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "orhun",
+      "category": "Developer tools",
+      "description": "Analyze ELF binaries in your terminal — strings, headers, hex, and live disassembly",
+      "homepage": "https://github.com/orhun/binsider",
+      "install_spec": {
+        "package": "binsider",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-19T00:22:56Z",
+      "license": "Apache-2.0",
+      "name": "binsider",
       "readme": "https://raw.githubusercontent.com/orhun/binsider/main/README.md",
+      "repo": "orhun/binsider",
+      "stars": 4163,
       "tags": [
         "binary",
         "analysis",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "binsider"
-      },
-      "last_commit": "2026-04-19T00:22:56Z"
+      ]
     },
     {
-      "name": "bluetui",
-      "repo": "pythops/bluetui",
-      "description": "Bluetooth device manager in the terminal, with adapter controls, pairing, and connection state",
-      "category": "DevOps",
-      "language": "Rust",
-      "license": "GPL-3.0",
-      "stars": 2724,
-      "homepage": "https://github.com/pythops/bluetui",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "pythops",
+      "category": "DevOps",
+      "description": "Bluetooth device manager in the terminal, with adapter controls, pairing, and connection state",
+      "homepage": "https://github.com/pythops/bluetui",
+      "install_spec": {
+        "package": "bluetui",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-17T11:01:01Z",
+      "license": "GPL-3.0",
+      "name": "bluetui",
       "readme": "https://raw.githubusercontent.com/pythops/bluetui/main/README.md",
+      "repo": "pythops/bluetui",
+      "stars": 2727,
       "tags": [
         "bluetooth",
         "network",
         "linux"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "bluetui"
-      },
-      "last_commit": "2026-04-17T11:01:01Z"
+      ]
     },
     {
-      "name": "bottom",
-      "repo": "ClementTsang/bottom",
-      "description": "Cross-platform graphical process and system monitor with charts, trees, and a configurable UI",
-      "category": "Dashboards",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 13226,
-      "homepage": "https://github.com/ClementTsang/bottom",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "ClementTsang",
+      "binary": "btm",
+      "category": "Dashboards",
+      "description": "Cross-platform graphical process and system monitor with charts, trees, and a configurable UI",
+      "homepage": "https://github.com/ClementTsang/bottom",
+      "install_spec": {
+        "package": "bottom",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-23T09:33:44Z",
+      "license": "MIT",
+      "name": "bottom",
       "readme": "https://raw.githubusercontent.com/ClementTsang/bottom/main/README.md",
+      "repo": "ClementTsang/bottom",
+      "stars": 13231,
       "tags": [
         "monitoring",
         "dashboard",
         "system"
-      ],
-      "binary": "btm",
-      "install_spec": {
-        "type": "brew",
-        "package": "bottom"
-      },
-      "last_commit": "2026-04-22T03:27:57Z"
+      ]
     },
     {
-      "name": "btop",
-      "repo": "aristocratos/btop",
-      "description": "Resource monitor with extras",
-      "category": "Dashboards",
-      "language": "C++",
-      "license": "Apache-2.0",
-      "stars": 31779,
-      "homepage": "https://github.com/aristocratos/btop",
+      "added_at": "2026-04-19T16:21:18Z",
       "author": "aristocratos",
+      "category": "Dashboards",
+      "description": "Resource monitor with extras",
+      "homepage": "https://github.com/aristocratos/btop",
+      "install_spec": {
+        "package": "btop",
+        "type": "brew"
+      },
+      "language": "C++",
+      "last_commit": "2026-04-13T08:38:34Z",
+      "license": "Apache-2.0",
+      "name": "btop",
       "readme": "https://raw.githubusercontent.com/aristocratos/btop/main/README.md",
+      "repo": "aristocratos/btop",
+      "stars": 31794,
       "tags": [
         "monitoring",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "btop"
-      },
-      "last_commit": "2026-04-13T08:38:34Z"
+      ]
     },
     {
-      "name": "cava",
-      "repo": "karlstav/cava",
-      "description": "Cross-platform bar spectrum audio visualizer for your terminal",
-      "category": "Toys \u0026 visualizers",
-      "language": "C",
-      "license": "MIT",
-      "stars": 6057,
-      "homepage": "https://github.com/karlstav/cava",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "karlstav",
+      "category": "Toys & visualizers",
+      "description": "Cross-platform bar spectrum audio visualizer for your terminal",
+      "homepage": "https://github.com/karlstav/cava",
+      "install_spec": {
+        "package": "cava",
+        "type": "brew"
+      },
+      "language": "C",
+      "last_commit": "2026-04-21T18:22:11Z",
+      "license": "MIT",
+      "name": "cava",
       "readme": "https://raw.githubusercontent.com/karlstav/cava/master/README.md",
+      "repo": "karlstav/cava",
+      "stars": 6061,
       "tags": [
         "audio",
         "visualizer",
         "music"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "cava"
-      },
-      "last_commit": "2026-04-21T18:22:11Z"
+      ]
     },
     {
-      "name": "chess-tui",
-      "repo": "thomas-mauran/chess-tui",
-      "description": "Play chess from your terminal against a bot, a friend, or an engine",
-      "category": "Games",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 1016,
-      "homepage": "https://github.com/thomas-mauran/chess-tui",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "thomas-mauran",
+      "category": "Games",
+      "description": "Play chess from your terminal against a bot, a friend, or an engine",
+      "homepage": "https://github.com/thomas-mauran/chess-tui",
+      "install_spec": {
+        "package": "chess-tui",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-23T13:41:27Z",
+      "license": "MIT",
+      "name": "chess-tui",
       "readme": "https://raw.githubusercontent.com/thomas-mauran/chess-tui/main/README.md",
+      "repo": "thomas-mauran/chess-tui",
+      "stars": 1016,
       "tags": [
         "game",
         "chess",
         "tui"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "chess-tui"
-      },
-      "last_commit": "2026-04-19T12:31:34Z"
+      ]
     },
     {
-      "name": "cliff",
-      "repo": "jmcntsh/cliff",
-      "description": "A terminal-native directory for CLIs and TUIs. Browse, read READMEs, install in one keystroke.",
-      "category": "Developer tools",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 0,
-      "homepage": "https://github.com/jmcntsh/cliff",
+      "added_at": "2026-04-22T20:25:17Z",
       "author": "jmcntsh",
+      "category": "Developer tools",
+      "description": "A terminal-native directory for CLIs and TUIs. Browse, read READMEs, install in one keystroke.",
+      "homepage": "https://github.com/jmcntsh/cliff",
+      "install_spec": {
+        "package": "jmcntsh/tap/cliff",
+        "type": "brew"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-23T16:21:16Z",
+      "license": "MIT",
+      "name": "cliff",
       "readme": "https://raw.githubusercontent.com/jmcntsh/cliff/main/README.md",
+      "repo": "jmcntsh/cliff",
+      "stars": 0,
       "tags": [
         "directory",
         "discovery",
         "installer",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "jmcntsh/tap/cliff"
-      },
-      "last_commit": "2026-04-22T19:44:06Z"
+      ]
     },
     {
-      "name": "crossword",
-      "repo": "MatrixFrog/crossword",
-      "description": "Play crossword puzzles in your terminal",
-      "category": "Games",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 47,
-      "homepage": "https://github.com/MatrixFrog/crossword",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "MatrixFrog",
+      "category": "Games",
+      "description": "Play crossword puzzles in your terminal",
+      "homepage": "https://github.com/MatrixFrog/crossword",
+      "install_spec": {
+        "package": "crossword",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2025-07-31T05:17:51Z",
+      "license": "MIT",
+      "name": "crossword",
       "readme": "https://raw.githubusercontent.com/MatrixFrog/crossword/main/README.md",
+      "repo": "MatrixFrog/crossword",
+      "stars": 47,
       "tags": [
         "game",
         "puzzle",
         "tui"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "crossword"
-      },
-      "last_commit": "2025-07-31T05:17:51Z"
+      ]
     },
     {
-      "name": "dooit",
-      "repo": "kraanzu/dooit",
-      "description": "An awesome todo manager for the terminal",
-      "category": "Productivity",
-      "language": "Python",
-      "license": "MIT",
-      "stars": 2867,
-      "homepage": "https://github.com/kraanzu/dooit",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "kraanzu",
+      "category": "Productivity",
+      "description": "An awesome todo manager for the terminal",
+      "homepage": "https://github.com/kraanzu/dooit",
+      "install_spec": {
+        "package": "dooit",
+        "type": "brew"
+      },
+      "language": "Python",
+      "last_commit": "2026-04-18T04:14:08Z",
+      "license": "MIT",
+      "name": "dooit",
       "readme": "https://raw.githubusercontent.com/kraanzu/dooit/main/README.md",
+      "repo": "kraanzu/dooit",
+      "stars": 2867,
       "tags": [
         "todo",
         "productivity",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "dooit"
-      },
-      "last_commit": "2026-04-18T04:14:08Z"
+      ]
     },
     {
-      "name": "frogmouth",
-      "repo": "Textualize/frogmouth",
-      "description": "A Markdown browser for your terminal, by the Textual team",
-      "category": "Documentation",
-      "language": "Python",
-      "license": "MIT",
-      "stars": 3139,
-      "homepage": "https://github.com/Textualize/frogmouth",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "Textualize",
+      "category": "Documentation",
+      "description": "A Markdown browser for your terminal, by the Textual team",
+      "homepage": "https://github.com/Textualize/frogmouth",
+      "install_spec": {
+        "package": "frogmouth",
+        "type": "pipx"
+      },
+      "language": "Python",
+      "last_commit": "2024-08-01T06:51:47Z",
+      "license": "MIT",
+      "name": "frogmouth",
       "readme": "https://raw.githubusercontent.com/Textualize/frogmouth/main/README.md",
+      "repo": "Textualize/frogmouth",
+      "stars": 3140,
       "tags": [
         "markdown",
         "reader",
         "tui"
-      ],
-      "install_spec": {
-        "type": "pipx",
-        "package": "frogmouth"
-      },
-      "last_commit": "2024-08-01T06:51:47Z"
+      ]
     },
     {
-      "name": "gh-dash",
-      "repo": "dlvhdr/gh-dash",
-      "description": "A gh extension: your PRs and issues on a beautiful, customizable terminal dashboard",
-      "category": "Developer tools",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 11432,
-      "homepage": "https://github.com/dlvhdr/gh-dash",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "dlvhdr",
+      "category": "Developer tools",
+      "description": "A gh extension: your PRs and issues on a beautiful, customizable terminal dashboard",
+      "homepage": "https://github.com/dlvhdr/gh-dash",
+      "install_spec": {
+        "package": "github.com/dlvhdr/gh-dash@latest",
+        "type": "go"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-22T20:02:50Z",
+      "license": "MIT",
+      "name": "gh-dash",
       "readme": "https://raw.githubusercontent.com/dlvhdr/gh-dash/main/README.md",
+      "repo": "dlvhdr/gh-dash",
+      "stars": 11441,
       "tags": [
         "github",
         "dashboard",
         "tui"
-      ],
-      "install_spec": {
-        "type": "go",
-        "package": "github.com/dlvhdr/gh-dash@latest"
-      },
-      "last_commit": "2026-04-19T20:09:30Z"
+      ]
     },
     {
-      "name": "gitlogue",
-      "repo": "unhappychoice/gitlogue",
-      "description": "Cinematic git-history replay with typing animations, syntax highlighting, and file-tree motion",
-      "category": "Toys \u0026 visualizers",
-      "language": "Rust",
-      "license": "ISC",
-      "stars": 4627,
-      "homepage": "https://github.com/unhappychoice/gitlogue",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "unhappychoice",
+      "category": "Toys & visualizers",
+      "description": "Cinematic git-history replay with typing animations, syntax highlighting, and file-tree motion",
+      "homepage": "https://github.com/unhappychoice/gitlogue",
+      "install_spec": {
+        "package": "gitlogue",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-23T12:16:22Z",
+      "license": "ISC",
+      "name": "gitlogue",
       "readme": "https://raw.githubusercontent.com/unhappychoice/gitlogue/main/README.md",
+      "repo": "unhappychoice/gitlogue",
+      "stars": 4631,
       "tags": [
         "git",
         "visualizer",
         "animation"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "gitlogue"
-      },
-      "last_commit": "2026-04-21T05:48:31Z"
+      ]
     },
     {
-      "name": "gitui",
-      "repo": "extrawurst/gitui",
-      "description": "Blazing-fast terminal UI for git, written in Rust",
-      "category": "Version control",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 21811,
-      "homepage": "https://github.com/extrawurst/gitui",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "extrawurst",
+      "category": "Version control",
+      "description": "Blazing-fast terminal UI for git, written in Rust",
+      "homepage": "https://github.com/extrawurst/gitui",
+      "install_spec": {
+        "package": "gitui",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-23T01:39:06Z",
+      "license": "MIT",
+      "name": "gitui",
       "readme": "https://raw.githubusercontent.com/extrawurst/gitui/master/README.md",
+      "repo": "extrawurst/gitui",
+      "stars": 21813,
       "tags": [
         "git",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "gitui"
-      },
-      "last_commit": "2026-04-21T02:57:38Z"
+      ]
     },
     {
-      "name": "glow",
-      "repo": "charmbracelet/glow",
-      "description": "Render markdown on the CLI, with pizzazz",
-      "category": "Documentation",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 24535,
-      "homepage": "https://github.com/charmbracelet/glow",
+      "added_at": "2026-04-19T16:21:18Z",
       "author": "charmbracelet",
+      "category": "Documentation",
+      "description": "Render markdown on the CLI, with pizzazz",
+      "homepage": "https://github.com/charmbracelet/glow",
+      "install_spec": {
+        "package": "github.com/charmbracelet/glow@latest",
+        "type": "go"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-22T14:14:50Z",
+      "license": "MIT",
+      "name": "glow",
       "readme": "https://raw.githubusercontent.com/charmbracelet/glow/master/README.md",
+      "repo": "charmbracelet/glow",
+      "stars": 24554,
       "tags": [
         "markdown",
         "tui"
-      ],
-      "install_spec": {
-        "type": "go",
-        "package": "github.com/charmbracelet/glow@latest"
-      },
-      "last_commit": "2026-04-22T14:14:50Z"
+      ]
     },
     {
-      "name": "gum",
-      "repo": "charmbracelet/gum",
-      "description": "A tool for glamorous shell scripts — make your scripts pop with Charm UI primitives",
-      "category": "Shell utilities",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 23434,
-      "homepage": "https://github.com/charmbracelet/gum",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "charmbracelet",
+      "category": "Shell utilities",
+      "description": "A tool for glamorous shell scripts — make your scripts pop with Charm UI primitives",
+      "homepage": "https://github.com/charmbracelet/gum",
+      "install_spec": {
+        "package": "gum",
+        "type": "brew"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-22T14:14:33Z",
+      "license": "MIT",
+      "name": "gum",
       "readme": "https://raw.githubusercontent.com/charmbracelet/gum/main/README.md",
+      "repo": "charmbracelet/gum",
+      "stars": 23440,
       "tags": [
         "shell",
         "scripting",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "gum"
-      },
-      "last_commit": "2026-04-22T14:14:33Z"
+      ]
     },
     {
-      "name": "harlequin",
-      "repo": "tconbeer/harlequin",
-      "description": "The SQL IDE for your terminal — query DuckDB, SQLite, Postgres, and more",
-      "category": "Databases",
-      "language": "Python",
-      "license": "MIT",
-      "stars": 6014,
-      "homepage": "https://github.com/tconbeer/harlequin",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "tconbeer",
+      "category": "Databases",
+      "description": "The SQL IDE for your terminal — query DuckDB, SQLite, Postgres, and more",
+      "homepage": "https://github.com/tconbeer/harlequin",
+      "install_spec": {
+        "package": "harlequin",
+        "type": "brew"
+      },
+      "language": "Python",
+      "last_commit": "2026-04-23T13:19:42Z",
+      "license": "MIT",
+      "name": "harlequin",
       "readme": "https://raw.githubusercontent.com/tconbeer/harlequin/main/README.md",
+      "repo": "tconbeer/harlequin",
+      "stars": 6019,
       "tags": [
         "sql",
         "database",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "harlequin"
-      },
-      "last_commit": "2026-04-22T02:45:38Z"
+      ]
     },
     {
-      "name": "impala",
-      "repo": "pythops/impala",
-      "description": "TUI for managing Wi-Fi networks with iwd on Linux, featuring live scans and smooth animations",
-      "category": "DevOps",
-      "language": "Rust",
-      "license": "GPL-3.0",
-      "stars": 2581,
-      "homepage": "https://github.com/pythops/impala",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "pythops",
+      "category": "DevOps",
+      "description": "TUI for managing Wi-Fi networks with iwd on Linux, featuring live scans and smooth animations",
+      "homepage": "https://github.com/pythops/impala",
+      "install_spec": {
+        "package": "impala",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-14T08:19:57Z",
+      "license": "GPL-3.0",
+      "name": "impala",
       "readme": "https://raw.githubusercontent.com/pythops/impala/main/README.md",
+      "repo": "pythops/impala",
+      "stars": 2587,
       "tags": [
         "wifi",
         "network",
         "linux"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "impala"
-      },
-      "last_commit": "2026-04-14T08:19:57Z"
+      ]
     },
     {
-      "name": "jnv",
-      "repo": "ynqa/jnv",
-      "description": "Interactive JSON filter using jq",
-      "category": "Data tools",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 5997,
-      "homepage": "https://github.com/ynqa/jnv",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "ynqa",
+      "category": "Data tools",
+      "description": "Interactive JSON filter using jq",
+      "homepage": "https://github.com/ynqa/jnv",
+      "install_spec": {
+        "package": "jnv",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-03T09:13:20Z",
+      "license": "MIT",
+      "name": "jnv",
       "readme": "https://raw.githubusercontent.com/ynqa/jnv/main/README.md",
+      "repo": "ynqa/jnv",
+      "stars": 5998,
       "tags": [
         "json",
         "jq",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "jnv"
-      },
-      "last_commit": "2026-04-03T09:13:20Z"
+      ]
     },
     {
-      "name": "kew",
-      "repo": "ravachol/kew",
-      "description": "Minimalist terminal music player with ASCII covers, library search, and a visualizer",
-      "category": "Music \u0026 media",
-      "language": "C",
-      "license": "GPL-2.0",
-      "stars": 2638,
-      "homepage": "https://github.com/ravachol/kew",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "ravachol",
+      "category": "Music & media",
+      "description": "Minimalist terminal music player with ASCII covers, library search, and a visualizer",
+      "homepage": "https://github.com/ravachol/kew",
+      "install_spec": {
+        "package": "kew",
+        "type": "brew"
+      },
+      "language": "C",
+      "last_commit": "2026-04-21T01:24:15Z",
+      "license": "GPL-2.0",
+      "name": "kew",
       "readme": "https://raw.githubusercontent.com/ravachol/kew/main/README.md",
+      "repo": "ravachol/kew",
+      "stars": 2638,
       "tags": [
         "music",
         "player",
         "audio"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "kew"
-      },
-      "last_commit": "2026-04-21T01:24:15Z"
+      ]
     },
     {
-      "name": "lazygit",
-      "repo": "jesseduffield/lazygit",
-      "description": "Simple terminal UI for git commands",
-      "category": "Version control",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 76858,
-      "homepage": "https://github.com/jesseduffield/lazygit",
+      "added_at": "2026-04-19T16:21:18Z",
       "author": "jesseduffield",
+      "category": "Version control",
+      "description": "Simple terminal UI for git commands",
+      "homepage": "https://github.com/jesseduffield/lazygit",
+      "install_spec": {
+        "package": "lazygit",
+        "type": "brew"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-22T06:21:10Z",
+      "license": "MIT",
+      "name": "lazygit",
       "readme": "https://raw.githubusercontent.com/jesseduffield/lazygit/master/README.md",
+      "repo": "jesseduffield/lazygit",
+      "stars": 76917,
       "tags": [
         "git",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "lazygit"
-      },
-      "last_commit": "2026-04-22T06:21:10Z"
+      ]
     },
     {
-      "name": "minesweep",
-      "repo": "cpcloud/minesweep-rs",
-      "description": "Classic minesweeper in the terminal, built with tui-rs",
-      "category": "Games",
-      "language": "Rust",
-      "license": "Apache-2.0",
-      "stars": 234,
-      "homepage": "https://github.com/cpcloud/minesweep-rs",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "cpcloud",
+      "category": "Games",
+      "description": "Classic minesweeper in the terminal, built with tui-rs",
+      "homepage": "https://github.com/cpcloud/minesweep-rs",
+      "install_spec": {
+        "package": "minesweep",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2025-06-08T01:01:12Z",
+      "license": "Apache-2.0",
+      "name": "minesweep",
       "readme": "https://raw.githubusercontent.com/cpcloud/minesweep-rs/main/README.md",
+      "repo": "cpcloud/minesweep-rs",
+      "stars": 234,
       "tags": [
         "game",
         "minesweeper",
         "tui"
-      ],
-      "binary": "minesweep",
-      "install_spec": {
-        "type": "cargo",
-        "package": "minesweep"
-      },
-      "last_commit": "2025-06-08T01:01:12Z"
+      ]
     },
     {
-      "name": "oxker",
-      "repo": "mrjackwills/oxker",
-      "description": "A simple TUI to view and control Docker containers",
-      "category": "DevOps",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 1629,
-      "homepage": "https://github.com/mrjackwills/oxker",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "mrjackwills",
+      "category": "DevOps",
+      "description": "A simple TUI to view and control Docker containers",
+      "homepage": "https://github.com/mrjackwills/oxker",
+      "install_spec": {
+        "package": "oxker",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-03-24T21:03:57Z",
+      "license": "MIT",
+      "name": "oxker",
       "readme": "https://raw.githubusercontent.com/mrjackwills/oxker/main/README.md",
+      "repo": "mrjackwills/oxker",
+      "stars": 1630,
       "tags": [
         "docker",
         "containers",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "oxker"
-      },
-      "last_commit": "2026-03-24T21:03:57Z"
+      ]
     },
     {
-      "name": "plastic",
-      "repo": "Amjad50/plastic",
-      "description": "NES emulator with a Ratatui terminal UI — play NES ROMs in your shell",
-      "category": "Games",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 578,
-      "homepage": "https://github.com/Amjad50/plastic",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "Amjad50",
+      "category": "Games",
+      "description": "NES emulator with a Ratatui terminal UI — play NES ROMs in your shell",
+      "homepage": "https://github.com/Amjad50/plastic",
+      "install_spec": {
+        "package": "plastic_tui",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-03-09T04:05:58Z",
+      "license": "MIT",
+      "name": "plastic",
       "readme": "https://raw.githubusercontent.com/Amjad50/plastic/master/README.md",
+      "repo": "Amjad50/plastic",
+      "stars": 578,
       "tags": [
         "game",
         "emulator",
         "nes",
         "tui"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "plastic_tui"
-      },
-      "last_commit": "2026-03-09T04:05:58Z"
+      ]
     },
     {
-      "name": "posting",
-      "repo": "darrenburns/posting",
-      "description": "Modern API client that lives in your terminal",
-      "category": "HTTP clients",
-      "language": "Python",
-      "license": "Apache-2.0",
-      "stars": 11763,
-      "homepage": "https://github.com/darrenburns/posting",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "darrenburns",
+      "category": "HTTP clients",
+      "description": "Modern API client that lives in your terminal",
+      "homepage": "https://github.com/darrenburns/posting",
+      "install_spec": {
+        "package": "posting",
+        "type": "brew"
+      },
+      "language": "Python",
+      "last_commit": "2026-03-25T23:30:48Z",
+      "license": "Apache-2.0",
+      "name": "posting",
       "readme": "https://raw.githubusercontent.com/darrenburns/posting/main/README.md",
+      "repo": "darrenburns/posting",
+      "stars": 11770,
       "tags": [
         "http",
         "api",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "posting"
-      },
-      "last_commit": "2026-03-25T23:30:48Z"
+      ]
     },
     {
-      "name": "rebels-in-the-sky",
-      "repo": "ricott1/rebels-in-the-sky",
-      "description": "P2P terminal game about space pirates playing basketball across the galaxy",
-      "category": "Games",
-      "language": "Rust",
-      "license": "GPL-3.0",
-      "stars": 642,
-      "homepage": "https://github.com/ricott1/rebels-in-the-sky",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "ricott1",
+      "category": "Games",
+      "description": "P2P terminal game about space pirates playing basketball across the galaxy",
+      "homepage": "https://github.com/ricott1/rebels-in-the-sky",
+      "install_spec": {
+        "package": "rebels",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-03-24T21:05:42Z",
+      "license": "GPL-3.0",
+      "name": "rebels-in-the-sky",
       "readme": "https://raw.githubusercontent.com/ricott1/rebels-in-the-sky/main/README.md",
+      "repo": "ricott1/rebels-in-the-sky",
+      "stars": 643,
       "tags": [
         "game",
         "multiplayer",
         "tui"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "rebels"
-      },
-      "last_commit": "2026-03-24T21:05:42Z"
+      ]
     },
     {
-      "name": "reel",
-      "repo": "jmcntsh/reel",
-      "description": "Record and replay terminal sessions as declarative frames, safe to embed",
-      "category": "Developer tools",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 1,
-      "homepage": "https://github.com/jmcntsh/reel",
+      "added_at": "2026-04-21T23:48:41Z",
       "author": "jmcntsh",
+      "category": "Developer tools",
+      "description": "Record and replay terminal sessions as declarative frames, safe to embed",
+      "homepage": "https://github.com/jmcntsh/reel",
+      "install_spec": {
+        "package": "github.com/jmcntsh/reel/cmd/reel@latest",
+        "type": "go"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-22T19:44:17Z",
+      "license": "MIT",
+      "name": "reel",
       "readme": "https://raw.githubusercontent.com/jmcntsh/reel/main/README.md",
+      "repo": "jmcntsh/reel",
+      "stars": 1,
       "tags": [
         "recording",
         "demo",
         "tui"
-      ],
-      "install_spec": {
-        "type": "go",
-        "package": "github.com/jmcntsh/reel/cmd/reel@latest"
-      },
-      "last_commit": "2026-04-21T23:27:07Z"
+      ]
     },
     {
-      "name": "rmpc",
-      "repo": "mierak/rmpc",
-      "description": "Modern MPD client with album art, inspired by ncmpcpp and ranger",
-      "category": "Music \u0026 media",
-      "language": "Rust",
-      "license": "BSD-3-Clause",
-      "stars": 2698,
-      "homepage": "https://github.com/mierak/rmpc",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "mierak",
+      "category": "Music & media",
+      "description": "Modern MPD client with album art, inspired by ncmpcpp and ranger",
+      "homepage": "https://github.com/mierak/rmpc",
+      "install_spec": {
+        "package": "rmpc",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-23T10:28:49Z",
+      "license": "BSD-3-Clause",
+      "name": "rmpc",
       "readme": "https://raw.githubusercontent.com/mierak/rmpc/main/README.md",
+      "repo": "mierak/rmpc",
+      "stars": 2698,
       "tags": [
         "music",
         "mpd",
         "player"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "rmpc"
-      },
-      "last_commit": "2026-04-20T15:34:16Z"
+      ]
     },
     {
-      "name": "scope-tui",
-      "repo": "alemidev/scope-tui",
-      "description": "A simple oscilloscope, vectorscope, and spectroscope for your terminal",
-      "category": "Toys \u0026 visualizers",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 576,
-      "homepage": "https://github.com/alemidev/scope-tui",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "alemidev",
+      "category": "Toys & visualizers",
+      "description": "A simple oscilloscope, vectorscope, and spectroscope for your terminal",
+      "homepage": "https://github.com/alemidev/scope-tui",
+      "install_spec": {
+        "package": "scope-tui",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-03-01T08:50:33Z",
+      "license": "MIT",
+      "name": "scope-tui",
       "readme": "https://raw.githubusercontent.com/alemidev/scope-tui/dev/README.md",
+      "repo": "alemidev/scope-tui",
+      "stars": 579,
       "tags": [
         "audio",
         "visualizer",
         "tui"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "scope-tui"
-      },
-      "last_commit": "2026-03-01T08:50:33Z"
+      ]
     },
     {
-      "name": "serie",
-      "repo": "lusingander/serie",
-      "description": "Rich git commit graph in your terminal, like magic",
-      "category": "Version control",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 1892,
-      "homepage": "https://github.com/lusingander/serie",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "lusingander",
+      "category": "Version control",
+      "description": "Rich git commit graph in your terminal, like magic",
+      "homepage": "https://github.com/lusingander/serie",
+      "install_spec": {
+        "package": "serie",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-18T05:52:12Z",
+      "license": "MIT",
+      "name": "serie",
       "readme": "https://raw.githubusercontent.com/lusingander/serie/main/README.md",
+      "repo": "lusingander/serie",
+      "stars": 1893,
       "tags": [
         "git",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "serie"
-      },
-      "last_commit": "2026-04-18T05:52:12Z"
+      ]
     },
     {
-      "name": "setrixtui",
-      "repo": "Mjoyufull/Setrixtui",
-      "description": "Falling-block puzzle where the pieces turn to sand and clear by connecting same-colored regions",
-      "category": "Games",
-      "language": "Rust",
-      "license": "GPL-3.0",
-      "stars": 133,
-      "homepage": "https://github.com/Mjoyufull/Setrixtui",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "Mjoyufull",
+      "category": "Games",
+      "description": "Falling-block puzzle where the pieces turn to sand and clear by connecting same-colored regions",
+      "homepage": "https://github.com/Mjoyufull/Setrixtui",
+      "install_spec": {
+        "package": "setrixtui",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-03-13T16:55:43Z",
+      "license": "GPL-3.0",
+      "name": "setrixtui",
       "readme": "https://raw.githubusercontent.com/Mjoyufull/Setrixtui/main/README.md",
+      "repo": "Mjoyufull/Setrixtui",
+      "stars": 134,
       "tags": [
         "game",
         "puzzle",
         "tui"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "setrixtui"
-      },
-      "last_commit": "2026-03-13T16:55:43Z"
+      ]
     },
     {
-      "name": "soft-serve",
-      "repo": "charmbracelet/soft-serve",
-      "description": "The mighty, self-hostable Git server with an SSH-accessible TUI",
-      "category": "Version control",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 6810,
-      "homepage": "https://github.com/charmbracelet/soft-serve",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "charmbracelet",
+      "category": "Version control",
+      "description": "The mighty, self-hostable Git server with an SSH-accessible TUI",
+      "homepage": "https://github.com/charmbracelet/soft-serve",
+      "install_spec": {
+        "package": "soft-serve",
+        "type": "brew"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-22T14:14:46Z",
+      "license": "MIT",
+      "name": "soft-serve",
       "readme": "https://raw.githubusercontent.com/charmbracelet/soft-serve/main/README.md",
+      "repo": "charmbracelet/soft-serve",
+      "stars": 6812,
       "tags": [
         "git",
         "ssh",
         "server",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "soft-serve"
-      },
-      "last_commit": "2026-04-22T14:14:46Z"
+      ]
     },
     {
-      "name": "spotify-player",
-      "repo": "aome510/spotify-player",
-      "description": "Spotify client in the terminal with streaming, Spotify Connect, lyrics, and audio visualization",
-      "category": "Music \u0026 media",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 6613,
-      "homepage": "https://github.com/aome510/spotify-player",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "aome510",
+      "binary": "spotify_player",
+      "category": "Music & media",
+      "description": "Spotify client in the terminal with streaming, Spotify Connect, lyrics, and audio visualization",
+      "homepage": "https://github.com/aome510/spotify-player",
+      "install_spec": {
+        "package": "spotify_player",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-10T13:53:16Z",
+      "license": "MIT",
+      "name": "spotify-player",
       "readme": "https://raw.githubusercontent.com/aome510/spotify-player/master/README.md",
+      "repo": "aome510/spotify-player",
+      "stars": 6617,
       "tags": [
         "music",
         "spotify",
         "player"
-      ],
-      "binary": "spotify_player",
-      "install_spec": {
-        "type": "brew",
-        "package": "spotify_player"
-      },
-      "last_commit": "2026-04-10T13:53:16Z"
+      ]
     },
     {
-      "name": "superfile",
-      "repo": "yorukot/superfile",
-      "description": "Pretty fancy and modern terminal file manager",
-      "category": "File management",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 17193,
-      "homepage": "https://github.com/yorukot/superfile",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "yorukot",
+      "category": "File management",
+      "description": "Pretty fancy and modern terminal file manager",
+      "homepage": "https://github.com/yorukot/superfile",
+      "install_spec": {
+        "package": "superfile",
+        "type": "brew"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-23T13:50:44Z",
+      "license": "MIT",
+      "name": "superfile",
       "readme": "https://raw.githubusercontent.com/yorukot/superfile/main/README.md",
+      "repo": "yorukot/superfile",
+      "stars": 17194,
       "tags": [
         "file-manager",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "superfile"
-      },
-      "last_commit": "2026-04-21T22:13:05Z"
+      ]
     },
     {
-      "name": "syscgo-tui",
-      "repo": "Nomadcxx/sysc-Go",
-      "description": "Interactive TUI launcher for fire, matrix rain, fireworks, and other terminal animations",
-      "category": "Toys \u0026 visualizers",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 132,
-      "homepage": "https://github.com/Nomadcxx/sysc-Go",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "Nomadcxx",
+      "binary": "syscgo-tui",
+      "category": "Toys & visualizers",
+      "description": "Interactive TUI launcher for fire, matrix rain, fireworks, and other terminal animations",
+      "homepage": "https://github.com/Nomadcxx/sysc-Go",
+      "install_spec": {
+        "package": "github.com/Nomadcxx/sysc-Go/cmd/syscgo-tui@latest",
+        "type": "go"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-19T15:26:55Z",
+      "license": "MIT",
+      "name": "syscgo-tui",
       "readme": "https://raw.githubusercontent.com/Nomadcxx/sysc-Go/master/README.md",
+      "repo": "Nomadcxx/sysc-Go",
+      "stars": 132,
       "tags": [
         "animation",
         "screensaver",
         "ascii"
-      ],
-      "binary": "syscgo-tui",
-      "install_spec": {
-        "type": "go",
-        "package": "github.com/Nomadcxx/sysc-Go/cmd/syscgo-tui@latest"
-      },
-      "last_commit": "2026-04-19T15:26:55Z"
+      ]
     },
     {
-      "name": "television",
-      "repo": "alexpasmantier/television",
-      "description": "Fast and versatile fuzzy finder TUI for files, git, env, docker, and more",
-      "category": "Shell utilities",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 5740,
-      "homepage": "https://github.com/alexpasmantier/television",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "alexpasmantier",
+      "category": "Shell utilities",
+      "description": "Fast and versatile fuzzy finder TUI for files, git, env, docker, and more",
+      "homepage": "https://github.com/alexpasmantier/television",
+      "install_spec": {
+        "package": "television",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-16T08:05:36Z",
+      "license": "MIT",
+      "name": "television",
       "readme": "https://raw.githubusercontent.com/alexpasmantier/television/main/README.md",
+      "repo": "alexpasmantier/television",
+      "stars": 5750,
       "tags": [
         "fuzzy-finder",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "television"
-      },
-      "last_commit": "2026-04-16T08:05:36Z"
+      ]
     },
     {
-      "name": "termusic",
-      "repo": "tramhao/termusic",
-      "description": "Terminal music player inspired by Lolcatjams, with playlists, tag editing, and podcast support",
-      "category": "Music \u0026 media",
-      "language": "Rust",
-      "license": "GPL-3.0",
-      "stars": 1979,
-      "homepage": "https://github.com/tramhao/termusic",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "tramhao",
+      "category": "Music & media",
+      "description": "Terminal music player inspired by Lolcatjams, with playlists, tag editing, and podcast support",
+      "homepage": "https://github.com/tramhao/termusic",
+      "install_spec": {
+        "package": "termusic",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-17T09:27:08Z",
+      "license": "GPL-3.0",
+      "name": "termusic",
       "readme": "https://raw.githubusercontent.com/tramhao/termusic/master/README.md",
+      "repo": "tramhao/termusic",
+      "stars": 1981,
       "tags": [
         "music",
         "player",
         "audio"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "termusic"
-      },
-      "last_commit": "2026-04-17T09:27:08Z"
+      ]
     },
     {
-      "name": "tetrigo",
-      "repo": "Broderick-Westrope/tetrigo",
-      "description": "Play Tetris in your terminal, following the official 2009 design guideline",
-      "category": "Games",
-      "language": "Go",
-      "license": "GPL-3.0",
-      "stars": 656,
-      "homepage": "https://github.com/Broderick-Westrope/tetrigo",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "Broderick-Westrope",
+      "category": "Games",
+      "description": "Play Tetris in your terminal, following the official 2009 design guideline",
+      "homepage": "https://github.com/Broderick-Westrope/tetrigo",
+      "install_spec": {
+        "package": "github.com/Broderick-Westrope/tetrigo/cmd/tetrigo@latest",
+        "type": "go"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-05T21:51:57Z",
+      "license": "GPL-3.0",
+      "name": "tetrigo",
       "readme": "https://raw.githubusercontent.com/Broderick-Westrope/tetrigo/main/README.md",
+      "repo": "Broderick-Westrope/tetrigo",
+      "stars": 656,
       "tags": [
         "game",
         "tetris",
         "tui"
-      ],
-      "install_spec": {
-        "type": "go",
-        "package": "github.com/Broderick-Westrope/tetrigo/cmd/tetrigo@latest"
-      },
-      "last_commit": "2026-04-05T21:51:57Z"
+      ]
     },
     {
-      "name": "toofan",
-      "repo": "vyrx-dev/toofan",
-      "description": "Lightning-fast typing TUI with live WPM, multiple modes, themes, and offline-only history",
-      "category": "Productivity",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 135,
-      "homepage": "https://github.com/vyrx-dev/toofan",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "vyrx-dev",
+      "category": "Productivity",
+      "description": "Lightning-fast typing TUI with live WPM, multiple modes, themes, and offline-only history",
+      "homepage": "https://github.com/vyrx-dev/toofan",
+      "install_spec": {
+        "package": "github.com/vyrx-dev/toofan@latest",
+        "type": "go"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-19T19:18:06Z",
+      "license": "MIT",
+      "name": "toofan",
       "readme": "https://raw.githubusercontent.com/vyrx-dev/toofan/master/README.md",
+      "repo": "vyrx-dev/toofan",
+      "stars": 136,
       "tags": [
         "typing",
         "practice",
         "game"
-      ],
-      "install_spec": {
-        "type": "go",
-        "package": "github.com/vyrx-dev/toofan@latest"
-      },
-      "last_commit": "2026-04-19T19:18:06Z"
+      ]
     },
     {
-      "name": "vhs",
-      "repo": "charmbracelet/vhs",
-      "description": "Write terminal GIFs as code for integration testing and demos",
-      "category": "Developer tools",
-      "language": "Go",
-      "license": "MIT",
-      "stars": 19468,
-      "homepage": "https://github.com/charmbracelet/vhs",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "charmbracelet",
+      "category": "Developer tools",
+      "description": "Write terminal GIFs as code for integration testing and demos",
+      "homepage": "https://github.com/charmbracelet/vhs",
+      "install_spec": {
+        "package": "vhs",
+        "type": "brew"
+      },
+      "language": "Go",
+      "last_commit": "2026-04-22T14:14:48Z",
+      "license": "MIT",
+      "name": "vhs",
       "readme": "https://raw.githubusercontent.com/charmbracelet/vhs/main/README.md",
+      "repo": "charmbracelet/vhs",
+      "stars": 19475,
       "tags": [
         "gif",
         "recording",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "vhs"
-      },
-      "last_commit": "2026-04-22T14:14:48Z"
+      ]
     },
     {
-      "name": "weathr",
-      "repo": "Veirt/weathr",
-      "description": "Terminal weather app with live ASCII animations for rain, snow, storms, and sky",
-      "category": "Toys \u0026 visualizers",
-      "language": "Rust",
-      "license": "GPL-3.0",
-      "stars": 2736,
-      "homepage": "https://github.com/Veirt/weathr",
+      "added_at": "2026-04-22T16:24:54Z",
       "author": "Veirt",
+      "category": "Toys & visualizers",
+      "description": "Terminal weather app with live ASCII animations for rain, snow, storms, and sky",
+      "homepage": "https://github.com/Veirt/weathr",
+      "install_spec": {
+        "package": "weathr",
+        "type": "cargo"
+      },
+      "language": "Rust",
+      "last_commit": "2026-03-31T04:52:34Z",
+      "license": "GPL-3.0",
+      "name": "weathr",
       "readme": "https://raw.githubusercontent.com/Veirt/weathr/main/README.md",
+      "repo": "Veirt/weathr",
+      "stars": 2740,
       "tags": [
         "weather",
         "animation",
         "ascii"
-      ],
-      "install_spec": {
-        "type": "cargo",
-        "package": "weathr"
-      },
-      "last_commit": "2026-03-31T04:52:34Z"
+      ]
     },
     {
-      "name": "yazi",
-      "repo": "sxyazi/yazi",
-      "description": "Blazing-fast terminal file manager based on async I/O",
-      "category": "File management",
-      "language": "Rust",
-      "license": "MIT",
-      "stars": 36911,
-      "homepage": "https://github.com/sxyazi/yazi",
+      "added_at": "2026-04-21T23:26:08Z",
       "author": "sxyazi",
+      "category": "File management",
+      "description": "Blazing-fast terminal file manager based on async I/O",
+      "homepage": "https://github.com/sxyazi/yazi",
+      "install_spec": {
+        "package": "yazi",
+        "type": "brew"
+      },
+      "language": "Rust",
+      "last_commit": "2026-04-22T11:52:40Z",
+      "license": "MIT",
+      "name": "yazi",
       "readme": "https://raw.githubusercontent.com/sxyazi/yazi/main/README.md",
+      "repo": "sxyazi/yazi",
+      "stars": 36951,
       "tags": [
         "file-manager",
         "tui"
-      ],
-      "install_spec": {
-        "type": "brew",
-        "package": "yazi"
-      },
-      "last_commit": "2026-04-22T11:52:40Z"
+      ]
     }
   ],
   "categories": [
     {
-      "name": "Dashboards",
-      "count": 2
+      "count": 2,
+      "name": "Dashboards"
     },
     {
-      "name": "Data tools",
-      "count": 1
+      "count": 1,
+      "name": "Data tools"
     },
     {
-      "name": "Databases",
-      "count": 1
+      "count": 1,
+      "name": "Databases"
     },
     {
-      "name": "DevOps",
-      "count": 3
+      "count": 3,
+      "name": "DevOps"
     },
     {
-      "name": "Developer tools",
-      "count": 4
+      "count": 5,
+      "name": "Developer tools"
     },
     {
-      "name": "Documentation",
-      "count": 2
+      "count": 2,
+      "name": "Documentation"
     },
     {
-      "name": "File management",
-      "count": 2
+      "count": 2,
+      "name": "File management"
     },
     {
-      "name": "Games",
-      "count": 8
+      "count": 8,
+      "name": "Games"
     },
     {
-      "name": "HTTP clients",
-      "count": 2
+      "count": 2,
+      "name": "HTTP clients"
     },
     {
-      "name": "Music \u0026 media",
-      "count": 4
+      "count": 4,
+      "name": "Music & media"
     },
     {
-      "name": "Productivity",
-      "count": 2
+      "count": 2,
+      "name": "Productivity"
     },
     {
-      "name": "Shell utilities",
-      "count": 3
+      "count": 3,
+      "name": "Shell utilities"
     },
     {
-      "name": "Toys \u0026 visualizers",
-      "count": 5
+      "count": 5,
+      "name": "Toys & visualizers"
     },
     {
-      "name": "Version control",
-      "count": 4
+      "count": 4,
+      "name": "Version control"
     }
-  ]
+  ],
+  "generated_at": "2026-04-23T17:00:07.863617504Z",
+  "schema_version": 1,
+  "source_commit": "74e11a9f115c225b1ca1b705d3e5d8cd0ef66197"
 }
