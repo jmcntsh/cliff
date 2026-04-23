@@ -23,9 +23,10 @@ type installResultMsg struct {
 	Result install.Result
 }
 
-// installStartedMsg fires synchronously from runInstallCmd's tea.Cmd
-// with the cancel func for the in-flight install. The receiver stashes
-// it so `esc` in modeInstallRunning can kill the child process.
+// installStartedMsg fires synchronously from runPkgCmd's tea.Cmd with
+// the cancel func for the in-flight child process. The receiver
+// stashes it so `esc` in modePkgRunning can kill whatever is running
+// (install, uninstall, or upgrade — the envelope doesn't care).
 type installStartedMsg struct {
 	Cancel context.CancelFunc
 }
@@ -45,40 +46,28 @@ var program *tea.Program
 // after tea.NewProgram and before user input can trigger an install.
 func SetProgram(p *tea.Program) { program = p }
 
-// runInstallCmd kicks off the install in a background goroutine and
-// returns an installStartedMsg immediately with the cancel func. As the
-// install runs, stdout/stderr lines are forwarded to the UI via
-// installLineMsg, and completion is reported via installResultMsg.
-func runInstallCmd(app *catalog.App) tea.Cmd {
+// runPkgCmd kicks off a package operation — install, uninstall, or
+// upgrade — in a background goroutine and returns an installStartedMsg
+// immediately with the cancel func. As the op runs, stdout/stderr lines
+// are forwarded via installLineMsg, and completion is reported via
+// installResultMsg. The caller passes the pre-derived shell command
+// (via pkgOpCommand) so this runner is op-agnostic: install.StreamCmd
+// doesn't care whether `cmd` is `brew install foo`, `brew uninstall
+// foo`, or `brew upgrade foo` — it just runs it and captures output.
+//
+// Consolidates the former runInstallCmd / runUninstallCmd /
+// runUpgradeCmd trio, which were identical except for the install
+// variant hard-coding InstallSpec.Shell(). Now the "what string to
+// run" decision lives in one place (pkgOpCommand) and this runner is
+// the one place that spawns a goroutine around StreamCmd.
+func runPkgCmd(app *catalog.App, cmd string) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
-			// Always release context resources. On esc, cancel() is also
-			// invoked from the UI to kill the child; calling it twice is
-			// safe. Without this defer, a normal completion leaks the
-			// context's internal goroutine per install.
-			defer cancel()
-			res := install.Stream(ctx, app, func(line string) {
-				if program != nil {
-					program.Send(installLineMsg{Line: line})
-				}
-			})
-			if program != nil {
-				program.Send(installResultMsg{Result: res})
-			}
-		}()
-		return installStartedMsg{Cancel: cancel}
-	}
-}
-
-// runUninstallCmd mirrors runInstallCmd but drives UninstallCommand
-// through StreamCmd. Shares the same installLineMsg/installResultMsg
-// envelope so the running/result views can consume one stream. The
-// receiver decides which verb to render based on r.installOp.
-func runUninstallCmd(app *catalog.App, cmd string) tea.Cmd {
-	return func() tea.Msg {
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
+			// Always release context resources. On esc, cancel() is
+			// also invoked from the UI to kill the child; calling it
+			// twice is safe. Without this defer, a normal completion
+			// leaks the context's internal goroutine per op.
 			defer cancel()
 			res := install.StreamCmd(ctx, app, cmd, func(line string) {
 				if program != nil {
@@ -93,54 +82,42 @@ func runUninstallCmd(app *catalog.App, cmd string) tea.Cmd {
 	}
 }
 
-// runUpgradeCmd is the upgrade-specific analog of the runners above.
-// Structurally identical to runUninstallCmd — same StreamCmd, same
-// envelope — but takes the pre-derived UpgradeCommand string. Lives
-// beside its siblings so the three package-op runners read as one
-// shape with one parameter changed.
-func runUpgradeCmd(app *catalog.App, cmd string) tea.Cmd {
-	return func() tea.Msg {
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			defer cancel()
-			res := install.StreamCmd(ctx, app, cmd, func(line string) {
-				if program != nil {
-					program.Send(installLineMsg{Line: line})
-				}
-			})
-			if program != nil {
-				program.Send(installResultMsg{Result: res})
-			}
-		}()
-		return installStartedMsg{Cancel: cancel}
-	}
-}
-
-// installConfirmView is the modal shown after `i`. It displays the exact
-// shell command that will run and a stronger warning for script-type
-// installs (per CLAUDE.md §3 and notes/manifest.md).
-func installConfirmView(app *catalog.App, width int) string {
-	if app == nil || app.InstallSpec == nil {
+// pkgConfirmView is the unified confirm modal for any package op. The
+// op argument drives labels ("Install" / "Uninstall" / "Update") and
+// the command-derivation rule; the script-type warning is install-only
+// because uninstall/upgrade don't shell out to an unsolicited remote
+// script (they run the inverse / latest of the known install verb).
+//
+// When the op isn't supported for the current app (no install spec,
+// script-type without author-provided [uninstall] / [upgrade] blocks,
+// etc.) we show an honest "can't X" message with the install type
+// named — the user can then close and try a different action. The
+// update handler treats ⏎ on this state as a dismiss.
+func pkgConfirmView(app *catalog.App, op pkgOp, width int) string {
+	if app == nil {
 		return modalBox(width,
-			theme.WarnText.Render("No install available")+"\n\n"+
-				theme.MutedText.Render("This app has no install spec in the manifest.")+"\n\n"+
+			theme.WarnText.Render("No app selected")+"\n\n"+
 				theme.MutedText.Render("esc close"))
 	}
 
-	header := theme.AccentBold.Render("Install ") +
+	cmd := pkgOpCommand(app, op)
+	if cmd == "" {
+		return pkgNotAvailableView(app, op, width)
+	}
+
+	header := theme.AccentBold.Render(op.verb()+" ") +
 		theme.FocusText.Render(app.Name) +
 		theme.AccentBold.Render("?")
 	// Literal command as the subline — more useful than naming the
-	// package manager once you know that's where 'i' goes, and it's
-	// what CLAUDE.md §3 asks the confirm modal to surface anyway.
-	subline := theme.MutedText.Render(app.InstallSpec.Shell())
+	// package manager and what CLAUDE.md §3 asks the confirm modal
+	// to surface anyway.
+	subline := theme.MutedText.Render(cmd)
 
-	body := []string{
-		header,
-		subline,
-	}
+	body := []string{header, subline}
 
-	if app.InstallSpec.Type == "script" {
+	// Script-type warning is install-only: uninstall/upgrade use
+	// derived commands that don't curl-pipe-sh an unknown URL.
+	if op == pkgOpInstall && app.InstallSpec != nil && app.InstallSpec.Type == "script" {
 		body = append(body,
 			"",
 			theme.WarnText.Render("⚠  This is a `script`-type install."),
@@ -150,23 +127,63 @@ func installConfirmView(app *catalog.App, width int) string {
 		)
 	}
 
-	body = append(body,
-		"",
-		theme.MutedText.Render("⏎ run     esc cancel"),
-	)
-
+	body = append(body, "", theme.MutedText.Render("⏎ run     esc cancel"))
 	return modalBox(width, strings.Join(body, "\n"))
 }
 
-func installRunningView(app *catalog.App, vp viewport.Model, hasOutput bool, width int) string {
-	header := theme.AccentBold.Render("Installing ") + theme.FocusText.Render(app.Name)
+// pkgNotAvailableView renders the "can't X this app" message for ops
+// that have no recipe in this manifest. Rendered verb changes per op;
+// the rest of the copy is shared.
+func pkgNotAvailableView(app *catalog.App, op pkgOp, width int) string {
+	typeLabel := "unknown"
+	if app != nil && app.InstallSpec != nil && app.InstallSpec.Type != "" {
+		typeLabel = app.InstallSpec.Type
+	}
 
+	var title, recipeKind string
+	switch op {
+	case pkgOpUninstall:
+		title = "Can't uninstall " + app.Name
+		recipeKind = "[uninstall]"
+	case pkgOpUpgrade:
+		title = "Can't update " + app.Name
+		recipeKind = "[upgrade]"
+	default:
+		// The install path reaches this branch only when there's no
+		// install spec at all (rare — the registry lint rejects it).
+		return modalBox(width,
+			theme.WarnText.Render("No install available")+"\n\n"+
+				theme.MutedText.Render("This app has no install spec in the manifest.")+"\n\n"+
+				theme.MutedText.Render("esc close"))
+	}
+
+	body := []string{
+		theme.WarnText.Render(title),
+		"",
+		theme.MutedText.Render(fmt.Sprintf("cliff has no recipe for install type: %s", typeLabel)),
+	}
+	if typeLabel == "script" {
+		body = append(body,
+			theme.MutedText.Render(fmt.Sprintf("Script-type apps need an author-provided %s block", recipeKind)),
+			theme.MutedText.Render("in the registry manifest."),
+		)
+	}
+	body = append(body, "", theme.MutedText.Render("esc close"))
+	return modalBox(width, strings.Join(body, "\n"))
+}
+
+// pkgRunningView is the unified streaming-logs modal. The op argument
+// drives the header verb ("Installing" / "Uninstalling" / "Updating");
+// everything else — subline command, viewport, footer — is identical
+// across ops, which is why the triplet collapsed to one function.
+func pkgRunningView(app *catalog.App, op pkgOp, vp viewport.Model, hasOutput bool, width int) string {
+	header := theme.AccentBold.Render(op.runningVerb()+" ") + theme.FocusText.Render(app.Name)
 	outputBlock := renderLogViewport(vp, hasOutput, "(starting…)")
 
 	body := []string{
 		header,
 		"",
-		theme.MutedText.Render(app.InstallSpec.Shell()),
+		theme.MutedText.Render(pkgOpCommand(app, op)),
 		"",
 		outputBlock,
 		"",
@@ -175,26 +192,31 @@ func installRunningView(app *catalog.App, vp viewport.Model, hasOutput bool, wid
 	return modalBox(width, strings.Join(body, "\n"))
 }
 
-func installResultView(res *install.Result, vp viewport.Model, launchMethod launcher.Method, launchErr error, overrides map[string]string, width int) string {
+// pkgResultView is the unified terminal modal. The launcher + PathWarning
+// follow-ups are install-only — uninstall/upgrade render a plain
+// dismiss footer regardless of result, because once an app is gone (or
+// upgraded) there's no hand-off step that would be useful.
+func pkgResultView(res *install.Result, op pkgOp, vp viewport.Model, launchMethod launcher.Method, launchErr error, overrides map[string]string, width int) string {
 	if res == nil {
 		return modalBox(width, "no result")
 	}
 	app := res.App
+	appName := "app"
+	if app != nil {
+		appName = app.Name
+	}
 
 	var status string
 	if res.Err == nil {
-		status = theme.OKText.Render("✓ Installed " + app.Name)
+		status = theme.OKText.Render("✓ " + op.pastVerb() + " " + appName)
 	} else {
-		status = theme.ErrorText.Render(fmt.Sprintf("✗ Install failed (exit %d)", res.ExitCode))
+		status = theme.ErrorText.Render(fmt.Sprintf("✗ %s failed (exit %d)", op.verb(), res.ExitCode))
 	}
 
 	hasOutput := strings.TrimSpace(res.Output) != ""
 	outputBlock := renderLogViewport(vp, hasOutput, "(no output)")
 
 	body := []string{status}
-	// Surface an actionable hint for recognized failures (e.g. "brew
-	// isn't installed"). Placed right after the status so it's the
-	// first thing the user sees below ✗.
 	if hint := install.Diagnose(*res); hint != "" {
 		body = append(body,
 			"",
@@ -202,13 +224,10 @@ func installResultView(res *install.Result, vp viewport.Model, launchMethod laun
 				Foreground(theme.ColorWarn).
 				Render(hint))
 	}
-	// Successful install but the binary landed off $PATH. The ✓
-	// marker reflects the filesystem (honest), but the user's shell
-	// still can't run the app until the dir is on $PATH. We offer to
-	// do the dotfile edit in-place (see modeFixPath) — "press ⏎" is
-	// the prompt because it's the only remaining step between "app
-	// installed" and "I can type its name in a new terminal."
-	if res.Err == nil && res.PathWarning != nil {
+
+	// Install-only follow-up section: PathWarning + launcher.
+	installing := op == pkgOpInstall
+	if installing && res.Err == nil && res.PathWarning != nil {
 		pw := res.PathWarning
 		headline := fmt.Sprintf("Installed to %s, but that directory isn't on your $PATH.", pw.Dir)
 		prompt := "Press ⏎ to add it automatically, or esc to dismiss."
@@ -221,20 +240,10 @@ func installResultView(res *install.Result, vp viewport.Model, launchMethod laun
 		)
 	}
 
-	// Clean success with no PathWarning: offer to launch the app in
-	// a new tab (when the host terminal supports it). This is the
-	// zero-friction finish line — install → ⏎ → running in the next
-	// tab while cliff stays open in this one. When we can't spawn a
-	// tab, fall back to "copy command" so the user still has a single
-	// keystroke path to trying the app out.
-	showLaunch := res.Err == nil && res.PathWarning == nil && app != nil && app.ResolvedBinaryName(overrides) != ""
+	showLaunch := installing && res.Err == nil && res.PathWarning == nil && app != nil && app.ResolvedBinaryName(overrides) != ""
 	if showLaunch {
 		bin := app.ResolvedBinaryName(overrides)
 		if launchErr != nil {
-			// The previous Launch attempt on this modal failed.
-			// Surface the error in-line so the user sees why their
-			// tab didn't open, and leave the affordance as "copy"
-			// so a second Enter does something useful.
 			body = append(body,
 				"",
 				theme.ErrorText.Render("× Couldn't open a new tab: "+launchErr.Error()),
@@ -259,17 +268,18 @@ func installResultView(res *install.Result, vp viewport.Model, launchMethod laun
 		"",
 		outputBlock,
 	)
-	// Footer hint: three mutually exclusive cases, labeled so ⏎ never
-	// does a surprise thing.
+
+	// Footer hint. Install has three mutually-exclusive Enter meanings;
+	// uninstall/upgrade have exactly one (dismiss).
 	switch {
-	case res.Err == nil && res.PathWarning != nil:
+	case installing && res.Err == nil && res.PathWarning != nil:
 		body = append(body, "", theme.MutedText.Render("⏎ fix PATH  ↑↓/jk scroll  esc close"))
-	case showLaunch && launchErr == nil && launchMethod != launcher.MethodUnsupported:
+	case installing && showLaunch && launchErr == nil && launchMethod != launcher.MethodUnsupported:
 		body = append(body, "", theme.MutedText.Render("⏎ open in new tab  c copy  ↑↓/jk scroll  esc close"))
-	case showLaunch:
+	case installing && showLaunch:
 		body = append(body, "", theme.MutedText.Render("⏎ copy command  ↑↓/jk scroll  esc close"))
 	default:
-		body = append(body, "", theme.MutedText.Render("↑↓/jk scroll  pgup/pgdn page  esc close"))
+		body = append(body, "", theme.MutedText.Render("↑↓/jk scroll  pgup/pgdn page  ⏎ or esc close"))
 	}
 	return modalBox(width, strings.Join(body, "\n"))
 }
