@@ -8,6 +8,31 @@ Last updated: 2026-04-23.
 
 ## Latest change
 
+`v0.1.14` (2026-04-23): fix-ups on top of v0.1.13. Two problems the
+first cut of "New this week" had: (1) it was falling back to
+`last_commit` because the registry wasn't stamping `added_at` yet,
+so the row read as "projects that pushed code this week" — mostly
+famous Charmbracelet repos and two of my own — rather than "new to
+cliff." (2) Even once `added_at` was present, the AddedAt branch
+had no cap, so on launch week — where every app was added in the
+past 7 days — the row showed the whole catalog (44/44) and conveyed
+nothing.
+
+Fix (1) shipped in [cliff-registry#6](https://github.com/jmcntsh/cliff-registry/pull/6):
+`cmd/build` now runs `git log --diff-filter=A --follow --format=%aI`
+against each manifest to find the commit that first added it, and
+writes that as RFC3339 `added_at` on every app. CI publish job
+switched to `fetch-depth: 0` so `git log` can see history older
+than the clone's default depth. Live `registry.cliff.sh/index.json`
+now has `added_at` populated on all 44 apps, and the embedded
+snapshot was refreshed in the same cut (first real run of the
+auto-PR workflow — pushed the branch fine, repo setting needed a
+flip to let GHA open PRs, now enabled for next time). Fix (2)
+collapsed `newSet`'s two branches into one ranked-window function
+that caps both paths at 10: pick AddedAt when any app has it, else
+LastCommit, take top `newCap` inside `newWindow`. Same steady-state
+behavior, correct launch-week behavior, net fewer lines.
+
 `v0.1.13` (2026-04-23): four internal/UX changes in one cut. (1) New
 "New" row in the sidebar — between "All" and
 "Installed" — showing recently-added apps. Until the registry starts
@@ -183,7 +208,7 @@ doesn't disappear after a successful off-PATH install.
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index except for the cliff entry, which lands on
   registry.cliff.sh as soon as the `apps/cliff.toml` PR merges.
-- **GitHub releases** — latest `v0.1.13` (2026-04-23). Darwin and
+- **GitHub releases** — latest `v0.1.14` (2026-04-23). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
@@ -200,13 +225,8 @@ doesn't disappear after a successful off-PATH install.
 - **Phase 2** — curation surfaces. Submit flow landed in v0.1.11
   (TUI `+` keybind and `cliff submit`); registry-side issue
   template open in [cliff-registry#4](https://github.com/jmcntsh/cliff-registry/pull/4).
-  "New this week" surface landed unreleased (2026-04-23); the
-  weekly digest is still pending.
-- **Registry `added_at` field** — the "New" sidebar row falls back
-  to `last_commit` (capped) until the registry CI starts stamping
-  an `added_at` timestamp per manifest at merge time. Once that
-  lands, the fallback clause + cap in `internal/ui/filter.go` stop
-  applying automatically — no client change required.
+  "New this week" surface landed in v0.1.13, flipped to real
+  add-order in v0.1.14; the weekly digest is still pending.
 - **Registry dispatch token** — the auto-PR snapshot workflow has
   a `repository_dispatch` trigger, but `cliff-registry`'s CI needs
   `CLIFF_CLIENT_DISPATCH_TOKEN` configured and the 5-line notify
