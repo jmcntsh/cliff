@@ -73,14 +73,7 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		res := m.Result
 		r.installRes = &res
 		r.installCancel = nil
-		switch r.installOp {
-		case pkgOpUninstall:
-			r.mode = modeUninstallResult
-		case pkgOpUpgrade:
-			r.mode = modeUpgradeResult
-		default:
-			r.mode = modeInstallResult
-		}
+		r.mode = modePkgResult
 		// Reset per-modal transient error from any previous install.
 		r.launchErr = nil
 		// Replace with the canonical full output from Result — Stream's
@@ -140,26 +133,14 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateHelp(m)
 		case modeReadme:
 			return r.updateReadme(m)
-		case modeInstallConfirm:
-			return r.updateInstallConfirm(m)
-		case modeInstallRunning:
-			return r.updateInstallRunning(m)
-		case modeInstallResult:
-			return r.updateInstallResult(m)
-		case modeUninstallConfirm:
-			return r.updateUninstallConfirm(m)
-		case modeUninstallRunning:
-			return r.updateUninstallRunning(m)
-		case modeUninstallResult:
-			return r.updateUninstallResult(m)
+		case modePkgConfirm:
+			return r.updatePkgConfirm(m)
+		case modePkgRunning:
+			return r.updatePkgRunning(m)
+		case modePkgResult:
+			return r.updatePkgResult(m)
 		case modeManage:
 			return r.updateManage(m)
-		case modeUpgradeConfirm:
-			return r.updateUpgradeConfirm(m)
-		case modeUpgradeRunning:
-			return r.updateUpgradeRunning(m)
-		case modeUpgradeResult:
-			return r.updateUpgradeResult(m)
 		case modeFixPath:
 			return r.updateFixPath(m)
 		case modeSubmit:
@@ -240,7 +221,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installApp = app
 			r.installOp = pkgOpInstall
 			r.installReturnMode = modeBrowse
-			r.mode = modeInstallConfirm
+			r.mode = modePkgConfirm
 		}
 		return r, nil
 	case key.Matches(msg, keys.Upgrade):
@@ -252,7 +233,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installApp = app
 			r.installOp = pkgOpUpgrade
 			r.installReturnMode = modeBrowse
-			r.mode = modeUpgradeConfirm
+			r.mode = modePkgConfirm
 		}
 		return r, nil
 	case key.Matches(msg, keys.Uninstall):
@@ -265,7 +246,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installApp = app
 			r.installOp = pkgOpUninstall
 			r.installReturnMode = modeBrowse
-			r.mode = modeUninstallConfirm
+			r.mode = modePkgConfirm
 		}
 		return r, nil
 	case key.Matches(msg, keys.CopyInstall):
@@ -365,7 +346,7 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installApp = app
 			r.installOp = pkgOpInstall
 			r.installReturnMode = modeReadme
-			r.mode = modeInstallConfirm
+			r.mode = modePkgConfirm
 			return r, nil
 		}
 	}
@@ -374,7 +355,7 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installApp = app
 			r.installOp = pkgOpInstall
 			r.installReturnMode = modeReadme
-			r.mode = modeInstallConfirm
+			r.mode = modePkgConfirm
 			return r, nil
 		}
 	}
@@ -383,7 +364,7 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installApp = app
 			r.installOp = pkgOpUpgrade
 			r.installReturnMode = modeReadme
-			r.mode = modeUpgradeConfirm
+			r.mode = modePkgConfirm
 			return r, nil
 		}
 	}
@@ -392,7 +373,7 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installApp = app
 			r.installOp = pkgOpUninstall
 			r.installReturnMode = modeReadme
-			r.mode = modeUninstallConfirm
+			r.mode = modePkgConfirm
 			return r, nil
 		}
 	}
@@ -448,63 +429,71 @@ func (r Root) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return r.refilter(), cmd
 }
 
-func (r Root) updateInstallConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+// updatePkgConfirm handles the confirm modal for any package op
+// (install, uninstall, upgrade). ⏎ runs the op's command via the
+// unified runPkgCmd; esc backs out. Op-specific command derivation
+// lives in pkgOpCommand — the rest of this handler is the same for
+// all three verbs, which is the whole reason the modes collapsed.
+func (r Root) updatePkgConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Escape, keys.Quit):
 		r.mode = r.installReturnMode
 		r.installApp = nil
+		r.installOp = pkgOpInstall
 		return r, nil
 	case key.Matches(msg, keys.Enter):
-		if r.installApp == nil || r.installApp.InstallSpec == nil {
-			// "No install available" dismissal on ⏎: return to caller
-			// (readme if that's where ⏎/i was pressed) rather than
-			// dumping the user back to the catalog.
+		cmd := pkgOpCommand(r.installApp, r.installOp)
+		if cmd == "" {
+			// Either no app, no install spec (install side), or no
+			// derived recipe (uninstall/upgrade for script-type
+			// without an explicit block). The view surfaces this
+			// plainly; ⏎ here is a dismiss, not a silent error.
 			r.mode = r.installReturnMode
 			r.installApp = nil
+			r.installOp = pkgOpInstall
 			return r, nil
 		}
 		app := r.installApp
-		// Clear any previous install's line buffer and viewport when
-		// entering the running view so each install starts blank.
+		// Clear any previous op's line buffer and viewport when
+		// entering the running view so each run starts blank.
 		r.installLines = nil
 		r.installViewport.SetContent("")
 		r.installViewport.GotoTop()
-		r.mode = modeInstallRunning
-		return r, runInstallCmd(app)
+		r.mode = modePkgRunning
+		return r, runPkgCmd(app, cmd)
 	}
 	return r, nil
 }
 
-func (r Root) updateInstallRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// esc/q cancels the in-flight install. The context cancellation
-	// kills the child via exec.CommandContext; Stream then returns with
-	// a non-nil Err and we transition to modeInstallResult normally.
+// updatePkgRunning is op-agnostic: esc cancels the in-flight child via
+// the stored context.CancelFunc, everything else scrolls the log
+// viewport. Completion arrives as installResultMsg and the top-level
+// receiver flips us into modePkgResult; the op carried on r.installOp
+// then drives which verb + follow-ups the result view renders.
+func (r Root) updatePkgRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, keys.Escape, keys.Quit) {
 		if r.installCancel != nil {
 			r.installCancel()
 		}
 		return r, nil
 	}
-	// All other keys get routed to the log viewport so the user can
-	// scroll through output while the install is still running.
 	var cmd tea.Cmd
 	r.installViewport, cmd = r.installViewport.Update(msg)
 	return r, cmd
 }
 
-func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// Enter has three different meanings depending on the install
-	// outcome, so the footer view labels them explicitly and this
-	// switch branches on the same conditions:
-	//
-	//   1. PathWarning pending → "fix PATH" (jump into modeFixPath).
-	//   2. Clean success + launcher supported → "open in new tab".
-	//   3. Clean success + launcher unsupported → "copy command".
-	//   4. Install failed or no binary → plain dismiss.
-	//
-	// esc/q/← always means "back out" to whatever called the install.
+// updatePkgResult handles the terminal modal for any package op. For
+// install there are three possible ⏎ meanings (fix PATH, open in new
+// tab, or plain dismiss) — all op-specific logic is gated on
+// r.installOp == pkgOpInstall. Uninstall and upgrade have no follow-
+// up action: ⏎ and esc both dismiss, like the old updateUninstallResult.
+func (r Root) updatePkgResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	installing := r.installOp == pkgOpInstall
+
 	if key.Matches(msg, keys.Enter) {
-		if r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
+		// Install: PathWarning gets priority — the user can't run the
+		// freshly-installed binary until PATH is fixed.
+		if installing && r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
 			plan, err := pathfix.Detect(r.installRes.PathWarning.Dir)
 			r.fixPlan = plan
 			r.fixErr = err
@@ -518,25 +507,27 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.launchErr = nil
 			return r, nil
 		}
-		// Clean success path: try to launch.
-		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
+		// Install clean-success path: offer to launch the binary.
+		if installing && r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
 			bin := r.installApp.ResolvedBinaryName(r.binOverrides)
 			if bin != "" {
 				return r.tryLaunchOrCopy(bin)
 			}
 		}
-		// Fallback: plain dismiss (install failed, or no binary).
-		r.mode = modeBrowse
+		// Everything else (uninstall, upgrade, install with no
+		// binary, failed ops): plain dismiss.
+		r.mode = r.installReturnMode
 		r.installApp = nil
 		r.installRes = nil
+		r.installOp = pkgOpInstall
 		r.launchErr = nil
 		return r, nil
 	}
-	// `c` as an explicit "copy command" shortcut — labeled in the
-	// footer when the launch affordance is also available, so users
-	// can choose the fallback without triggering a tab they don't
-	// want. Harmless no-op when there's no binary.
-	if msg.String() == "c" {
+	// `c` is the install-only explicit "copy command" shortcut — the
+	// escape hatch when the launch affordance is available but the
+	// user doesn't want a new tab. Ignored for other ops since there's
+	// nothing meaningful to copy post-uninstall/upgrade.
+	if installing && msg.String() == "c" {
 		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
 			bin := r.installApp.ResolvedBinaryName(r.binOverrides)
 			if bin != "" {
@@ -552,81 +543,38 @@ func (r Root) updateInstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.mode = r.installReturnMode
 		r.installApp = nil
 		r.installRes = nil
+		r.installOp = pkgOpInstall
 		r.launchErr = nil
 		return r, nil
 	}
-	// Everything else scrolls the log viewport.
 	var cmd tea.Cmd
 	r.installViewport, cmd = r.installViewport.Update(msg)
 	return r, cmd
 }
 
-// updateUninstallConfirm handles the "Uninstall <app>?" modal. ⏎ runs
-// the derived UninstallCommand via StreamCmd; esc backs out. Mirrors
-// updateInstallConfirm except there's no PathWarning / launcher flow
-// to worry about on the result side.
-func (r Root) updateUninstallConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch {
-	case key.Matches(msg, keys.Escape, keys.Quit):
-		r.mode = r.installReturnMode
-		r.installApp = nil
-		return r, nil
-	case key.Matches(msg, keys.Enter):
-		if r.installApp == nil {
-			r.mode = r.installReturnMode
-			r.installApp = nil
-			return r, nil
-		}
-		cmd := r.installApp.UninstallCommand()
-		if cmd == "" {
-			// No uninstall recipe available (script-type without
-			// manifest [uninstall] block). The view will have
-			// already communicated that; bail on ⏎ as a dismiss.
-			r.mode = r.installReturnMode
-			r.installApp = nil
-			return r, nil
-		}
-		app := r.installApp
-		r.installLines = nil
-		r.installViewport.SetContent("")
-		r.installViewport.GotoTop()
-		r.mode = modeUninstallRunning
-		return r, runUninstallCmd(app, cmd)
+// pkgOpCommand returns the literal shell command to run for the given
+// app + op, or "" when none is available ("no install spec", "no
+// uninstall recipe", etc.). Centralizing the derivation here keeps
+// updatePkgConfirm and the running-state view pulling the same string
+// for the same (app, op) pair — the old triplet had three near-
+// identical InstallSpec.Shell / UninstallCommand / UpgradeCommand
+// branches, one per handler, which is the exact duplication this
+// helper exists to eliminate.
+func pkgOpCommand(app *catalog.App, op pkgOp) string {
+	if app == nil {
+		return ""
 	}
-	return r, nil
-}
-
-// updateUninstallRunning is the direct analog of updateInstallRunning:
-// esc cancels the in-flight process (via context), everything else
-// scrolls the log viewport. Completion arrives as installResultMsg,
-// which the receiver routes to modeUninstallResult because r.installOp
-// is pkgOpUninstall.
-func (r Root) updateUninstallRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if key.Matches(msg, keys.Escape, keys.Quit) {
-		if r.installCancel != nil {
-			r.installCancel()
+	switch op {
+	case pkgOpUninstall:
+		return app.UninstallCommand()
+	case pkgOpUpgrade:
+		return app.UpgradeCommand()
+	default:
+		if app.InstallSpec == nil {
+			return ""
 		}
-		return r, nil
+		return app.InstallSpec.Shell()
 	}
-	var cmd tea.Cmd
-	r.installViewport, cmd = r.installViewport.Update(msg)
-	return r, cmd
-}
-
-// updateUninstallResult shows the final state of an uninstall. There's
-// no PathWarning / launcher branching here — once the app is gone, the
-// only hand-off is "close the modal", so ⏎ and esc both dismiss.
-func (r Root) updateUninstallResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
-		r.mode = r.installReturnMode
-		r.installApp = nil
-		r.installRes = nil
-		r.installOp = pkgOpInstall
-		return r, nil
-	}
-	var cmd tea.Cmd
-	r.installViewport, cmd = r.installViewport.Update(msg)
-	return r, cmd
 }
 
 // updateManage drives the horizontal picker shown when ⏎ is pressed on
@@ -665,13 +613,13 @@ func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.installOp = pkgOpUpgrade
 			r.manageActions = nil
 			r.manageCursor = 0
-			r.mode = modeUpgradeConfirm
+			r.mode = modePkgConfirm
 			return r, nil
 		case manageUninstall:
 			r.installOp = pkgOpUninstall
 			r.manageActions = nil
 			r.manageCursor = 0
-			r.mode = modeUninstallConfirm
+			r.mode = modePkgConfirm
 			return r, nil
 		case manageReadme:
 			// The manage picker might have been opened from readme
@@ -712,75 +660,6 @@ func manageStep(actions []manageAction, cursor, delta int) int {
 	}
 	// Off the end without finding an enabled slot — stay put.
 	return cursor
-}
-
-// updateUpgradeConfirm mirrors updateUninstallConfirm — ⏎ runs the
-// upgrade command via StreamCmd, esc backs out to whatever opened the
-// confirm modal. Structurally identical to the uninstall path because
-// upgrade is "install but with a different command string."
-func (r Root) updateUpgradeConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch {
-	case key.Matches(msg, keys.Escape, keys.Quit):
-		r.mode = r.installReturnMode
-		r.installApp = nil
-		r.installOp = pkgOpInstall
-		return r, nil
-	case key.Matches(msg, keys.Enter):
-		if r.installApp == nil {
-			r.mode = r.installReturnMode
-			r.installApp = nil
-			r.installOp = pkgOpInstall
-			return r, nil
-		}
-		cmd := r.installApp.UpgradeCommand()
-		if cmd == "" {
-			// No upgrade recipe. The view surfaces this; ⏎ here is
-			// a dismiss.
-			r.mode = r.installReturnMode
-			r.installApp = nil
-			r.installOp = pkgOpInstall
-			return r, nil
-		}
-		app := r.installApp
-		r.installLines = nil
-		r.installViewport.SetContent("")
-		r.installViewport.GotoTop()
-		r.mode = modeUpgradeRunning
-		return r, runUpgradeCmd(app, cmd)
-	}
-	return r, nil
-}
-
-// updateUpgradeRunning: esc cancels the child process via context, all
-// other keys scroll the log viewport. Completion arrives via
-// installResultMsg which the top-level receiver routes to
-// modeUpgradeResult based on r.installOp == pkgOpUpgrade.
-func (r Root) updateUpgradeRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if key.Matches(msg, keys.Escape, keys.Quit) {
-		if r.installCancel != nil {
-			r.installCancel()
-		}
-		return r, nil
-	}
-	var cmd tea.Cmd
-	r.installViewport, cmd = r.installViewport.Update(msg)
-	return r, cmd
-}
-
-// updateUpgradeResult mirrors updateUninstallResult: no launcher or
-// PathWarning branching (the app was already on PATH pre-upgrade, so
-// there's no "open in new tab" load-bearing step), ⏎ and esc dismiss.
-func (r Root) updateUpgradeResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
-		r.mode = r.installReturnMode
-		r.installApp = nil
-		r.installRes = nil
-		r.installOp = pkgOpInstall
-		return r, nil
-	}
-	var cmd tea.Cmd
-	r.installViewport, cmd = r.installViewport.Update(msg)
-	return r, cmd
 }
 
 // tryLaunchOrCopy runs the post-install "open in new tab" action.
@@ -883,7 +762,7 @@ func (r Root) updateFixPath(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if key.Matches(msg, keys.Escape, keys.Quit, keys.Left) {
 		r = r.clearFixPath()
-		r.mode = modeInstallResult
+		r.mode = modePkgResult
 		return r, nil
 	}
 	return r, nil

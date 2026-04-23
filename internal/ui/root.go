@@ -32,22 +32,26 @@ const (
 	modeHelp
 	modeReadme
 	modeManage // picker: Update / Uninstall / Readme for installed apps
-	modeInstallConfirm
-	modeInstallRunning
-	modeInstallResult
-	modeUninstallConfirm
-	modeUninstallRunning
-	modeUninstallResult
-	modeUpgradeConfirm
-	modeUpgradeRunning
-	modeUpgradeResult
+
+	// Package-operation modes are shared across install / uninstall /
+	// upgrade. The specific verb is carried on r.installOp, which the
+	// view/update handlers branch on for labels and op-specific flows
+	// (PathWarning + launcher handoff are install-only). Collapsing
+	// the previous 3×3 = 9 modes into a single 3-phase machine halves
+	// the dispatch table and keeps the three ops in lockstep by
+	// construction — adding a new phase (e.g. a post-diagnose retry
+	// screen) doesn't require adding three parallel modes.
+	modePkgConfirm
+	modePkgRunning
+	modePkgResult
+
 	modeFixPath // confirm + result screen for auto-adding a dir to $PATH
 	modeSubmit  // confirm screen for opening the registry submit form in a browser
 )
 
-// pkgOp is the active package operation for the shared install/uninstall
-// state machine. Install is the zero value so existing code paths that
-// leave it unset stay on the install side by default.
+// pkgOp is the active package operation for the shared confirm/running/
+// result state machine above. Install is the zero value so paths that
+// leave r.installOp unset stay on the install side by default.
 type pkgOp int
 
 const (
@@ -55,6 +59,46 @@ const (
 	pkgOpUninstall
 	pkgOpUpgrade
 )
+
+// verb returns the short gerund used in running-state headers ("Installing",
+// "Uninstalling", "Updating"). Centralizing the strings keeps
+// pkgRunningView consistent with the confirm/result headers without
+// each call site having to duplicate a switch.
+func (o pkgOp) verb() string {
+	switch o {
+	case pkgOpUninstall:
+		return "Uninstall"
+	case pkgOpUpgrade:
+		return "Update"
+	default:
+		return "Install"
+	}
+}
+
+// runningVerb is the -ing form used on the progress modal.
+func (o pkgOp) runningVerb() string {
+	switch o {
+	case pkgOpUninstall:
+		return "Uninstalling"
+	case pkgOpUpgrade:
+		return "Updating"
+	default:
+		return "Installing"
+	}
+}
+
+// pastVerb is the past-tense form used on the success line ("Installed foo",
+// "Uninstalled foo", "Updated foo").
+func (o pkgOp) pastVerb() string {
+	switch o {
+	case pkgOpUninstall:
+		return "Uninstalled"
+	case pkgOpUpgrade:
+		return "Updated"
+	default:
+		return "Installed"
+	}
+}
 
 type sortMode int
 

@@ -71,45 +71,21 @@ func (r Root) View() string {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center, helpView(r.layout, r.helpReturnMode))
 	}
 
-	if r.mode == modeInstallConfirm {
+	if r.mode == modePkgConfirm {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			installConfirmView(r.installApp, r.width))
+			pkgConfirmView(r.installApp, r.installOp, r.width))
 	}
-	if r.mode == modeInstallRunning {
+	if r.mode == modePkgRunning {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			installRunningView(r.installApp, r.installViewport, len(r.installLines) > 0, r.width))
+			pkgRunningView(r.installApp, r.installOp, r.installViewport, len(r.installLines) > 0, r.width))
 	}
-	if r.mode == modeInstallResult {
+	if r.mode == modePkgResult {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			installResultView(r.installRes, r.installViewport, r.launchMethod, r.launchErr, r.binOverrides, r.width))
-	}
-	if r.mode == modeUninstallConfirm {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			uninstallConfirmView(r.installApp, r.width))
-	}
-	if r.mode == modeUninstallRunning {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			uninstallRunningView(r.installApp, r.installViewport, len(r.installLines) > 0, r.width))
-	}
-	if r.mode == modeUninstallResult {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			uninstallResultView(r.installRes, r.installViewport, r.width))
+			pkgResultView(r.installRes, r.installOp, r.installViewport, r.launchMethod, r.launchErr, r.binOverrides, r.width))
 	}
 	if r.mode == modeManage {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
 			manageView(r.installApp, r.manageActions, r.manageCursor, r.width))
-	}
-	if r.mode == modeUpgradeConfirm {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			upgradeConfirmView(r.installApp, r.width))
-	}
-	if r.mode == modeUpgradeRunning {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			upgradeRunningView(r.installApp, r.installViewport, len(r.installLines) > 0, r.width))
-	}
-	if r.mode == modeUpgradeResult {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			upgradeResultView(r.installRes, r.installViewport, r.width))
 	}
 	if r.mode == modeFixPath {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
@@ -207,30 +183,22 @@ func (r Root) footer() string {
 			readmeVerb = "⏎ manage · U update · u uninstall"
 		}
 		hints = readmeVerb + " · o github · ? help · ← back"
-	case modeInstallConfirm:
+	case modePkgConfirm:
 		hints = "⏎ run · esc cancel"
-	case modeInstallRunning:
-		hints = "↑↓ scroll logs  esc cancel install"
-	case modeInstallResult:
-		if r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
+	case modePkgRunning:
+		// Label the cancel with the op's verb so "esc" is unambiguous —
+		// "cancel install" reads differently from "cancel uninstall,"
+		// and we want the user to see exactly which child process
+		// they're about to kill.
+		hints = "↑↓ scroll logs  esc cancel " + strings.ToLower(r.installOp.verb())
+	case modePkgResult:
+		if r.installOp == pkgOpInstall && r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
 			hints = "⏎ fix PATH · esc close"
 		} else {
 			hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
 		}
-	case modeUninstallConfirm:
-		hints = "⏎ run · esc cancel"
-	case modeUninstallRunning:
-		hints = "↑↓ scroll logs  esc cancel uninstall"
-	case modeUninstallResult:
-		hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
 	case modeManage:
 		hints = "←→ move · ⏎ go · esc cancel"
-	case modeUpgradeConfirm:
-		hints = "⏎ run · esc cancel"
-	case modeUpgradeRunning:
-		hints = "↑↓ scroll logs  esc cancel update"
-	case modeUpgradeResult:
-		hints = "↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
 	case modeFixPath:
 		if r.fixApplied {
 			hints = "⏎ or esc close"
