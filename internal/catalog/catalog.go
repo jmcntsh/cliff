@@ -21,6 +21,19 @@ type App struct {
 	Tags        []string     `json:"tags,omitempty"`
 	Binary      string       `json:"binary,omitempty"` // override for the installed executable name; defaults to repo basename
 	InstallSpec *InstallSpec `json:"install_spec,omitempty"`
+
+	// LastCommit is the most recent commit on the project's default
+	// branch, snapshotted at index build time. Already emitted by the
+	// registry's CI; used here to power the "New" sidebar surface and
+	// as a fallback signal for freshness when AddedAt isn't set yet.
+	LastCommit time.Time `json:"last_commit,omitempty"`
+	// AddedAt is when the manifest first landed in the registry. The
+	// registry doesn't populate this yet (planned), so clients treat
+	// zero as "unknown, fall back to LastCommit for the New filter".
+	// When present, it takes precedence: a freshly-added app with an
+	// old last commit (e.g. a well-maintained classic a curator just
+	// noticed) should still appear under New.
+	AddedAt time.Time `json:"added_at,omitempty"`
 	// Optional author-provided recipes. Required for type=script (no
 	// general reverse exists); optional otherwise, where presence
 	// overrides the derivation in InstallSpec.UninstallShell/UpgradeShell.
@@ -165,6 +178,20 @@ func (a *App) ResolvedBinaryName(overrides map[string]string) string {
 		}
 	}
 	return a.BinaryName()
+}
+
+// FreshnessTime returns the timestamp the "New" filter should compare
+// against. Precedence: AddedAt (when the registry stamps it) → LastCommit
+// → zero time. Centralized here so the sidebar, grid badge, and any
+// future "new this week" surface all agree on the same rule.
+func (a *App) FreshnessTime() time.Time {
+	if a == nil {
+		return time.Time{}
+	}
+	if !a.AddedAt.IsZero() {
+		return a.AddedAt
+	}
+	return a.LastCommit
 }
 
 // BinaryName returns the expected executable name for the app. If the
