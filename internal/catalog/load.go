@@ -11,9 +11,18 @@ import (
 // has something to show on first launch before the live fetch completes
 // and whenever the network is unavailable.
 //
-// Refresh with:
+// This file is refreshed automatically by the refresh-snapshot workflow
+// (see .github/workflows/refresh-snapshot.yml), which opens a PR
+// whenever the live registry diverges. To force a refresh outside the
+// normal cadence, run the workflow manually from the Actions tab, or —
+// as a one-off — curl the live file yourself:
 //
-//	curl -fsSL https://registry.cliff.sh/index.json -o internal/catalog/data/index.json
+//	curl -fsSL https://registry.cliff.sh/index.json | \
+//	  jq -S . > internal/catalog/data/index.json
+//
+// The `jq -S` pass is what the workflow also does; keep the manual
+// path aligned so a hand-bump doesn't immediately re-trigger the
+// workflow with "unchanged data, whitespace diff."
 //
 //go:embed data/index.json
 var embeddedIndex []byte

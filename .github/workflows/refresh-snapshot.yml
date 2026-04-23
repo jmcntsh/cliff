@@ -1,0 +1,95 @@
+name: refresh-snapshot
+
+# Keeps internal/catalog/data/index.json — the embedded offline
+# fallback — in sync with the live registry index without anyone
+# having to remember to curl + commit. Three triggers:
+#
+#   * schedule   — weekly sweep, in case the remote dispatch is missed
+#                  (cliff-registry CI failure, token expiry, etc.). The
+#                  schedule window is offset so the PR lands in the
+#                  maintainer's inbox on a weekday morning.
+#   * workflow_dispatch — manual "force a refresh now" button. Shows
+#                  up in the Actions tab with one input so you can
+#                  refresh with no-PR if the snapshot already matches.
+#   * repository_dispatch — remote kick from cliff-registry's CI on
+#                  every successful merge to main. See the snippet in
+#                  notes/registry-dispatch.md for the one-liner the
+#                  registry side needs. Event type is "registry-
+#                  published" so the registry repo can fire other
+#                  events at cliff without collision.
+#
+# The job is idempotent: if the live index equals what's already
+# committed, it exits with a friendly log line and opens no PR.
+
+on:
+  schedule:
+    - cron: '15 12 * * 1' # Mondays, 12:15 UTC
+  workflow_dispatch:
+  repository_dispatch:
+    types: [registry-published]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch latest registry index
+        id: fetch
+        run: |
+          set -euo pipefail
+          url="${CLIFF_REGISTRY_URL:-https://registry.cliff.sh/index.json}"
+          mkdir -p internal/catalog/data
+          curl -fsSL --retry 3 --retry-delay 5 \
+            "$url" -o internal/catalog/data/index.json
+          # Normalize so whitespace-only diffs don't create churn.
+          # `jq -S` sorts keys and uses stable indentation; same input
+          # file maps to the same output byte-for-byte.
+          jq -S . internal/catalog/data/index.json > internal/catalog/data/index.normalized.json
+          mv internal/catalog/data/index.normalized.json internal/catalog/data/index.json
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet -- internal/catalog/data/index.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            # Surface a summary in the Actions log so we can spot
+            # unexpected churn without opening the PR.
+            git --no-pager diff --stat -- internal/catalog/data/index.json
+          fi
+
+      - name: No changes, exit cleanly
+        if: steps.diff.outputs.changed == 'false'
+        run: echo "Embedded snapshot already matches upstream — no PR needed."
+
+      # We use a separate PR branch rather than pushing straight to
+      # main: the refresh touches a code-gen-like file and I want the
+      # diff reviewable (and revertible via a simple PR close) rather
+      # than a silent bump that lands in the next release.
+      - name: Open pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: refresh-snapshot
+          commit-message: "chore: refresh embedded registry snapshot"
+          title: "chore: refresh embedded registry snapshot"
+          body: |
+            Automated refresh of `internal/catalog/data/index.json` to
+            match the current live registry at `registry.cliff.sh`.
+
+            Triggered by: `${{ github.event_name }}`
+
+            * On merge, the next `go build` picks up the new embedded
+              fallback for offline first-launch and network-failure cases.
+            * Close without merging if the refresh window is awkward —
+              the workflow will open a fresh PR on the next trigger.
+          delete-branch: true
+          labels: |
+            chore
+            automated
