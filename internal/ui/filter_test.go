@@ -157,7 +157,7 @@ func TestFilter_New_FallbackCapsToTopN(t *testing.T) {
 	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
 	// 15 apps, all inside the 7-day LastCommit window, none with
 	// AddedAt → fallback branch triggers and the cap kicks in at
-	// newFallbackCap (10). The 5 oldest should be dropped.
+	// newCap (10). The 5 oldest should be dropped.
 	apps := make([]catalog.App, 0, 15)
 	for i := 0; i < 15; i++ {
 		apps = append(apps, catalog.App{
@@ -167,10 +167,35 @@ func TestFilter_New_FallbackCapsToTopN(t *testing.T) {
 		})
 	}
 	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
-	if len(got) != newFallbackCap {
-		t.Fatalf("expected cap of %d, got %d", newFallbackCap, len(got))
+	if len(got) != newCap {
+		t.Fatalf("expected cap of %d, got %d", newCap, len(got))
 	}
-	// The 10 kept should be the freshest 10 (i=0..9).
+	for i, app := range got {
+		wantName := fmt.Sprintf("app-%02d", i)
+		if app.Name != wantName {
+			t.Errorf("at %d: expected %s, got %s", i, wantName, app.Name)
+		}
+	}
+}
+
+func TestFilter_New_AddedAtCapsToTopN(t *testing.T) {
+	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
+	// Launch-week shape: 15 apps all added within the past week via
+	// AddedAt. Without a cap this returns the whole catalog and the
+	// "New" row shows everything — useless. With the cap we keep the
+	// 10 most recently added.
+	apps := make([]catalog.App, 0, 15)
+	for i := 0; i < 15; i++ {
+		apps = append(apps, catalog.App{
+			Name:    fmt.Sprintf("app-%02d", i),
+			Repo:    fmt.Sprintf("a/app-%02d", i),
+			AddedAt: now.Add(-time.Duration(i) * time.Hour),
+		})
+	}
+	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
+	if len(got) != newCap {
+		t.Fatalf("expected cap of %d, got %d", newCap, len(got))
+	}
 	for i, app := range got {
 		wantName := fmt.Sprintf("app-%02d", i)
 		if app.Name != wantName {
