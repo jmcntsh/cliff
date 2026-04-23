@@ -4,9 +4,39 @@ What's actually shipped right now. Updated on every ship. Source of
 truth for "is X live?" — principles docs ([`CLAUDE.md`](CLAUDE.md))
 describe intent, not state.
 
-Last updated: 2026-04-22.
+Last updated: 2026-04-23.
 
 ## Latest change
+
+*Unreleased* (2026-04-23): four internal/UX changes bundled for the
+next tag. (1) New "New" row in the sidebar — between "All" and
+"Installed" — showing recently-added apps. Until the registry starts
+stamping an `added_at` field on each manifest (the correct signal),
+the client falls back to `last_commit` within a 7-day window, capped
+to the 10 freshest apps so the row reads as a curated surface rather
+than "every active project in the catalog." Once the registry emits
+`added_at`, the cap drops away automatically. (2) The install /
+uninstall / upgrade mode trio collapsed into a single three-phase
+state machine (`modePkgConfirm` / `Running` / `Result`) parameterized
+by `pkgOp`; removes ~381 lines and one file. No user-visible
+behavior change — the three ops still render different verbs and the
+install-only launcher / PathWarning follow-ups still fire exactly
+where they used to, just out of one view function instead of three
+parallel ones. (3) New `cliff bin-audit` maintainer subcommand turns
+`~/.cliff/logs/bin-audit.log` — the append-only record of
+detected ≠ derived binary-name events — into paste-ready
+`binary = "…"` overrides for PRs against the registry. Two output
+formats: `summary` (human-scannable table) and `toml-patches`
+(ready to paste per manifest). Closes the loop on the "how do we
+backfill `binary` without hand-editing every manifest" question by
+just reading what cliff has already been observing. (4) New
+`.github/workflows/refresh-snapshot.yml` auto-PRs an update to the
+embedded `internal/catalog/data/index.json` whenever the live
+registry diverges. Three triggers: weekly cron (safety net), manual
+button, and `repository_dispatch` from `cliff-registry`'s CI on
+merge (see `notes/registry-dispatch.md` for the 5-line snippet the
+registry side needs). The embedded fallback stops drifting by
+default. `reel` is unchanged and stays.
 
 `v0.1.12` (2026-04-22): looping reel preview above the readme view,
 plus two supporting fixes. First in-TUI use of
@@ -170,8 +200,19 @@ doesn't disappear after a successful off-PATH install.
 - **Phase 2** — curation surfaces. Submit flow landed in v0.1.11
   (TUI `+` keybind and `cliff submit`); registry-side issue
   template open in [cliff-registry#4](https://github.com/jmcntsh/cliff-registry/pull/4).
-  Still pending: a "new this week" surface in the TUI, and the
-  weekly digest.
+  "New this week" surface landed unreleased (2026-04-23); the
+  weekly digest is still pending.
+- **Registry `added_at` field** — the "New" sidebar row falls back
+  to `last_commit` (capped) until the registry CI starts stamping
+  an `added_at` timestamp per manifest at merge time. Once that
+  lands, the fallback clause + cap in `internal/ui/filter.go` stop
+  applying automatically — no client change required.
+- **Registry dispatch token** — the auto-PR snapshot workflow has
+  a `repository_dispatch` trigger, but `cliff-registry`'s CI needs
+  `CLIFF_CLIENT_DISPATCH_TOKEN` configured and the 5-line notify
+  step in `notes/registry-dispatch.md` added before the remote
+  kick fires. Until then the weekly cron + manual button still
+  keep the snapshot fresh.
 
 ## Known issues / gotchas
 
