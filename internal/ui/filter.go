@@ -22,35 +22,30 @@ const categoryInstalled = "__installed__"
 // doesn't live in catalog.Categories.
 const categoryNew = "__new__"
 
-// newWindow is how far back "new" reaches when we have a reliable
-// "added to cliff" timestamp (App.AddedAt). One week matches the
+// newWindow is how far back "new" reaches. One week matches the
 // "new this week" language in README/CLAUDE.
 const newWindow = 7 * 24 * time.Hour
 
-// newFallbackWindow is the window we use when falling back to
-// LastCommit. LastCommit means "this project pushed code recently,"
-// not "this project is new to cliff" — two very different claims.
-// We still use a week here so mid-week visitors see something, but
-// the fallback is additionally capped to newFallbackCap entries (via
-// fallbackFreshest) so the row reads as a curated surface rather
-// than "every actively-maintained tool in the catalog."
-const newFallbackWindow = 7 * 24 * time.Hour
-
-// newFallbackCap bounds the LastCommit-fallback variant of "New" so
-// it stays a small, curated-feeling row. Irrelevant once the registry
-// starts emitting AddedAt — at that point the 7-day AddedAt window is
-// naturally small and the cap drops away.
-const newFallbackCap = 10
+// newCap bounds how many apps land in the "New" row regardless of
+// signal. On launch week the 7-day window is every app, and a row
+// that shows everything shows nothing; the cap keeps the row scannable
+// and curated-feeling in both the AddedAt and LastCommit branches.
+const newCap = 10
 
 // newSet returns the set of repos that qualify as "New" at time `now`.
-// When any app has a non-zero AddedAt, the AddedAt branch wins
-// exclusively: every qualifying app is one whose AddedAt is inside
-// newWindow. Otherwise we fall back to the top-newFallbackCap apps by
-// LastCommit that are inside newFallbackWindow. Returning a set
-// (rather than a predicate) is what lets the fallback enforce a cap
-// without each isNew call needing to re-rank the whole catalog.
+// When any app has a non-zero AddedAt, we use AddedAt exclusively
+// (LastCommit means "pushed code recently," a very different claim);
+// otherwise we fall back to LastCommit. In both branches we keep the
+// top newCap by timestamp inside newWindow. Returning a set rather
+// than a predicate is what lets the cap be enforced once for the
+// whole render instead of per-row.
 func newSet(apps []catalog.App, now time.Time) map[string]struct{} {
-	set := make(map[string]struct{})
+	pick := func(a *catalog.App) time.Time {
+		if !a.AddedAt.IsZero() {
+			return a.AddedAt
+		}
+		return time.Time{}
+	}
 	hasAddedAt := false
 	for i := range apps {
 		if !apps[i].AddedAt.IsZero() {
@@ -58,15 +53,10 @@ func newSet(apps []catalog.App, now time.Time) map[string]struct{} {
 			break
 		}
 	}
-	if hasAddedAt {
-		for i := range apps {
-			a := &apps[i]
-			if !a.AddedAt.IsZero() && now.Sub(a.AddedAt) <= newWindow {
-				set[a.Repo] = struct{}{}
-			}
-		}
-		return set
+	if !hasAddedAt {
+		pick = func(a *catalog.App) time.Time { return a.LastCommit }
 	}
+
 	type ranked struct {
 		repo string
 		t    time.Time
@@ -74,8 +64,9 @@ func newSet(apps []catalog.App, now time.Time) map[string]struct{} {
 	eligible := make([]ranked, 0, len(apps))
 	for i := range apps {
 		a := &apps[i]
-		if !a.LastCommit.IsZero() && now.Sub(a.LastCommit) <= newFallbackWindow {
-			eligible = append(eligible, ranked{repo: a.Repo, t: a.LastCommit})
+		t := pick(a)
+		if !t.IsZero() && now.Sub(t) <= newWindow {
+			eligible = append(eligible, ranked{repo: a.Repo, t: t})
 		}
 	}
 	sort.Slice(eligible, func(i, j int) bool {
@@ -84,9 +75,10 @@ func newSet(apps []catalog.App, now time.Time) map[string]struct{} {
 		}
 		return eligible[i].repo < eligible[j].repo
 	})
-	if len(eligible) > newFallbackCap {
-		eligible = eligible[:newFallbackCap]
+	if len(eligible) > newCap {
+		eligible = eligible[:newCap]
 	}
+	set := make(map[string]struct{}, len(eligible))
 	for _, r := range eligible {
 		set[r.repo] = struct{}{}
 	}
