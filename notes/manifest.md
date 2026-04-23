@@ -52,6 +52,14 @@ package = "lazygit"    # or `command = "..."` for type=script
   `btm`). Optional; clients fall back to the repo basename. Used by
   uninstall (for `type = "go"`) and installed-state detection.
 
+  Backfill path: when the client installs an app whose produced
+  binary disagrees with the derived basename, the disagreement is
+  recorded in `~/.cliff/logs/bin-audit.log`. Run
+  `cliff bin-audit --format=toml-patches` to turn that log into
+  paste-ready `binary = "…"` overrides to PR against the registry.
+  This is the lazy way to close the loop — every install is quietly
+  building the worklist.
+
 ### Reserved
 - `tryable` — bool. If true, a future `cliff try <name>` will run
   the app in an ephemeral sandbox. Deferred.
