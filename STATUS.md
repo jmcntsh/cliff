@@ -8,8 +8,8 @@ Last updated: 2026-04-23.
 
 ## Latest change
 
-*Unreleased* (2026-04-23): four internal/UX changes bundled for the
-next tag. (1) New "New" row in the sidebar — between "All" and
+`v0.1.13` (2026-04-23): four internal/UX changes in one cut. (1) New
+"New" row in the sidebar — between "All" and
 "Installed" — showing recently-added apps. Until the registry starts
 stamping an `added_at` field on each manifest (the correct signal),
 the client falls back to `last_commit` within a 7-day window, capped
@@ -183,7 +183,7 @@ doesn't disappear after a successful off-PATH install.
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index except for the cliff entry, which lands on
   registry.cliff.sh as soon as the `apps/cliff.toml` PR merges.
-- **GitHub releases** — latest `v0.1.12` (2026-04-22). Darwin and
+- **GitHub releases** — latest `v0.1.13` (2026-04-23). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
