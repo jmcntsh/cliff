@@ -59,6 +59,7 @@ type readmeModel struct {
 	fromCache      bool
 	reel           reelStrip
 	reelFetchCmd   tea.Cmd
+	hero           heroImage
 }
 
 func newReadme(app *catalog.App, width, height int) readmeModel {
@@ -70,6 +71,7 @@ func newReadme(app *catalog.App, width, height int) readmeModel {
 		loading:      true,
 		reel:         reel,
 		reelFetchCmd: fetchCmd,
+		hero:         heroImage{slug: app.Name, width: width},
 	}
 	return m.resize(width, height)
 }
@@ -130,9 +132,9 @@ func splitRepo(repo string) (string, string) {
 	return repo[:i], repo[i+1:]
 }
 
-func (m readmeModel) applyFetch(msg readmeFetchedMsg) readmeModel {
+func (m readmeModel) applyFetch(msg readmeFetchedMsg) (readmeModel, tea.Cmd) {
 	if m.app == nil || msg.repo != m.app.Repo {
-		return m
+		return m, nil
 	}
 	m.loading = false
 	r := msg.result
@@ -150,8 +152,40 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) readmeModel {
 	case r.Err != nil:
 		m.fetchErr = r.Err
 	}
-	rendered := renderMarkdown(m.raw, m.contentWidth)
+	rendered := m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
 	m.viewport.SetContent(rendered)
+
+	// Look for a hero image once we have real markdown. The hero
+	// fetches in the background; when it lands, applyHeroFetched
+	// re-renders with the rendered ANSI block spliced in at the
+	// markdown URL's position. Reel and hero coexist now — reel
+	// keeps its slot above (or to the right of) the viewport, hero
+	// lives inline within the viewport content.
+	var heroCmd tea.Cmd
+	if r.Markdown != "" && !m.hero.ready {
+		var newHero heroImage
+		newHero, heroCmd = newHeroFromMarkdown(m.app.Name, m.raw, m.app.Readme, m.contentWidth)
+		// Only replace the existing hero if we actually launched a
+		// fetch — otherwise keep the zero value so applyHeroFetched
+		// stays a no-op for stale messages.
+		if heroCmd != nil {
+			m.hero = newHero
+		}
+	}
+	return m, heroCmd
+}
+
+// applyHeroFetched routes a heroImageReadyMsg to the hero and re-runs
+// the markdown render so the rendered ANSI block gets spliced in at
+// the image's markdown position. The viewport keeps its current
+// scroll position; bubbles handles the line-count change.
+func (m readmeModel) applyHeroFetched(msg heroImageReadyMsg) readmeModel {
+	wasReady := m.hero.ready
+	m.hero = m.hero.applyHeroFetched(msg)
+	if !wasReady && m.hero.ready {
+		rendered := m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
+		m.viewport.SetContent(rendered)
+	}
 	return m
 }
 
@@ -179,7 +213,12 @@ func (m readmeModel) resize(width, height int) readmeModel {
 		vpHeight := max(bodyRows-reelRows, 1)
 		m.viewport = viewport.New(m.contentWidth, vpHeight)
 	}
-	rendered := renderMarkdown(m.raw, m.contentWidth)
+	// Keep the hero's centering width in sync with the readme content
+	// width — the right-pane reel mode narrows the readme column, so a
+	// hero centered against the full terminal width would sit off to
+	// the right of the surrounding markdown.
+	m.hero.width = m.contentWidth
+	rendered := m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
 	m.viewport.SetContent(rendered)
 	m.ready = true
 	return m
@@ -311,7 +350,20 @@ func placeholderMarkdown(app *catalog.App) string {
 	return "# " + app.Name + "\n\n*fetching from github…*\n"
 }
 
-func renderMarkdown(md string, termWidth int) string {
+func renderMarkdown(md, heroRefRaw string, termWidth int) string {
+	// Pre-process HTML <img> tags into markdown image syntax so
+	// glamour surfaces their URLs in its output. Many GitHub
+	// READMEs use HTML for alignment/sizing; without this step
+	// glamour strips the whole tag and the inline-image splice
+	// has no anchor.
+	md = HTMLImgToMarkdown(md)
+
+	// If a hero has been picked for this readme, swap its markdown
+	// image syntax for the splice placeholder before glamour sees
+	// it. This sidesteps glamour's URL wrapping/normalization
+	// quirks that broke earlier direct-match approaches.
+	md = InjectHeroPlaceholder(md, heroRefRaw)
+
 	wrap := readmeMaxContentWidth
 	if termWidth-8 < wrap {
 		wrap = max(termWidth-8, 20)

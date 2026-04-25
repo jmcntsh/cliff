@@ -32,7 +32,16 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r.resize(), nil
 
 	case readmeFetchedMsg:
-		r.readme = r.readme.applyFetch(m)
+		var cmd tea.Cmd
+		r.readme, cmd = r.readme.applyFetch(m)
+		return r, cmd
+
+	case heroImageReadyMsg:
+		// Late-arriving hero render. Routed unconditionally for the
+		// same reason reelFetchedMsg is — a fetch that completes
+		// while the user is in the help overlay should still populate
+		// the strip when they come back.
+		r.readme = r.readme.applyHeroFetched(m)
 		return r, nil
 
 	case reelFetchedMsg:
