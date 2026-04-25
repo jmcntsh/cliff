@@ -32,6 +32,10 @@ func main() {
 			os.Exit(cmdVersion())
 		case "help", "--help", "-h":
 			os.Exit(cmdHelp())
+		default:
+			fmt.Fprintf(os.Stderr, "cliff: unknown verb %q\n", os.Args[1])
+			fmt.Fprintln(os.Stderr, "run 'cliff help' for the list of verbs, or 'cliff' (no args) to launch the TUI")
+			os.Exit(2)
 		}
 	}
 	os.Exit(runTUI())
