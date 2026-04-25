@@ -117,7 +117,7 @@ func pkgConfirmView(app *catalog.App, op pkgOp, width int) string {
 
 	// Script-type warning is install-only: uninstall/upgrade use
 	// derived commands that don't curl-pipe-sh an unknown URL.
-	if op == pkgOpInstall && app.InstallSpec != nil && app.InstallSpec.Type == "script" {
+	if op == pkgOpInstall && app.PrimaryInstallSpec() != nil && app.PrimaryInstallSpec().Type == "script" {
 		body = append(body,
 			"",
 			theme.WarnText.Render("⚠  This is a `script`-type install."),
@@ -136,8 +136,8 @@ func pkgConfirmView(app *catalog.App, op pkgOp, width int) string {
 // the rest of the copy is shared.
 func pkgNotAvailableView(app *catalog.App, op pkgOp, width int) string {
 	typeLabel := "unknown"
-	if app != nil && app.InstallSpec != nil && app.InstallSpec.Type != "" {
-		typeLabel = app.InstallSpec.Type
+	if s := app.PrimaryInstallSpec(); s != nil && s.Type != "" {
+		typeLabel = s.Type
 	}
 
 	var title, recipeKind string

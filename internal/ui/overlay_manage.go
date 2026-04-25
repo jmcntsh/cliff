@@ -92,14 +92,14 @@ func manageDisabledReason(kind manageKind, app *catalog.App) string {
 	switch kind {
 	case manageUpdate:
 		typeLabel := "unknown"
-		if app != nil && app.InstallSpec != nil && app.InstallSpec.Type != "" {
-			typeLabel = app.InstallSpec.Type
+		if s := app.PrimaryInstallSpec(); s != nil && s.Type != "" {
+			typeLabel = s.Type
 		}
 		return fmt.Sprintf("No upgrade recipe available for install type: %s.", typeLabel)
 	case manageUninstall:
 		typeLabel := "unknown"
-		if app != nil && app.InstallSpec != nil && app.InstallSpec.Type != "" {
-			typeLabel = app.InstallSpec.Type
+		if s := app.PrimaryInstallSpec(); s != nil && s.Type != "" {
+			typeLabel = s.Type
 		}
 		return fmt.Sprintf("No uninstall recipe available for install type: %s.", typeLabel)
 	default:

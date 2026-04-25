@@ -79,10 +79,10 @@ type Result struct {
 // Callers in a TUI should invoke Stream off the main loop (inside a
 // tea.Cmd) since it blocks for the duration of the install.
 func Stream(ctx context.Context, app *catalog.App, onLine func(string)) Result {
-	if app == nil || app.InstallSpec == nil {
+	if app == nil || app.PrimaryInstallSpec() == nil {
 		return Result{App: app, Err: errors.New("app has no install spec")}
 	}
-	return StreamCmd(ctx, app, app.InstallSpec.Shell(), onLine)
+	return StreamCmd(ctx, app, app.PrimaryInstallSpec().Shell(), onLine)
 }
 
 // StreamCmd is Stream but for an arbitrary shell command — used by the
@@ -111,9 +111,22 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 	// "cava's binary"). Detection for brew does strictly more harm
 	// than good; for brew installs the manifest is the source of
 	// truth (package + optional `binary` override).
+	// Match cmd against any of the app's declared install methods. For
+	// single-method manifests this collapses to the primary; for
+	// multi-method ([[installs]]) we want detection to fire regardless
+	// of which method the user picked via --via.
 	var preSnap map[string]struct{}
-	isInstall := app != nil && app.InstallSpec != nil && cmd == app.InstallSpec.Shell()
-	detectable := isInstall && app.InstallSpec.Type != "brew"
+	var matchedSpec *catalog.InstallSpec
+	if app != nil {
+		for i := range app.InstallSpecs {
+			if cmd == app.InstallSpecs[i].Shell() {
+				matchedSpec = &app.InstallSpecs[i]
+				break
+			}
+		}
+	}
+	isInstall := matchedSpec != nil
+	detectable := isInstall && matchedSpec.Type != "brew"
 	if detectable {
 		preSnap = snapshotBinDirs()
 	}
@@ -171,7 +184,7 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 		// see the comment next to `detectable` above.
 		var detected []string
 		if detectable {
-			detected = scrapeBinaries(app.InstallSpec.Type, res.Output)
+			detected = scrapeBinaries(matchedSpec.Type, res.Output)
 			detected = appendUnique(detected, diffBinDirs(preSnap, snapshotBinDirs())...)
 			res.DetectedBinaries = detected
 		}
@@ -249,8 +262,8 @@ func Diagnose(res Result) string {
 	if res.Err == nil {
 		return ""
 	}
-	if res.App != nil && res.App.InstallSpec != nil && res.ExitCode == 127 {
-		if h, ok := toolHints[res.App.InstallSpec.Type]; ok {
+	if res.App != nil && res.App.PrimaryInstallSpec() != nil && res.ExitCode == 127 {
+		if h, ok := toolHints[res.App.PrimaryInstallSpec().Type]; ok {
 			return h
 		}
 	}

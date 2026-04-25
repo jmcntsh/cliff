@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -19,22 +20,62 @@ import (
 )
 
 // cmdInstall runs `cliff install <pkg>`. Looks up the app in the
-// catalog, prints the exact command that will run (same honesty the
-// TUI's confirm modal gives), then streams the install.
+// catalog, picks which install method to use (first with its tool
+// available, or --via override), prints the exact command that will
+// run (same honesty the TUI's confirm modal gives), then streams.
 //
-// Accepts --fix-path / --no-fix-path flags. When neither is given
-// and stdin is a terminal, we prompt interactively; otherwise we
-// fall back to just printing the hint (old v0.1.6 behavior), keeping
-// non-interactive pipelines deterministic.
+// Accepts --fix-path / --no-fix-path and --via <type> flags. When
+// neither fix-path flag is given and stdin is a terminal, we prompt
+// interactively; otherwise we fall back to just printing the hint
+// (old v0.1.6 behavior), keeping non-interactive pipelines
+// deterministic.
 func cmdInstall(args []string) int {
-	installArgs, mode, err := parseInstallFlags(args)
+	installArgs, mode, via, err := parseInstallFlags(args)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "cliff:", err)
 		return 2
 	}
 	return runPkgVerb("install", installArgs, func(app *catalog.App, _ map[string]string) string {
-		return app.InstallSpec.Shell()
+		spec := app.PreferredInstallSpec(via, toolAvailable)
+		if spec == nil {
+			if via != "" {
+				fmt.Fprintf(os.Stderr, "cliff: %s has no --via %s install method\n", app.Name, via)
+				fmt.Fprintf(os.Stderr, "  available methods: %s\n", installMethodsList(app))
+			}
+			return ""
+		}
+		return spec.Shell()
 	}, mode)
+}
+
+// toolAvailable reports whether the package-manager CLI for a given
+// install type is on the user's $PATH. Used by PreferredInstallSpec
+// to skip methods the user can't actually run. script returns true by
+// convention — there's no tool to probe, the shell runs the command
+// as-is, and the install's own failure surfaces if something's wrong.
+func toolAvailable(installType string) bool {
+	var bin string
+	switch installType {
+	case "brew", "cargo", "go", "npm", "pipx":
+		bin = installType
+	case "script":
+		return true
+	default:
+		return false
+	}
+	_, err := exec.LookPath(bin)
+	return err == nil
+}
+
+func installMethodsList(app *catalog.App) string {
+	if app == nil {
+		return ""
+	}
+	types := make([]string, 0, len(app.InstallSpecs))
+	for _, s := range app.InstallSpecs {
+		types = append(types, s.Type)
+	}
+	return strings.Join(types, ", ")
 }
 
 // fixPathMode controls how runPkgVerb handles a PathWarning from a
@@ -51,25 +92,37 @@ const (
 
 // parseInstallFlags is a small hand-rolled flag parser so we don't
 // pull in flag.Parse and its side effects on the global flagset.
-// Recognized flags: --fix-path, --no-fix-path. Positional args are
-// the package name. Extra flags are rejected rather than silently
-// passed through, since the rest of the CLI doesn't take any.
-func parseInstallFlags(args []string) (positional []string, mode fixPathMode, err error) {
+// Recognized flags: --fix-path, --no-fix-path, --via <type> (or
+// --via=<type>). Positional args are the package name. Extra flags
+// are rejected rather than silently passed through, since the rest
+// of the CLI doesn't take any.
+func parseInstallFlags(args []string) (positional []string, mode fixPathMode, via string, err error) {
 	mode = fixPathPromptAuto
-	for _, a := range args {
-		switch a {
-		case "--fix-path":
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--fix-path":
 			mode = fixPathAlwaysApply
-		case "--no-fix-path":
+		case a == "--no-fix-path":
 			mode = fixPathNeverApply
-		default:
-			if strings.HasPrefix(a, "-") {
-				return nil, mode, fmt.Errorf("unknown flag: %s", a)
+		case a == "--via":
+			if i+1 >= len(args) {
+				return nil, mode, "", fmt.Errorf("--via requires a value (e.g. --via brew)")
 			}
+			via = args[i+1]
+			i++
+		case strings.HasPrefix(a, "--via="):
+			via = strings.TrimPrefix(a, "--via=")
+			if via == "" {
+				return nil, mode, "", fmt.Errorf("--via requires a value (e.g. --via brew)")
+			}
+		case strings.HasPrefix(a, "-"):
+			return nil, mode, "", fmt.Errorf("unknown flag: %s", a)
+		default:
 			positional = append(positional, a)
 		}
 	}
-	return positional, mode, nil
+	return positional, mode, via, nil
 }
 
 // cmdUninstall runs `cliff uninstall <pkg>`. Prefers the manifest's
@@ -123,13 +176,21 @@ func runPkgVerb(verb string, args []string, cmdFor func(*catalog.App, map[string
 	if cmd == "" {
 		fmt.Fprintf(os.Stderr, "cliff: %s is not supported for %s (install type: %s)\n",
 			verb, app.Name, installTypeOrUnknown(app))
-		if app.InstallSpec != nil && app.InstallSpec.Type == "script" {
+		if hasScriptMethod(app) {
 			fmt.Fprintln(os.Stderr, "  script-type apps need an author-provided uninstall/upgrade recipe, not yet supported.")
 		}
 		return 1
 	}
 
-	fmt.Printf("%s %s:\n  $ %s\n\n", verbGerund(verb), app.Name, cmd)
+	if verb == "install" {
+		if method := matchInstallMethod(app, cmd); method != "" {
+			fmt.Printf("%s %s via %s:\n  $ %s\n\n", verbGerund(verb), app.Name, method, cmd)
+		} else {
+			fmt.Printf("%s %s:\n  $ %s\n\n", verbGerund(verb), app.Name, cmd)
+		}
+	} else {
+		fmt.Printf("%s %s:\n  $ %s\n\n", verbGerund(verb), app.Name, cmd)
+	}
 
 	result := install.StreamCmd(
 		context.Background(),
@@ -248,10 +309,48 @@ func printSuggestions(query string, apps []catalog.App) {
 }
 
 func installTypeOrUnknown(app *catalog.App) string {
-	if app == nil || app.InstallSpec == nil {
+	s := app.PrimaryInstallSpec()
+	if s == nil {
 		return "unknown"
 	}
-	return app.InstallSpec.Type
+	if len(app.InstallSpecs) > 1 {
+		return installMethodsList(app)
+	}
+	return s.Type
+}
+
+// hasScriptMethod reports whether any of the app's declared install
+// methods is script. Used by the verb-not-supported error to give a
+// targeted hint when at least one method is script-type — that's the
+// case where a [uninstall] / [upgrade] block would lift the refusal.
+func hasScriptMethod(app *catalog.App) bool {
+	if app == nil {
+		return false
+	}
+	for _, s := range app.InstallSpecs {
+		if s.Type == "script" {
+			return true
+		}
+	}
+	return false
+}
+
+// matchInstallMethod returns the install type (brew / cargo / go / ...)
+// whose derived Shell() equals cmd, or "" if none match. Used to
+// annotate the install output with which method was picked, so the
+// user always sees "installing chess-tui via cargo" rather than just
+// guessing from the command line. For uninstall/upgrade commands the
+// match won't find anything, and the caller skips the annotation.
+func matchInstallMethod(app *catalog.App, cmd string) string {
+	if app == nil {
+		return ""
+	}
+	for _, s := range app.InstallSpecs {
+		if s.Shell() == cmd {
+			return s.Type
+		}
+	}
+	return ""
 }
 
 // handlePathWarning is the CLI counterpart of the TUI's modeFixPath
