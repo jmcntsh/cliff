@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmcntsh/cliff/internal/reelfetch"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 	"github.com/jmcntsh/reel/format"
 	"github.com/jmcntsh/reel/player"
@@ -44,35 +45,95 @@ type reelTickMsg time.Time
 // Zero value is "no reel to play" — all methods tolerate it, which
 // keeps the readme view's conditional rendering simple (just always
 // call View; an empty strip draws nothing and occupies zero rows).
+//
+// slug is captured at construction so the late-arriving bytes-fetched
+// message can be matched against the strip currently on screen — if
+// the user navigated to a different app's readme while the fetch was
+// in flight, the stale message is dropped instead of overwriting the
+// new strip.
 type reelStrip struct {
 	player   *player.Player
 	lastTick time.Time
 	width    int
 	ready    bool
+	slug     string
 }
 
-// newReelStripForApp returns a strip populated for apps we have an
-// embedded reel for, or a zero-value strip otherwise. Today that's
-// exactly one app: cliff itself. Anything else renders no strip.
-// The readme view's layout math treats a zero strip as occupying
-// zero rows, so non-cliff readmes are visually unchanged.
-func newReelStripForApp(appName string, width int) reelStrip {
-	if appName != "cliff" || len(cliffdemoReelBytes) == 0 {
-		return reelStrip{}
+// reelFetchedMsg is the tea message delivered when a background
+// reelfetch.Fetch completes. The slug is carried so the readme model
+// can route it to the right strip (a no-op if the user has already
+// navigated away to another app).
+type reelFetchedMsg struct {
+	slug   string
+	result reelfetch.Result
+}
+
+// newReelStripForApp returns a strip and a tea.Cmd to populate it.
+//
+// For cliff itself, the strip is populated immediately from the
+// embedded asset — first-run-offline still gets the canonical demo
+// without a network round-trip and without a fallback flicker. The
+// returned cmd is nil in this case (no fetch needed).
+//
+// For every other slug, the strip starts in the zero ("not ready")
+// state so the readme view reserves no rows for it, and the returned
+// cmd does the registry fetch in the background. When bytes arrive,
+// the host re-runs resize() so the strip's freshly non-zero height
+// gets layout space; see updateReelFetched.
+func newReelStripForApp(slug string, width int) (reelStrip, tea.Cmd) {
+	if slug == "cliff" && len(cliffdemoReelBytes) > 0 {
+		r, err := format.Decode(strings.NewReader(string(cliffdemoReelBytes)))
+		if err != nil {
+			// Swallow: a broken embedded reel is a bug in the binary,
+			// not a runtime problem the user can act on. Silently
+			// falling back to "no strip" keeps the readme usable.
+			return reelStrip{slug: slug}, nil
+		}
+		return reelStrip{
+			player:   player.New(r),
+			lastTick: time.Now(),
+			width:    width,
+			ready:    true,
+			slug:     slug,
+		}, nil
 	}
-	r, err := format.Decode(strings.NewReader(string(cliffdemoReelBytes)))
+	return reelStrip{slug: slug, width: width}, fetchReelCmd(slug)
+}
+
+// fetchReelCmd returns a tea.Cmd that fetches the named reel from
+// the registry and emits a reelFetchedMsg with the result. Runs on
+// bubbletea's command goroutine so the UI thread stays responsive
+// even on cold-cache fetches over a slow link.
+func fetchReelCmd(slug string) tea.Cmd {
+	return func() tea.Msg {
+		return reelFetchedMsg{slug: slug, result: reelfetch.Fetch(slug)}
+	}
+}
+
+// applyReelFetched populates the strip with the fetched bytes if they
+// match this strip's slug and parse cleanly. On any failure mode (slug
+// mismatch from a stale fetch, network error, 404, or corrupt reel)
+// the strip stays in its zero state and the readme renders without it.
+//
+// Returns the (possibly mutated) strip and a tea.Cmd to start the
+// animation tick loop. Caller is responsible for re-running layout
+// (resize) so the now-non-zero Height() is reflected in the viewport
+// budget.
+func (s reelStrip) applyReelFetched(msg reelFetchedMsg) (reelStrip, tea.Cmd) {
+	if msg.slug != s.slug || s.ready {
+		return s, nil
+	}
+	if msg.result.Err != nil || msg.result.NotFound || len(msg.result.Bytes) == 0 {
+		return s, nil
+	}
+	r, err := format.Decode(strings.NewReader(string(msg.result.Bytes)))
 	if err != nil {
-		// Swallow: a broken embedded reel is a bug in the binary,
-		// not a runtime problem the user can act on. Silently
-		// falling back to "no strip" keeps the readme usable.
-		return reelStrip{}
+		return s, nil
 	}
-	return reelStrip{
-		player:   player.New(r),
-		lastTick: time.Now(),
-		width:    width,
-		ready:    true,
-	}
+	s.player = player.New(r)
+	s.lastTick = time.Now()
+	s.ready = true
+	return s, tickReel()
 }
 
 // reelBorderRows is how many rows the framing border adds on top of

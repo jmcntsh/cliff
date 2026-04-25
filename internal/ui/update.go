@@ -35,6 +35,20 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.readme = r.readme.applyFetch(m)
 		return r, nil
 
+	case reelFetchedMsg:
+		// Late-arriving registry fetch. Routed unconditionally
+		// (not gated on r.mode == modeReadme) so a fetch that
+		// resolves while the help overlay is open still populates
+		// the strip; when the user dismisses the overlay back to
+		// the readme, the reel is already there and animating.
+		// applyReelFetched is a no-op when the slug doesn't match
+		// the strip currently held in the readme model — covers
+		// the case where the user moved on to another app's
+		// readme during the fetch.
+		var cmd tea.Cmd
+		r.readme, cmd = r.readme.applyReelFetched(m)
+		return r, cmd
+
 	case reelTickMsg:
 		// Reel ticks only drive the reel strip inside the readme view.
 		// We route them unconditionally (not gated on r.mode == modeReadme)

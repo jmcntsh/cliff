@@ -52,26 +52,59 @@ type readmeModel struct {
 	fetchErr       error
 	fromCache      bool
 	reel           reelStrip
+	reelFetchCmd   tea.Cmd
 }
 
 func newReadme(app *catalog.App, width, height int) readmeModel {
 	raw := placeholderMarkdown(app)
+	reel, fetchCmd := newReelStripForApp(app.Name, width)
 	m := readmeModel{
-		app:     app,
-		raw:     raw,
-		loading: true,
-		reel:    newReelStripForApp(app.Name, width),
+		app:          app,
+		raw:          raw,
+		loading:      true,
+		reel:         reel,
+		reelFetchCmd: fetchCmd,
 	}
 	return m.resize(width, height)
 }
 
-// ReelInit returns the tea.Cmd that starts the reel-strip's tick
-// loop if the current app has an embedded reel, or nil otherwise.
-// Callers entering modeReadme should batch this with the existing
-// fetchReadmeCmd so the strip starts animating at the same moment
-// the network fetch is kicked off.
+// ReelInit returns the tea.Cmd(s) that get the reel strip going.
+// Two cases are batched together so callers don't have to know which
+// applies:
+//
+//   - For the cliff app (embedded reel), the strip is already
+//     populated; this returns the tick-loop start command.
+//   - For everything else, the strip is empty and this returns the
+//     background fetch command. The tick loop starts later when
+//     applyReelFetched succeeds.
+//
+// Callers entering modeReadme should batch this with fetchReadmeCmd
+// so the README and the reel both start loading the moment the user
+// presses enter.
 func (m readmeModel) ReelInit() tea.Cmd {
-	return m.reel.Init()
+	tickCmd := m.reel.Init()
+	if m.reelFetchCmd == nil {
+		return tickCmd
+	}
+	if tickCmd == nil {
+		return m.reelFetchCmd
+	}
+	return tea.Batch(tickCmd, m.reelFetchCmd)
+}
+
+// applyReelFetched routes a reelFetchedMsg to the strip and re-runs
+// layout if the strip went from "not ready" to "ready" (so the
+// viewport gives back rows to the now-visible strip). Returns the
+// updated model and any tick command the strip needs to start
+// animating.
+func (m readmeModel) applyReelFetched(msg reelFetchedMsg) (readmeModel, tea.Cmd) {
+	wasReady := m.reel.ready
+	var cmd tea.Cmd
+	m.reel, cmd = m.reel.applyReelFetched(msg)
+	if !wasReady && m.reel.ready {
+		m = m.resize(m.width, m.height)
+	}
+	return m, cmd
 }
 
 func fetchReadmeCmd(app *catalog.App) tea.Cmd {
