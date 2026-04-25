@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 )
@@ -14,13 +15,20 @@ type App struct {
 	Stars       int    `json:"stars"`
 	Homepage    string `json:"homepage"`
 
-	Author      string       `json:"author,omitempty"`
-	Readme      string       `json:"readme,omitempty"`
-	Demo        string       `json:"demo,omitempty"`
-	Screenshots []string     `json:"screenshots,omitempty"`
-	Tags        []string     `json:"tags,omitempty"`
-	Binary      string       `json:"binary,omitempty"` // override for the installed executable name; defaults to repo basename
-	InstallSpec *InstallSpec `json:"install_spec,omitempty"`
+	Author      string   `json:"author,omitempty"`
+	Readme      string   `json:"readme,omitempty"`
+	Demo        string   `json:"demo,omitempty"`
+	Screenshots []string `json:"screenshots,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	Binary      string   `json:"binary,omitempty"` // override for the installed executable name; defaults to repo basename
+	// InstallSpecs is the ordered list of install methods. Single-method
+	// manifests produce a one-element slice; multi-method ([[installs]])
+	// manifests produce the list in author order, which is also the
+	// client's default preference order when picking. Callers that only
+	// need the primary can use PrimaryInstallSpec; multi-method-aware
+	// paths use PreferredInstallSpec to honor a `--via` override and
+	// tool-availability detection.
+	InstallSpecs []InstallSpec `json:"install_specs,omitempty"`
 
 	// LastCommit is the most recent commit on the project's default
 	// branch, snapshotted at index build time. Already emitted by the
@@ -235,7 +243,7 @@ func (a *App) UninstallCommandWithOverrides(overrides map[string]string) string 
 	if a.UninstallSpec != nil && a.UninstallSpec.Command != "" {
 		return a.UninstallSpec.Command
 	}
-	return a.InstallSpec.UninstallShell(a.ResolvedBinaryName(overrides))
+	return a.PrimaryInstallSpec().UninstallShell(a.ResolvedBinaryName(overrides))
 }
 
 // UpgradeCommand returns the shell command to upgrade the app, or ""
@@ -250,7 +258,82 @@ func (a *App) UpgradeCommand() string {
 	if a.UpgradeSpec != nil && a.UpgradeSpec.Command != "" {
 		return a.UpgradeSpec.Command
 	}
-	return a.InstallSpec.UpgradeShell()
+	return a.PrimaryInstallSpec().UpgradeShell()
+}
+
+// PrimaryInstallSpec returns the first install method, or nil if the
+// app has none. This is the right choice when a caller needs "the one
+// install method" — display, type-check, default derivations — and
+// doesn't care about multi-method picking. Callers that run an install
+// and need to honor user overrides or tool-availability should use
+// PreferredInstallSpec instead.
+func (a *App) PrimaryInstallSpec() *InstallSpec {
+	if a == nil || len(a.InstallSpecs) == 0 {
+		return nil
+	}
+	return &a.InstallSpecs[0]
+}
+
+// PreferredInstallSpec picks which install method to run for this app.
+//
+//   - If `typeHint` is non-empty (e.g. from `--via brew`), return the
+//     matching method, or nil if the manifest doesn't offer it.
+//   - Otherwise, return the first method whose tool reports available
+//     via `isAvailable`. For type=script, availability is assumed true
+//     (nothing to probe for; the shell runs the command as-is).
+//   - Otherwise, fall back to the primary (first) method, so we
+//     surface the tool's own "command not found" error via
+//     install.Diagnose rather than a cliff-side refusal.
+//
+// `isAvailable` may be nil, in which case only the type-hint and
+// primary-fallback paths apply. Returns nil only when the app has no
+// install methods at all.
+func (a *App) PreferredInstallSpec(typeHint string, isAvailable func(installType string) bool) *InstallSpec {
+	if a == nil || len(a.InstallSpecs) == 0 {
+		return nil
+	}
+	if typeHint != "" {
+		for i := range a.InstallSpecs {
+			if a.InstallSpecs[i].Type == typeHint {
+				return &a.InstallSpecs[i]
+			}
+		}
+		return nil
+	}
+	if isAvailable != nil {
+		for i := range a.InstallSpecs {
+			t := a.InstallSpecs[i].Type
+			if t == "script" || isAvailable(t) {
+				return &a.InstallSpecs[i]
+			}
+		}
+	}
+	return &a.InstallSpecs[0]
+}
+
+// UnmarshalJSON supports both the current wire shape (`install_specs`)
+// and the pre-multi-method shape (`install_spec`, singular). This lets
+// a client binary built after the schema change still parse an embedded
+// snapshot or cached `index.json` that was produced by an earlier
+// registry build. The reverse — new wire, old binary — breaks and
+// that's fine; we own both ends and the wire moves forward.
+func (a *App) UnmarshalJSON(data []byte) error {
+	// Alias sidesteps the infinite-recursion trap of calling json.Unmarshal
+	// on *App (which would invoke this method again). The alias has the
+	// same field layout but no UnmarshalJSON method.
+	type appAlias App
+	var raw struct {
+		appAlias
+		LegacyInstallSpec *InstallSpec `json:"install_spec,omitempty"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	*a = App(raw.appAlias)
+	if len(a.InstallSpecs) == 0 && raw.LegacyInstallSpec != nil {
+		a.InstallSpecs = []InstallSpec{*raw.LegacyInstallSpec}
+	}
+	return nil
 }
 
 type Category struct {

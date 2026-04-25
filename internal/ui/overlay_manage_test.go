@@ -79,11 +79,11 @@ func TestManageStep_SkipsDisabled(t *testing.T) {
 // forgot the upgrade + uninstall blocks). Readme is always enabled
 // because it's the fallback path the picker is guaranteed to offer.
 func TestManageActionsFor_DefaultCursorOnFirstEnabled(t *testing.T) {
-	brewSpec := &catalog.InstallSpec{Type: "brew", Package: "foo"}
+	brewSpec := catalog.InstallSpec{Type: "brew", Package: "foo"}
 	// A script-type install with no override recipes: UpgradeShell
 	// and UninstallShell both return "" for Type=script, so both
 	// Update and Uninstall picker items should come out disabled.
-	scriptNoRecipes := &catalog.InstallSpec{Type: "script", Command: "curl x | sh"}
+	scriptNoRecipes := catalog.InstallSpec{Type: "script", Command: "curl x | sh"}
 
 	tests := []struct {
 		name       string
@@ -94,14 +94,14 @@ func TestManageActionsFor_DefaultCursorOnFirstEnabled(t *testing.T) {
 	}{
 		{
 			name:       "brew app has update + uninstall",
-			app:        &catalog.App{InstallSpec: brewSpec},
+			app:        &catalog.App{InstallSpecs: []catalog.InstallSpec{brewSpec}},
 			wantCursor: 0,
 			wantUpdate: true,
 			wantUninst: true,
 		},
 		{
 			name:       "script-only app has just readme",
-			app:        &catalog.App{InstallSpec: scriptNoRecipes},
+			app:        &catalog.App{InstallSpecs: []catalog.InstallSpec{scriptNoRecipes}},
 			wantCursor: 2,
 			wantUpdate: false,
 			wantUninst: false,

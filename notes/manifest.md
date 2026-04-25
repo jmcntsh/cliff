@@ -67,6 +67,13 @@ package = "lazygit"    # or `command = "..."` for type=script
 
 ## Install types
 
+Manifests declare install methods with either `[install]` (single
+method — the common case) or `[[installs]]` (array-of-tables, for
+apps that ship through more than one package manager). Exactly one
+of the two must be present; the client picks the first `[[installs]]`
+entry whose tool is on the user's `$PATH`, or honors an explicit
+`--via <type>` override.
+
 ```toml
 [install]
 type = "brew"
@@ -108,6 +115,33 @@ command = "curl -fsSL https://example.com/install.sh | sh"
 warning before running `script`-type installs — the warning copy
 is real, not a rubber stamp — because we don't review or sandbox
 what runs.
+
+### Multi-method (`[[installs]]`)
+
+When the same app is available via multiple package managers, use
+`[[installs]]` (double-bracket, array-of-tables) instead of
+`[install]`:
+
+```toml
+[[installs]]
+type = "brew"
+package = "chess-tui"
+
+[[installs]]
+type = "cargo"
+package = "chess-tui"
+```
+
+Order matters — it's the preference order. On install, the client
+picks the first entry whose tool is on `$PATH`; if the user passes
+`--via <type>`, that wins. Duplicate types within `[[installs]]` are
+rejected by lint.
+
+Today uninstall and upgrade still derive from the primary (first)
+method only — so for the `chess-tui` manifest above, uninstall would
+run `brew uninstall chess-tui` regardless of how the user installed.
+Tracking "which method did I actually use?" per install is on the
+roadmap (`internal/binmap` is the groundwork).
 
 ## Uninstall and upgrade recipes
 
@@ -162,7 +196,9 @@ Checks:
 - `name` uniqueness; matches `[a-z0-9-]`.
 - `tags` lowercased and deduped.
 - URL reachability (readme, homepage, screenshots, demo).
-- `[uninstall]` present when `install.type = "script"`.
+- Exactly one of `[install]` or `[[installs]]` is declared.
+- Within `[[installs]]`, each entry's type is unique.
+- `[uninstall]` present when any method has `type = "script"`.
 - `[uninstall]` / `[upgrade]` blocks, if present, have non-empty `command`.
 - GitHub star count + last-commit timestamp snapshotted at build
   time into `index.json` (so the client sorts/displays without

@@ -52,7 +52,7 @@ func TestResolvedBinaryName_FallbackWhenNoOverride(t *testing.T) {
 func TestUninstallCommandWithOverrides_GoUsesDetectedBinary(t *testing.T) {
 	app := App{
 		Repo:        "author/repo-with-weird-suffix",
-		InstallSpec: &InstallSpec{Type: "go", Package: "example.com/author/repo-with-weird-suffix@latest"},
+		InstallSpecs: []InstallSpec{{Type: "go", Package: "example.com/author/repo-with-weird-suffix@latest"}},
 	}
 	overrides := map[string]string{"author/repo-with-weird-suffix": "actualbin"}
 	got := app.UninstallCommandWithOverrides(overrides)
@@ -67,7 +67,7 @@ func TestUninstallCommandWithOverrides_GoUsesDetectedBinary(t *testing.T) {
 func TestAppUninstallCommand_OverrideWins(t *testing.T) {
 	app := App{
 		Repo:          "foo/bar",
-		InstallSpec:   &InstallSpec{Type: "brew", Package: "bar"},
+		InstallSpecs:  []InstallSpec{{Type: "brew", Package: "bar"}},
 		UninstallSpec: &CommandSpec{Command: "rm -rf /custom/path"},
 	}
 	if got := app.UninstallCommand(); got != "rm -rf /custom/path" {
@@ -78,7 +78,7 @@ func TestAppUninstallCommand_OverrideWins(t *testing.T) {
 func TestAppUninstallCommand_DerivedFallback(t *testing.T) {
 	app := App{
 		Repo:        "foo/bar",
-		InstallSpec: &InstallSpec{Type: "brew", Package: "bar"},
+		InstallSpecs: []InstallSpec{{Type: "brew", Package: "bar"}},
 	}
 	if got := app.UninstallCommand(); got != "brew uninstall bar" {
 		t.Errorf("derived fallback wrong: got %q", got)
@@ -87,7 +87,7 @@ func TestAppUninstallCommand_DerivedFallback(t *testing.T) {
 
 func TestAppUninstallCommand_ScriptNoSpecReturnsEmpty(t *testing.T) {
 	app := App{
-		InstallSpec: &InstallSpec{Type: "script", Command: "curl ... | sh"},
+		InstallSpecs: []InstallSpec{{Type: "script", Command: "curl ... | sh"}},
 	}
 	if got := app.UninstallCommand(); got != "" {
 		t.Errorf("script without UninstallSpec should be empty, got %q", got)
@@ -96,7 +96,7 @@ func TestAppUninstallCommand_ScriptNoSpecReturnsEmpty(t *testing.T) {
 
 func TestAppUpgradeCommand_GoLatestPathRewrite(t *testing.T) {
 	app := App{
-		InstallSpec: &InstallSpec{Type: "go", Package: "github.com/x/y@v1.2.3"},
+		InstallSpecs: []InstallSpec{{Type: "go", Package: "github.com/x/y@v1.2.3"}},
 	}
 	if got := app.UpgradeCommand(); got != "go install github.com/x/y@latest" {
 		t.Errorf("go @version should be rewritten to @latest, got %q", got)
@@ -110,7 +110,7 @@ func TestAppUninstallCommand_GoUsesRuntimeGoEnv(t *testing.T) {
 	// binary doesn't actually live. Regression guard for that bug.
 	app := App{
 		Repo:        "foo/bar",
-		InstallSpec: &InstallSpec{Type: "go", Package: "github.com/foo/bar@latest"},
+		InstallSpecs: []InstallSpec{{Type: "go", Package: "github.com/foo/bar@latest"}},
 	}
 	got := app.UninstallCommand()
 	if !strings.Contains(got, "go env GOBIN") {

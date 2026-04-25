@@ -570,10 +570,11 @@ func pkgOpCommand(app *catalog.App, op pkgOp) string {
 	case pkgOpUpgrade:
 		return app.UpgradeCommand()
 	default:
-		if app.InstallSpec == nil {
+		s := app.PrimaryInstallSpec()
+		if s == nil {
 			return ""
 		}
-		return app.InstallSpec.Shell()
+		return s.Shell()
 	}
 }
 
@@ -844,8 +845,9 @@ func clearFlashCmd() tea.Cmd {
 }
 
 func preferredInstall(app *catalog.App) string {
-	if app == nil || app.InstallSpec == nil {
+	s := app.PrimaryInstallSpec()
+	if s == nil {
 		return ""
 	}
-	return app.InstallSpec.Shell()
+	return s.Shell()
 }

@@ -15,8 +15,8 @@ func sampleApp() *catalog.App {
 	return &catalog.App{
 		Name: "demo",
 		Repo: "u/demo",
-		InstallSpec: &catalog.InstallSpec{
-			Type: "script", Command: "echo hello",
+		InstallSpecs: []catalog.InstallSpec{
+			{Type: "script", Command: "echo hello"},
 		},
 	}
 }
@@ -36,7 +36,7 @@ func TestStream_OK(t *testing.T) {
 
 func TestStream_Failure(t *testing.T) {
 	app := sampleApp()
-	app.InstallSpec.Command = "exit 7"
+	app.InstallSpecs[0].Command = "exit 7"
 	res := Stream(context.Background(), app, nil)
 	if res.Err == nil {
 		t.Fatal("expected error")
@@ -64,7 +64,7 @@ func TestStream_HandlesLineLongerThanScannerBuffer(t *testing.T) {
 	// 2 MB of 'x' on one line (well over the 1 MiB scanner limit),
 	// then a newline, then "done". /dev/zero + tr is portable across
 	// macOS and Linux.
-	app.InstallSpec.Command = "head -c 2000000 /dev/zero | tr '\\0' 'x'; printf '\\n'; echo done"
+	app.InstallSpecs[0].Command = "head -c 2000000 /dev/zero | tr '\\0' 'x'; printf '\\n'; echo done"
 
 	resCh := make(chan Result, 1)
 	go func() {
@@ -86,7 +86,7 @@ func TestStream_HandlesLineLongerThanScannerBuffer(t *testing.T) {
 
 func TestStream_CallsOnLine(t *testing.T) {
 	app := sampleApp()
-	app.InstallSpec.Command = "printf 'one\\ntwo\\nthree\\n'"
+	app.InstallSpecs[0].Command = "printf 'one\\ntwo\\nthree\\n'"
 	var got []string
 	res := Stream(context.Background(), app, func(line string) {
 		got = append(got, line)
@@ -128,7 +128,7 @@ func TestDetect_FindsExecutables(t *testing.T) {
 func TestDiagnose_CommandNotFoundByExitCode(t *testing.T) {
 	res := Result{
 		App: &catalog.App{
-			InstallSpec: &catalog.InstallSpec{Type: "brew", Package: "foo"},
+			InstallSpecs: []catalog.InstallSpec{{Type: "brew", Package: "foo"}},
 		},
 		ExitCode: 127,
 		Err:      context.DeadlineExceeded, // any non-nil err
@@ -290,10 +290,10 @@ func TestStream_AttachesPathWarning(t *testing.T) {
 	app := &catalog.App{
 		Name: "phantom",
 		Repo: "u/phantom",
-		InstallSpec: &catalog.InstallSpec{
+		InstallSpecs: []catalog.InstallSpec{{
 			Type:    "script",
 			Command: `printf '#!/bin/sh\nexit 0\n' > ` + bin + ` && chmod +x ` + bin,
-		},
+		}},
 	}
 
 	res := Stream(context.Background(), app, nil)
@@ -328,10 +328,10 @@ func TestStream_DetectsBinaryViaDirDiff(t *testing.T) {
 	app := &catalog.App{
 		Name: "phantom",
 		Repo: "u/phantom-extra-suffix",
-		InstallSpec: &catalog.InstallSpec{
+		InstallSpecs: []catalog.InstallSpec{{
 			Type:    "script",
 			Command: `printf '#!/bin/sh\nexit 0\n' > ` + filepath.Join(gobin, "phantom") + ` && chmod +x ` + filepath.Join(gobin, "phantom"),
-		},
+		}},
 	}
 	res := Stream(context.Background(), app, nil)
 	if res.Err != nil {
@@ -366,10 +366,10 @@ func TestStream_EmptyDetectedOnMute(t *testing.T) {
 	app := &catalog.App{
 		Name: "silent",
 		Repo: "u/silent",
-		InstallSpec: &catalog.InstallSpec{
+		InstallSpecs: []catalog.InstallSpec{{
 			Type:    "script",
 			Command: "echo doing nothing",
-		},
+		}},
 	}
 	res := Stream(context.Background(), app, nil)
 	if res.Err != nil {
@@ -437,11 +437,11 @@ func TestStream_NoPathWarningWhenOnPATH(t *testing.T) {
 	app := &catalog.App{
 		Name: "ghost",
 		Repo: "u/ghost",
-		InstallSpec: &catalog.InstallSpec{
+		InstallSpecs: []catalog.InstallSpec{{
 			Type: "script",
 			Command: `printf '#!/bin/sh\nexit 0\n' > ` +
 				filepath.Join(dir, "ghost") + ` && chmod +x ` + filepath.Join(dir, "ghost"),
-		},
+		}},
 	}
 	res := Stream(context.Background(), app, nil)
 	if res.Err != nil {
