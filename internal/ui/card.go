@@ -49,7 +49,7 @@ func renderCard(app catalog.App, width, height int, selected, installed, focused
 	active := selected && focused
 
 	border := lipgloss.RoundedBorder()
-	borderColor := theme.ColorBorder
+	var borderColor lipgloss.TerminalColor = theme.ColorBorder
 	switch {
 	case active:
 		border = lipgloss.ThickBorder()
@@ -96,7 +96,7 @@ func renderCard(app catalog.App, width, height int, selected, installed, focused
 	sep := applyBG(lipgloss.NewStyle()).Render("  ")
 	meta := strings.Join(metaParts, sep)
 
-	descColor := theme.ColorMuted
+	var descColor lipgloss.TerminalColor = theme.ColorMuted
 	if active {
 		// Lift the description out of muted-grey on the active card so
 		// the whole tile reads as "lit up", not just its frame. When
