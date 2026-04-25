@@ -60,7 +60,10 @@ const LANDING_HTML = `<!doctype html>
   <h1>cliff</h1>
   <p class="tagline">A terminal-native directory for CLIs and TUIs.</p>
 
-  <p>Install:</p>
+  <p>Install with Homebrew:</p>
+  <pre>brew install jmcntsh/tap/cliff</pre>
+
+  <p>Or via the install script:</p>
   <pre>curl -fsSL https://cliff.sh | sh</pre>
 
   <p>Then run <code>cliff</code>. Press <code>?</code> for keybinds.</p>
