@@ -224,7 +224,7 @@ doesn't disappear after a successful off-PATH install.
 
 - **Phase 2** — curation surfaces. Submit flow landed in v0.1.11
   (TUI `+` keybind and `cliff submit`); registry-side issue
-  template open in [cliff-registry#4](https://github.com/jmcntsh/cliff-registry/pull/4).
+  template merged in [cliff-registry#4](https://github.com/jmcntsh/cliff-registry/pull/4).
   "New this week" surface landed in v0.1.13, flipped to real
   add-order in v0.1.14; the weekly digest is still pending.
 - **Registry dispatch token** — the auto-PR snapshot workflow has
