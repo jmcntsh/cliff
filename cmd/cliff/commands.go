@@ -26,6 +26,7 @@ Usage:
   cliff install <pkg>          install an app via its package manager
   cliff uninstall <pkg>        uninstall a previously installed app
   cliff upgrade <pkg>          upgrade an app to its latest version
+  cliff installed              list catalog apps detected on your system
   cliff submit [name|repo]     nominate an app for the cliff registry
   cliff help                   show this message
   cliff version                print the installed version
@@ -95,7 +96,7 @@ _cliff() {
     local cur prev verbs
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    verbs="install uninstall upgrade submit completions help version"
+    verbs="install uninstall upgrade installed submit completions help version"
 
     if [ "$COMP_CWORD" -eq 1 ]; then
         COMPREPLY=( $(compgen -W "$verbs" -- "$cur") )
@@ -126,6 +127,7 @@ _cliff() {
         'install:install an app via its package manager'
         'uninstall:uninstall a previously installed app'
         'upgrade:upgrade an app to its latest version'
+        'installed:list catalog apps detected on your system'
         'submit:nominate an app for the cliff registry'
         'completions:emit shell completion script'
         'help:show help'
@@ -158,6 +160,7 @@ complete -c cliff -f
 complete -c cliff -n '__fish_use_subcommand' -a 'install'     -d 'install an app via its package manager'
 complete -c cliff -n '__fish_use_subcommand' -a 'uninstall'   -d 'uninstall a previously installed app'
 complete -c cliff -n '__fish_use_subcommand' -a 'upgrade'     -d 'upgrade an app to its latest version'
+complete -c cliff -n '__fish_use_subcommand' -a 'installed'   -d 'list catalog apps detected on your system'
 complete -c cliff -n '__fish_use_subcommand' -a 'submit'      -d 'nominate an app for the cliff registry'
 complete -c cliff -n '__fish_use_subcommand' -a 'completions' -d 'emit shell completion script'
 complete -c cliff -n '__fish_use_subcommand' -a 'help'        -d 'show help'
