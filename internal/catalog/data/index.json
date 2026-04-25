@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-25T00:15:57.970067Z",
+  "generated_at": "2026-04-25T02:39:35.901808Z",
   "source_commit": "registry@local",
   "apps": [
     {
@@ -39,7 +39,7 @@
       "category": "Shell utilities",
       "language": "Rust",
       "license": "MIT",
-      "stars": 29471,
+      "stars": 29470,
       "homepage": "https://github.com/atuinsh/atuin",
       "author": "atuinsh",
       "readme": "https://raw.githubusercontent.com/atuinsh/atuin/main/README.md",
@@ -144,7 +144,7 @@
       "category": "Dashboards",
       "language": "Rust",
       "license": "MIT",
-      "stars": 13233,
+      "stars": 13234,
       "homepage": "https://github.com/ClementTsang/bottom",
       "author": "ClementTsang",
       "readme": "https://raw.githubusercontent.com/ClementTsang/bottom/main/README.md",
@@ -174,7 +174,7 @@
       "category": "Dashboards",
       "language": "C++",
       "license": "Apache-2.0",
-      "stars": 31822,
+      "stars": 31819,
       "homepage": "https://github.com/aristocratos/btop",
       "author": "aristocratos",
       "readme": "https://raw.githubusercontent.com/aristocratos/btop/main/README.md",
@@ -198,7 +198,7 @@
       "category": "Toys \u0026 visualizers",
       "language": "C",
       "license": "MIT",
-      "stars": 6068,
+      "stars": 6069,
       "homepage": "https://github.com/karlstav/cava",
       "author": "karlstav",
       "readme": "https://raw.githubusercontent.com/karlstav/cava/master/README.md",
@@ -266,9 +266,16 @@
         {
           "type": "brew",
           "package": "jmcntsh/tap/cliff"
+        },
+        {
+          "type": "script",
+          "command": "curl -fsSL https://cliff.sh | sh"
         }
       ],
-      "last_commit": "2026-04-23T17:09:37Z",
+      "uninstall_spec": {
+        "command": "rm -f \"${CLIFF_INSTALL_DIR:+$CLIFF_INSTALL_DIR/cliff}\" /usr/local/bin/cliff \"$HOME/.local/bin/cliff\""
+      },
+      "last_commit": "2026-04-25T02:27:07Z",
       "added_at": "2026-04-22T20:25:17Z"
     },
     {
@@ -357,7 +364,7 @@
       "category": "Developer tools",
       "language": "Go",
       "license": "MIT",
-      "stars": 11459,
+      "stars": 11460,
       "homepage": "https://github.com/dlvhdr/gh-dash",
       "author": "dlvhdr",
       "readme": "https://raw.githubusercontent.com/dlvhdr/gh-dash/main/README.md",
@@ -439,7 +446,7 @@
       "category": "Documentation",
       "language": "Go",
       "license": "MIT",
-      "stars": 24596,
+      "stars": 24600,
       "homepage": "https://github.com/charmbracelet/glow",
       "author": "charmbracelet",
       "readme": "https://raw.githubusercontent.com/charmbracelet/glow/master/README.md",
@@ -467,7 +474,7 @@
       "category": "Shell utilities",
       "language": "Go",
       "license": "MIT",
-      "stars": 23457,
+      "stars": 23458,
       "homepage": "https://github.com/charmbracelet/gum",
       "author": "charmbracelet",
       "readme": "https://raw.githubusercontent.com/charmbracelet/gum/main/README.md",
@@ -604,7 +611,7 @@
       "category": "Version control",
       "language": "Go",
       "license": "MIT",
-      "stars": 76992,
+      "stars": 76991,
       "homepage": "https://github.com/jesseduffield/lazygit",
       "author": "jesseduffield",
       "readme": "https://raw.githubusercontent.com/jesseduffield/lazygit/master/README.md",
@@ -954,7 +961,7 @@
       "category": "File management",
       "language": "Go",
       "license": "MIT",
-      "stars": 17200,
+      "stars": 17202,
       "homepage": "https://github.com/yorukot/superfile",
       "author": "yorukot",
       "readme": "https://raw.githubusercontent.com/yorukot/superfile/main/README.md",
@@ -1004,7 +1011,7 @@
       "category": "Shell utilities",
       "language": "Rust",
       "license": "MIT",
-      "stars": 5762,
+      "stars": 5763,
       "homepage": "https://github.com/alexpasmantier/television",
       "author": "alexpasmantier",
       "readme": "https://raw.githubusercontent.com/alexpasmantier/television/main/README.md",
@@ -1107,7 +1114,7 @@
       "category": "Developer tools",
       "language": "Go",
       "license": "MIT",
-      "stars": 19495,
+      "stars": 19497,
       "homepage": "https://github.com/charmbracelet/vhs",
       "author": "charmbracelet",
       "readme": "https://raw.githubusercontent.com/charmbracelet/vhs/main/README.md",
