@@ -155,6 +155,19 @@ func (s reelStrip) Height() int {
 	return rows + reelBorderRows
 }
 
+// FramedWidth returns the column count the strip occupies once the
+// rounded border is added. Callers laying the strip out as an
+// adjacent column (rather than stacked above the markdown) use this
+// to budget the column it consumes; pair with Height() for the row
+// budget. Returns zero when there's nothing to draw.
+func (s reelStrip) FramedWidth() int {
+	if !s.ready || s.player == nil {
+		return 0
+	}
+	cols, _ := s.player.Size()
+	return cols + 2 // border adds 1 col on each side
+}
+
 // Init returns the first tick command. Must be wired into the
 // host's tea.Cmd chain when the readme view is entered — the strip
 // won't animate without it.

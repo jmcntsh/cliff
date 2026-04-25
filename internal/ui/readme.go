@@ -17,6 +17,10 @@ import (
 )
 
 const readmeMaxContentWidth = 80
+const (
+	readmeReelPaneGap     = 2
+	readmeMinContentWidth = 60
+)
 
 // darkBackground stores the terminal background polarity detected at
 // startup. It's set by main via SetDarkBackground before any tea Program
@@ -42,9 +46,11 @@ type readmeModel struct {
 	app            *catalog.App
 	raw            string
 	viewport       viewport.Model
+	contentWidth   int
 	width          int
 	height         int
 	ready          bool
+	reelRightPane  bool
 	loading        bool
 	rateLimited    bool
 	rateLimitReset time.Time
@@ -144,7 +150,7 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) readmeModel {
 	case r.Err != nil:
 		m.fetchErr = r.Err
 	}
-	rendered := renderMarkdown(m.raw, m.width)
+	rendered := renderMarkdown(m.raw, m.contentWidth)
 	m.viewport.SetContent(rendered)
 	return m
 }
@@ -153,17 +159,27 @@ func (m readmeModel) resize(width, height int) readmeModel {
 	m.width = width
 	m.height = height
 	// Reserve 3 rows for header + footer + the separating blank line
-	// between the viewport and footer that JoinVertical produces at
-	// these widths; reserve extra rows for the reel strip if one is
-	// attached. The strip's height is zero for apps without an
-	// embedded reel, so non-cliff readmes keep the previous layout.
-	reelRows := m.reel.Height()
-	if reelRows > 0 {
-		m.reel.width = width
+	// between viewport/body and footer that JoinVertical produces at
+	// these widths.
+	bodyRows := max(height-3, 1)
+	m.reelRightPane = m.canUseReelRightPane(width, bodyRows)
+
+	if m.reelRightPane {
+		reelW := m.reel.FramedWidth()
+		m.contentWidth = max(width-reelW-readmeReelPaneGap, 20)
+		// Keep the strip uncentered in right-pane mode.
+		m.reel.width = reelW
+		m.viewport = viewport.New(m.contentWidth, bodyRows)
+	} else {
+		reelRows := m.reel.Height()
+		if reelRows > 0 {
+			m.reel.width = width
+		}
+		m.contentWidth = width
+		vpHeight := max(bodyRows-reelRows, 1)
+		m.viewport = viewport.New(m.contentWidth, vpHeight)
 	}
-	vpHeight := max(height-3-reelRows, 1)
-	m.viewport = viewport.New(width, vpHeight)
-	rendered := renderMarkdown(m.raw, width)
+	rendered := renderMarkdown(m.raw, m.contentWidth)
 	m.viewport.SetContent(rendered)
 	m.ready = true
 	return m
@@ -205,10 +221,30 @@ func (m readmeModel) View() string {
 	}
 	header := m.renderHeader()
 	footer := m.renderFooter()
+	if m.reelRightPane {
+		body := lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			m.viewport.View(),
+			strings.Repeat(" ", readmeReelPaneGap),
+			m.reel.View(),
+		)
+		return lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
+	}
 	if m.reel.Height() > 0 {
 		return lipgloss.JoinVertical(lipgloss.Left, header, m.reel.View(), m.viewport.View(), footer)
 	}
 	return lipgloss.JoinVertical(lipgloss.Left, header, m.viewport.View(), footer)
+}
+
+func (m readmeModel) canUseReelRightPane(width, bodyRows int) bool {
+	reelW := m.reel.FramedWidth()
+	reelH := m.reel.Height()
+	if reelW == 0 || reelH == 0 {
+		return false
+	}
+	// Only split when both panes remain useful: README keeps a readable
+	// column and the reel fits in the body area without forcing extra rows.
+	return width-reelW-readmeReelPaneGap >= readmeMinContentWidth && reelH <= bodyRows
 }
 
 func (m readmeModel) renderHeader() string {
@@ -221,7 +257,7 @@ func (m readmeModel) renderHeader() string {
 		fmt.Sprintf("★ %s · %s", formatStars(m.app.Stars), m.app.Language))
 
 	left := back + "   " + title
-	spacerW := m.width - lipgloss.Width(left) - lipgloss.Width(meta)
+	spacerW := m.contentWidth - lipgloss.Width(left) - lipgloss.Width(meta)
 	if spacerW < 1 {
 		spacerW = 1
 	}
@@ -256,7 +292,7 @@ func (m readmeModel) renderFooter() string {
 	if status == "" {
 		return scroll
 	}
-	spacer := m.width - lipgloss.Width(status) - lipgloss.Width(scroll)
+	spacer := m.contentWidth - lipgloss.Width(status) - lipgloss.Width(scroll)
 	if spacer < 1 {
 		spacer = 1
 	}
