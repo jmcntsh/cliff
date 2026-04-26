@@ -33,6 +33,18 @@ Usage:
   cliff completions <shell>    emit shell completion script
                                (run 'cliff completions' for install tips)
 
+Environment:
+  CLIFF_THEME=dark|light       force the UI palette regardless of the
+                               terminal's reported background. Useful
+                               when your terminal profile contradicts
+                               the actual colors (e.g. light profile
+                               with a dark window background).
+  CLIFF_BG=dark|light          override the README markdown renderer's
+                               background detection. Set this if your
+                               terminal does not respond to OSC 11.
+  CLIFF_DEBUG=1                print extra diagnostics on startup
+                               (e.g. catalog source and fetch errors).
+
 See https://cliff.sh for more.
 `
 

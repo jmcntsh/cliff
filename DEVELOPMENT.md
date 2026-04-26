@@ -42,6 +42,25 @@ CLIFF_REGISTRY_URL="file:///tmp/index.json" go run ./cmd/cliff
 `CLIFF_DEBUG=1` prints the catalog source (`registry`, `cache`,
 or `embedded`) and any non-fatal fetch error to stderr at startup.
 
+### Forcing the theme
+
+cliff picks light/dark variants based on the terminal's reported
+background. Two overrides exist for terminals that lie or refuse
+to answer:
+
+- `CLIFF_THEME=dark|light` forces the entire UI palette (sidebar,
+  cards, footer, modals) to one side, regardless of what the
+  terminal reports.
+- `CLIFF_BG=dark|light` forces only the README's Glamour renderer.
+  Useful when OSC 11 doesn't round-trip (some SSH/tmux setups).
+
+Set whichever matches your reality:
+
+```sh
+CLIFF_THEME=dark cliff       # one-off
+echo 'export CLIFF_THEME=dark' >> ~/.zshrc   # persist
+```
+
 ## Project layout
 
 ```

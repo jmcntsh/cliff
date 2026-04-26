@@ -13,6 +13,9 @@ Today: ~600 apps, rendered READMEs, fuzzy search, one-key install
 via the project's own package manager (brew / cargo / npm / pipx /
 `go install`). No accounts, no payments, no hosted binaries.
 
+If the colors look washed out, your terminal is reporting the
+wrong background. Force it: `CLIFF_THEME=dark cliff` (or `light`).
+
 ## Why this exists
 
 AI coding tools are producing a flood of weird, useful, personal
