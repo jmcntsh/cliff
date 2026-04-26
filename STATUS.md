@@ -4,9 +4,59 @@ What's actually shipped right now. Updated on every ship. Source of
 truth for "is X live?" — principles docs ([`CLAUDE.md`](CLAUDE.md))
 describe intent, not state.
 
-Last updated: 2026-04-23.
+Last updated: 2026-04-26.
 
 ## Latest change
+
+`v0.1.16` (2026-04-26): two follow-ups on top of v0.1.15 — the
+right-side reel pane and inline README hero images — plus the registry
+guardrail that locks in the reel-publishing pipeline.
+
+(1) Reels move into a right-side pane on wide terminals
+(`internal/ui/reel_strip.go` + `readme.go` layout pass). Below the
+breakpoint they still stack above the README; above it the reel sits
+next to the prose so the playback doesn't push the README content
+out of view as the user reads. (2) New `internal/ui/hero_image.go`
++ `hero_pick.go` + `hero_render.go` fetches the first non-badge image
+from each app's README, half-block-renders it into ANSI, and splices
+it back in at the original placement via a `CLIFFHEROANCHORZ7`
+placeholder so glamour's URL wrapping doesn't fight the substitution.
+Limits: PNG/JPEG/GIF first frame, 60×15 cells, 5s timeout, 5 MiB.
+`raw.githubusercontent.com` URLs get pinned to `HEAD` so manifests
+with stale branch segments still resolve (workaround for cliff-registry#7).
+(3) `cliff-registry` gained `scripts/lint-reels.py`, wired into the
+registry workflow's lint job. It greps every committed `.reel` for
+`/Users/`, `/var/folders/`, common recorder usernames, requires the
+opening `[disclaimer: ...]` card on Template-1 demos, and rejects
+orphan artifacts (a `.reel` with no `demo.sh` source, or vice versa).
+Runs in ~50ms with no extra deps; fails the publish job on regression.
+
+Embedded snapshot at `internal/catalog/data/index.json` refreshed in
+this cut so first-launch / offline users see the live 44-app catalog
+including the corrected `bluetui` README URL and current
+star/last_commit values.
+
+`v0.1.15` (2026-04-25): registry-hosted demo reels go live for every
+app, plus the client side that fetches and plays them. New
+`internal/reelfetch` package mirrors the `internal/readme` cache
+shape (`~/.cache/cliff/reels/<slug>.{reel,etag}`, `If-None-Match` for
+cheap revalidation, fall-through to cache on network errors). The
+reel strip starts in a "not ready" state and folds in fetched bytes
+via a `reelFetchedMsg` that root update routes unconditionally, so
+reels arrive even with a modal open. Adaptive high-contrast colors
+are dropped while a reel is recording so captures don't lock to one
+terminal's palette.
+
+The 44 reels themselves live in `cliff-registry/reels/<slug>.reel` and
+publish to `https://registry.cliff.sh/reels/<slug>.reel` from the same
+Pages job that emits `index.json`. 26 are real binary captures, 18 are
+scripted fakes for apps where a real run would either need
+unobtainable input (audio for `scope-tui`, BT/Wi-Fi devices for
+`bluetui`/`impala`) or leak host metadata (`btop`, `superfile`'s
+owner/group columns). All 18 scripted reels open with a centered
+`[disclaimer: simulated preview; see README for exact behavior]` card
+that `scripts/record-reel.sh` injects at record time so the policy is
+enforced by the recorder rather than by hand.
 
 `v0.1.14` (2026-04-23): fix-ups on top of v0.1.13. Two problems the
 first cut of "New this week" had: (1) it was falling back to
