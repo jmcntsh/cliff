@@ -49,6 +49,7 @@ func helpRightFor(layout layoutMode, from mode) []helpSection {
 }
 
 func helpView(layout layoutMode, from mode) string {
+	header := theme.GradientTitle("cliff · keys")
 	intro := theme.MutedText.Render(
 		"arrows move where you look · ⏎ opens · ← or esc goes back",
 	)
@@ -57,26 +58,31 @@ func helpView(layout layoutMode, from mode) string {
 	right := renderHelpColumn(helpRightFor(layout, from))
 	cols := lipgloss.JoinHorizontal(lipgloss.Top, left, "    ", right)
 
-	body := intro + "\n\n" + cols
+	body := header + "\n" + intro + "\n\n" + cols
 
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(theme.ColorBorder).
+		BorderTopForeground(theme.ColorAccent).
+		BorderLeftForeground(theme.ColorAccent).
+		BorderRightForeground(theme.ColorAccentMid).
+		BorderBottomForeground(theme.ColorAccentAlt).
 		Padding(1, 3).
 		Render(body)
 }
 
-func renderHelpColumn(sections []helpSection) string {
-	keyStyle := lipgloss.NewStyle().Foreground(theme.ColorAccent).Bold(true).Width(8)
-	descStyle := theme.MutedText
+// helpKeyStyle is the fixed-width left column of each help row. Hoisted
+// to package scope (rather than rebuilt on every help open) because the
+// styling is invariant — only the rendered string changes per binding.
+var helpKeyStyle = lipgloss.NewStyle().Foreground(theme.ColorAccent).Bold(true).Width(8)
 
+func renderHelpColumn(sections []helpSection) string {
 	var blocks []string
 	for _, sec := range sections {
 		var lines []string
 		lines = append(lines, theme.AccentBold.Render(sec.title))
 		for _, b := range sec.bindings {
 			h := b.Help()
-			lines = append(lines, "  "+keyStyle.Render(h.Key)+descStyle.Render(h.Desc))
+			lines = append(lines, "  "+helpKeyStyle.Render(h.Key)+theme.MutedText.Render(h.Desc))
 		}
 		blocks = append(blocks, strings.Join(lines, "\n"))
 	}

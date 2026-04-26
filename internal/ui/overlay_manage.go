@@ -26,7 +26,7 @@ func manageView(app *catalog.App, actions []manageAction, cursor int, width int)
 				theme.MutedText.Render("esc close"))
 	}
 
-	header := theme.AccentBold.Render("Manage ") + theme.FocusText.Render(app.Name)
+	header := theme.GradientTitle("Manage " + app.Name)
 	subline := theme.MutedText.Render("Already installed — what would you like to do?")
 
 	// Render each action as either "[ label ]" (focused, enabled),

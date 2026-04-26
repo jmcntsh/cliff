@@ -68,13 +68,25 @@ func renderCard(app catalog.App, width, height int, selected, installed, focused
 	if installed {
 		name = "✓ " + name
 	}
-	nameStyle := lipgloss.NewStyle().Bold(true)
+	truncated := runewidth.Truncate(name, innerW, "…")
+
+	var nameLine string
 	if active {
-		nameStyle = nameStyle.Foreground(theme.ColorAccent)
+		// Gradient the active card's name like the title bar does.
+		// The fuchsia→indigo sweep on the focused tile signals "this
+		// is the live one" with the same brand pull as the title,
+		// closing a loop between the page header and the focal item.
+		// Background is panel so the gradient runes blend with the
+		// active card fill.
+		nameLine = lipgloss.NewStyle().
+			Background(theme.ColorPanel).
+			Render(theme.GradientTitle(truncated))
 	} else {
-		nameStyle = nameStyle.Foreground(theme.ColorText)
+		nameLine = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(theme.ColorText).
+			Render(truncated)
 	}
-	nameLine := nameStyle.Render(runewidth.Truncate(name, innerW, "…"))
 
 	// Every styled chunk in the meta row needs the panel bg on an
 	// active card. Each Render call emits a trailing ANSI reset that
@@ -133,6 +145,20 @@ func renderCard(app catalog.App, width, height int, selected, installed, focused
 		// the grid is the focused pane; a selected-but-unfocused card
 		// keeps just the thick-border shape.
 		box = box.Background(theme.ColorPanel).BorderBackground(theme.ColorPanel)
+
+		// Per-edge gradient: top in brand fuchsia, right/bottom in
+		// the HCL midpoint, going to indigo at the bottom-right
+		// corner. Routing the side edges through the midpoint
+		// smooths the diagonal so the border reads as a continuous
+		// fuchsia→indigo wash instead of two abruptly-meeting solid
+		// halves. lipgloss can't do per-character border styling, so
+		// this 3-color routing is the smoothest option without
+		// rendering the border by hand.
+		box = box.
+			BorderTopForeground(theme.ColorAccent).
+			BorderLeftForeground(theme.ColorAccent).
+			BorderRightForeground(theme.ColorAccentMid).
+			BorderBottomForeground(theme.ColorAccentAlt)
 	}
 
 	return box.Render(body)

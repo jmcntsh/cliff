@@ -16,7 +16,7 @@ func (r Root) View() string {
 	}
 
 	if r.mode == modeReadme {
-		return r.readme.View() + "\n" + r.footer()
+		return r.readme.ViewWithSpinner(r.spinner.View()) + "\n" + r.footer()
 	}
 
 	contentH := r.height - 2
@@ -27,11 +27,12 @@ func (r Root) View() string {
 
 	gridW, gridH := r.gridDimensions()
 
-	titleStyle := theme.TitleStyle
+	var title string
 	if r.focus == focusSidebar {
-		titleStyle = theme.DimTitle
+		title = theme.DimTitle.Render(r.computeTitle())
+	} else {
+		title = theme.GradientTitlePhase(r.computeTitle(), r.titlePhase)
 	}
-	title := titleStyle.Render(r.computeTitle())
 
 	gridBody := r.grid.View()
 	if len(r.grid.apps) == 0 {
@@ -61,7 +62,10 @@ func (r Root) View() string {
 
 		searchBar := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(theme.ColorAccent).
+			BorderTopForeground(theme.ColorAccent).
+			BorderLeftForeground(theme.ColorAccent).
+			BorderRightForeground(theme.ColorAccentMid).
+			BorderBottomForeground(theme.ColorAccentAlt).
 			Padding(0, 1).
 			Render(content)
 		body = searchBar + "\n" + body
@@ -77,7 +81,7 @@ func (r Root) View() string {
 	}
 	if r.mode == modePkgRunning {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			pkgRunningView(r.installApp, r.installOp, r.installViewport, len(r.installLines) > 0, r.width))
+			pkgRunningView(r.installApp, r.installOp, r.installViewport, len(r.installLines) > 0, r.spinner.View(), r.width))
 	}
 	if r.mode == modePkgResult {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
@@ -92,8 +96,18 @@ func (r Root) View() string {
 			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.installApp, r.launchMethod, r.launchErr, r.binOverrides, r.width))
 	}
 	if r.mode == modeSubmit {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			submitView(r.submitURL, r.submitOpened, r.submitErr, r.width))
+		var content string
+		switch r.submitPhase {
+		case submitPhaseForm:
+			if r.submitForm != nil {
+				content = submitFormView(r.submitForm, r.width)
+			}
+		case submitPhaseConfirm:
+			content = submitConfirmView(r.submitURL, r.width)
+		case submitPhaseOpened:
+			content = submitOpenedView(r.submitURL, r.submitErr, r.width)
+		}
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center, content)
 	}
 
 	return body + "\n" + r.footer()
@@ -206,14 +220,91 @@ func (r Root) footer() string {
 			hints = "⏎ apply · esc cancel"
 		}
 	case modeSubmit:
-		if r.submitOpened {
-			hints = "⏎ or esc close"
-		} else {
+		switch r.submitPhase {
+		case submitPhaseForm:
+			hints = "tab/⏎ next field · ⏎ on last field to confirm · esc cancel"
+		case submitPhaseConfirm:
 			hints = "⏎ open in browser · esc cancel"
+		case submitPhaseOpened:
+			hints = "⏎ or esc close"
 		}
 	}
 	if r.flashMsg != "" && time.Now().Before(r.flashExpiry) {
-		return theme.AccentText.Render(r.flashMsg)
+		// Even on flash, keep the brand mark anchored on the left so
+		// the bottom row always reads as "this is cliff." The flash
+		// message replaces the hints, not the wordmark.
+		return theme.GradientTitlePhase("cliff", r.titlePhase) + theme.MutedText.Render("  ") + theme.AccentText.Render(r.flashMsg)
 	}
-	return theme.MutedText.Render(hints)
+	// Brand mark on the left, hint text on the right, separated by a
+	// muted dot. The wordmark is the consistent "Charm app" tell;
+	// every screen ends with it. The hint chunks are styled per-keycap
+	// so the actionable letters pop in fuchsia and the descriptions
+	// sit muted, which makes the footer scannable instead of a flat
+	// gray ribbon.
+	return theme.GradientTitlePhase("cliff", r.titlePhase) +
+		theme.MutedText.Render("  ·  ") +
+		styleHints(hints)
+}
+
+// styleHints renders a "·"-separated hint string with each chunk's
+// keycap (the first whitespace-delimited token) in fuchsia bold and
+// the rest of the chunk muted. Examples of inputs it handles:
+//
+//	"/ search"           → ⟦/⟧ search
+//	"⏎ install"          → ⟦⏎⟧ install
+//	"↑↓/pgup/pgdn scroll logs  ⏎ or esc to close"
+//	                     → ⟦↑↓/pgup/pgdn⟧ scroll logs   ⟦⏎⟧ or esc to close
+//	"type to search · ↑↓←→ pick · ⏎ commit · esc cancel"
+//	                     → type to search · ⟦↑↓←→⟧ pick · ⟦⏎⟧ commit · ⟦esc⟧ cancel
+//
+// The split rule: each chunk is split on the first space, and the
+// left side is treated as the keycap. Chunks without a space (rare,
+// like a standalone phrase) render fully muted. The function is
+// stateless and re-parses every render — cheap given hint strings
+// are tens of bytes.
+func styleHints(s string) string {
+	const sep = " · "
+	chunks := strings.Split(s, sep)
+	for i, chunk := range chunks {
+		chunks[i] = styleHintChunk(chunk)
+	}
+	return strings.Join(chunks, theme.MutedText.Render(sep))
+}
+
+func styleHintChunk(c string) string {
+	// Some chunks have a double-space sub-separator (e.g. "↑↓
+	// scroll logs  esc cancel install"). Recurse on those so each
+	// half gets its own keycap styling.
+	if i := strings.Index(c, "  "); i >= 0 {
+		return styleHintChunk(c[:i]) + theme.MutedText.Render("  ") + styleHintChunk(c[i+2:])
+	}
+
+	// Chunks like "type to search" or "?" with no real keycap
+	// fall back to all-muted. The detection rule is "first token
+	// is shorter than the rest" — i.e. it really is a key, not the
+	// start of a sentence.
+	sp := strings.IndexByte(c, ' ')
+	if sp <= 0 || sp >= len(c)-1 {
+		return theme.MutedText.Render(c)
+	}
+	key := c[:sp]
+	desc := c[sp:]
+
+	// "type to search" starts with a long word that isn't a
+	// keycap; exempt anything where the first token is > 4 chars
+	// AND alphabetic. ⏎/↑↓/pgup/esc all stay short or contain
+	// non-letters so they pass the keycap test.
+	if len(key) > 4 && isAlpha(key) {
+		return theme.MutedText.Render(c)
+	}
+	return theme.AccentBold.Render(key) + theme.MutedText.Render(desc)
+}
+
+func isAlpha(s string) bool {
+	for _, r := range s {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') {
+			return false
+		}
+	}
+	return true
 }

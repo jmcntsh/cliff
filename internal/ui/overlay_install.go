@@ -105,9 +105,7 @@ func pkgConfirmView(app *catalog.App, op pkgOp, width int) string {
 		return pkgNotAvailableView(app, op, width)
 	}
 
-	header := theme.AccentBold.Render(op.verb()+" ") +
-		theme.FocusText.Render(app.Name) +
-		theme.AccentBold.Render("?")
+	header := theme.GradientTitle(op.verb() + " " + app.Name + "?")
 	// Literal command as the subline — more useful than naming the
 	// package manager and what CLAUDE.md §3 asks the confirm modal
 	// to surface anyway.
@@ -176,9 +174,17 @@ func pkgNotAvailableView(app *catalog.App, op pkgOp, width int) string {
 // drives the header verb ("Installing" / "Uninstalling" / "Updating");
 // everything else — subline command, viewport, footer — is identical
 // across ops, which is why the triplet collapsed to one function.
-func pkgRunningView(app *catalog.App, op pkgOp, vp viewport.Model, hasOutput bool, width int) string {
-	header := theme.AccentBold.Render(op.runningVerb()+" ") + theme.FocusText.Render(app.Name)
-	outputBlock := renderLogViewport(vp, hasOutput, "(starting…)")
+//
+// spinnerGlyph is the rotating dot from the Root spinner; passed in
+// (rather than imported) so the view stays a pure renderer and the
+// modal still works in tests that construct a static frame.
+func pkgRunningView(app *catalog.App, op pkgOp, vp viewport.Model, hasOutput bool, spinnerGlyph string, width int) string {
+	header := theme.GradientTitle(op.runningVerb() + " " + app.Name)
+	placeholder := "starting…"
+	if spinnerGlyph != "" {
+		placeholder = spinnerGlyph + " " + placeholder
+	}
+	outputBlock := renderLogViewport(vp, hasOutput, placeholder)
 
 	body := []string{
 		header,
@@ -218,11 +224,7 @@ func pkgResultView(res *install.Result, op pkgOp, vp viewport.Model, launchMetho
 
 	body := []string{status}
 	if hint := install.Diagnose(*res); hint != "" {
-		body = append(body,
-			"",
-			lipgloss.NewStyle().
-				Foreground(theme.ColorWarn).
-				Render(hint))
+		body = append(body, "", theme.Warn.Render(hint))
 	}
 
 	// Install-only follow-up section: PathWarning + launcher.
@@ -233,9 +235,7 @@ func pkgResultView(res *install.Result, op pkgOp, vp viewport.Model, launchMetho
 		prompt := "Press ⏎ to add it automatically, or esc to dismiss."
 		body = append(body,
 			"",
-			lipgloss.NewStyle().
-				Foreground(theme.ColorWarn).
-				Render(headline),
+			theme.Warn.Render(headline),
 			theme.MutedText.Render(prompt),
 		)
 	}
@@ -302,7 +302,7 @@ func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, ap
 
 	if !applied {
 		// Confirm phase: preview the exact file and line before writing.
-		header := theme.AccentBold.Render("Add to $PATH?")
+		header := theme.GradientTitle("Add to $PATH?")
 
 		var body []string
 		body = append(body, header, "")
@@ -351,7 +351,7 @@ func fixPathView(plan *pathfix.Plan, err error, applied, alreadyPresent bool, ap
 	}
 
 	// Result phase.
-	header := theme.AccentBold.Render("$PATH")
+	header := theme.GradientTitle("$PATH")
 	var body []string
 	body = append(body, header, "")
 
@@ -462,34 +462,42 @@ func shellLabel(k pathfix.ShellKind) string {
 	}
 }
 
+// Styles for the scrollable log block. Built once at package load
+// because they're used on every renderLogViewport call (i.e. every
+// frame the install/uninstall/upgrade modal is on screen) and have no
+// per-frame inputs.
+var (
+	logPlaceholderStyle = lipgloss.NewStyle().
+				Foreground(theme.ColorMuted).
+				Italic(true).
+				Padding(0, 1).
+				Width(installLogWidth)
+
+	logInnerStyle = lipgloss.NewStyle().
+			Foreground(theme.ColorText).
+			Background(theme.ColorPanel).
+			Padding(0, 1)
+
+	logScrollIndicatorStyle = lipgloss.NewStyle().
+				Foreground(theme.ColorMuted).
+				Align(lipgloss.Right).
+				Width(installLogWidth)
+)
+
 // renderLogViewport boxes the scrollable viewport for the install log
 // modals and shows a scroll indicator in the bottom-right when there's
 // content to scroll. Shared between the running and result views so the
 // two visually match.
 func renderLogViewport(vp viewport.Model, hasOutput bool, emptyPlaceholder string) string {
 	if !hasOutput {
-		return lipgloss.NewStyle().
-			Foreground(theme.ColorMuted).
-			Italic(true).
-			Padding(0, 1).
-			Width(installLogWidth).
-			Render(emptyPlaceholder)
+		return logPlaceholderStyle.Render(emptyPlaceholder)
 	}
-	inner := lipgloss.NewStyle().
-		Foreground(theme.ColorText).
-		Background(theme.ColorPanel).
-		Padding(0, 1).
-		Render(vp.View())
+	inner := logInnerStyle.Render(vp.View())
 	// Scroll indicator — only shown once the content exceeds the viewport.
-	pct := vp.ScrollPercent()
 	if vp.TotalLineCount() <= vp.Height {
 		return inner
 	}
-	indicator := lipgloss.NewStyle().
-		Foreground(theme.ColorMuted).
-		Align(lipgloss.Right).
-		Width(installLogWidth).
-		Render(fmt.Sprintf("%3.0f%%", pct*100))
+	indicator := logScrollIndicatorStyle.Render(fmt.Sprintf("%3.0f%%", vp.ScrollPercent()*100))
 	return inner + "\n" + indicator
 }
 
@@ -503,7 +511,10 @@ func modalBox(width int, content string) string {
 	}
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(theme.ColorBorder).
+		BorderTopForeground(theme.ColorAccent).
+		BorderLeftForeground(theme.ColorAccent).
+		BorderRightForeground(theme.ColorAccentMid).
+		BorderBottomForeground(theme.ColorAccentAlt).
 		Padding(1, 3).
 		Width(maxW).
 		Render(content)

@@ -8,6 +8,7 @@ import (
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
@@ -86,23 +87,23 @@ func (s sidebar) setFocused(b bool) sidebar {
 }
 
 func (s sidebar) update(msg tea.Msg) (sidebar, bool) {
-	key, ok := msg.(tea.KeyMsg)
+	km, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return s, false
 	}
 	prev := s.cursor
-	switch key.String() {
-	case "up", "k":
+	switch {
+	case key.Matches(km, keys.Up):
 		if s.cursor > 0 {
 			s.cursor--
 		}
-	case "down", "j":
+	case key.Matches(km, keys.Down):
 		if s.cursor < len(s.items)-1 {
 			s.cursor++
 		}
-	case "home", "g":
+	case key.Matches(km, keys.Top):
 		s.cursor = 0
-	case "end", "G":
+	case key.Matches(km, keys.Bottom):
 		s.cursor = len(s.items) - 1
 	}
 	return s, s.cursor != prev
@@ -110,18 +111,18 @@ func (s sidebar) update(msg tea.Msg) (sidebar, bool) {
 
 func (s sidebar) view(height int) string {
 	var lines []string
-	// Header flips to accent-on-panel when the sidebar is focused —
-	// a title-bar treatment that matches the focused-row fill below
-	// and makes it unambiguous which pane input is going to. When
-	// unfocused, the header stays plain accent text so the sidebar
-	// still reads as labeled but visually recedes.
-	headerStyle := theme.TitleStyle
+	// Header uses the gradient brand-mark treatment so the sidebar
+	// reads as a labeled section sharing the title bar's brand
+	// language. When focused, an accent-color underline-style
+	// indicator marks which pane has input.
+	header := theme.GradientTitle("CATEGORIES")
 	if s.focused {
-		headerStyle = theme.TitleStyle.
+		header = lipgloss.NewStyle().
 			Background(theme.ColorPanel).
-			Padding(0, 1)
+			Padding(0, 1).
+			Render(header)
 	}
-	lines = append(lines, headerStyle.Render("CATEGORIES"))
+	lines = append(lines, header)
 	lines = append(lines, "")
 
 	nameBudget := sidebarWidth - 2 // 2 cols for prefix; count appended after truncation
@@ -145,26 +146,29 @@ func (s sidebar) view(height int) string {
 		selected := i == s.cursor
 		prefix := "  "
 		style := lipgloss.NewStyle().Foreground(theme.ColorMuted)
+
+		var rendered string
 		switch {
 		case selected && s.focused:
-			// Focused+selected: stack three cues the way the card grid
-			// does — accent ▸ prefix, bold focus-color text, and a
-			// panel-background bar that extends across the full
-			// sidebar width. The bar is the peripheral-vision cue;
-			// without it, a focus change reads as "one row got
-			// slightly bolder somewhere" and is easy to miss when
-			// your eyes are on the grid.
+			// Focused+selected gets the gradient treatment so the
+			// active sidebar row matches the title bar and the
+			// active card visually. The panel-background bar
+			// extends across the full sidebar width as a
+			// peripheral-vision cue, with the gradient label
+			// painted on top.
 			prefix = theme.SelectionPrefix
-			style = lipgloss.NewStyle().
-				Foreground(theme.ColorFocus).
+			barStyle := lipgloss.NewStyle().
 				Background(theme.ColorPanel).
-				Bold(true).
 				Width(nameBudget)
+			rendered = prefix + barStyle.Render(theme.GradientTitle(label))
 		case selected:
 			prefix = "▸ "
 			style = lipgloss.NewStyle().Foreground(theme.ColorText)
+			rendered = prefix + style.Render(label)
+		default:
+			rendered = prefix + style.Render(label)
 		}
-		lines = append(lines, prefix+style.Render(label))
+		lines = append(lines, rendered)
 	}
 
 	for len(lines) < height {

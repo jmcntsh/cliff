@@ -14,13 +14,71 @@ import (
 	"github.com/jmcntsh/cliff/internal/submit"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 )
 
 type flashClearMsg struct{}
 
 func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Spinner ticks are handled before the main switch so the
+	// glyph keeps animating across modes without each handler
+	// having to know about it. We only re-arm the next tick
+	// while a loading state is actually visible — once nothing
+	// wants the spinner, the tick chain naturally terminates and
+	// we go back to zero per-frame work.
+	if tick, ok := msg.(spinner.TickMsg); ok {
+		var cmd tea.Cmd
+		r.spinner, cmd = r.spinner.Update(tick)
+		if !r.spinnerActive() {
+			return r, nil
+		}
+		return r, cmd
+	}
+
+	if _, ok := msg.(titleTickMsg); ok {
+		// Advance the launch sweep. We re-arm the next tick only
+		// while phase < titleTickEnd, so the chain self-terminates
+		// ~1.2s after launch and produces zero per-frame work
+		// afterwards. titleTickEnd > 1.0 so the torch sweeps fully
+		// off the right edge of "cliff" before we settle — without
+		// the overshoot, the rightmost char never gets a clean
+		// post-torch frame and the animation ends mid-glow.
+		r.titlePhase += titleTickStep
+		if r.titlePhase >= titleTickEnd {
+			r.titlePhase = titleTickEnd
+			return r, nil
+		}
+		return r, launchTitleTick()
+	}
+
+	// Submit-form non-key routing. The huh form needs to see internal
+	// messages like nextFieldMsg, tea.BlinkMsg from its text inputs,
+	// and any focus events — none of which are tea.KeyMsg, so they'd
+	// otherwise fall through the dispatch below. Routing them here
+	// keeps the rest of the type switch focused on app-level events
+	// without each handler having to know about huh's wire protocol.
+	//
+	// Key messages still flow through the tea.KeyMsg case so the
+	// modal-level esc-cancel intercept (in updateSubmitForm) runs
+	// before huh sees the key. WindowSizeMsg falls through to its
+	// own case so the form picks up the new width via resize() →
+	// re-init path; routing it here would double-handle.
+	if r.mode == modeSubmit && r.submitPhase == submitPhaseForm && r.submitForm != nil {
+		switch msg.(type) {
+		case tea.KeyMsg, tea.WindowSizeMsg:
+			// fall through to the main switch below
+		default:
+			form, cmd := r.submitForm.Update(msg)
+			if f, ok := form.(*huh.Form); ok {
+				r.submitForm = f
+			}
+			return r, cmd
+		}
+	}
+
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		r.width = m.Width
@@ -28,6 +86,20 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.ready = true
 		if r.readme.ready {
 			r.readme = r.readme.resize(m.Width, m.Height)
+		}
+		// If the submit form is on screen, rebuild it at the new
+		// width so the input fields don't render off the modal's
+		// content column. Cheaper than threading WithWidth through
+		// huh's resize internals — the user-typed values live on
+		// r.submitFields, not on the form, so a fresh form picks
+		// them up via the same value pointers.
+		if r.mode == modeSubmit && r.submitPhase == submitPhaseForm {
+			r.submitForm = newSubmitForm(
+				&r.submitFields,
+				submitFormWidth(r.width),
+				submitFormHeight(r.height),
+			)
+			return r.resize(), r.submitForm.Init()
 		}
 		return r.resize(), nil
 
@@ -211,14 +283,10 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// From browse, submit with no app context — we don't assume
 		// the currently-cursored app is "the one to submit" because
 		// a user hitting `+` is usually thinking of something that
-		// _isn't_ in the catalog. Blank fields; the curator sorts it
-		// out from the issue form.
+		// _isn't_ in the catalog. Blank fields; the form lets them
+		// fill it in.
 		r.submitReturnMode = modeBrowse
-		r.submitURL = submit.Request{}.URL()
-		r.submitOpened = false
-		r.submitErr = nil
-		r.mode = modeSubmit
-		return r, nil
+		return r.openSubmitForm()
 	case key.Matches(msg, keys.Enter):
 		if app := r.selectedApp(); app != nil {
 			// Installed apps open the manage picker instead of the
@@ -236,7 +304,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			r.readme = newReadme(app, r.width, r.height)
 			r.mode = modeReadme
-			return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit())
+			return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit(), r.spinner.Tick)
 		}
 		return r, nil
 	case key.Matches(msg, keys.Install):
@@ -299,7 +367,12 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		newSB, changed := r.sidebar.update(msg)
 		r.sidebar = newSB
 		if changed {
+			// Sidebar category changes should start the grid at the top
+			// of the newly filtered list. Preserving the prior selected
+			// repo here causes a surprising jump into the middle/bottom
+			// of the new category when that repo exists there too.
 			r = r.refilter()
+			r.grid = r.grid.jumpTop()
 		}
 		return r, nil
 	}
@@ -418,11 +491,7 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// we don't prefill its repo — submit is always "cliff should
 		// also list <X>" where X is whatever the user just thought of.
 		r.submitReturnMode = modeReadme
-		r.submitURL = submit.Request{}.URL()
-		r.submitOpened = false
-		r.submitErr = nil
-		r.mode = modeSubmit
-		return r, nil
+		return r.openSubmitForm()
 	}
 	var cmd tea.Cmd
 	r.readme, cmd = r.readme.Update(msg)
@@ -443,8 +512,9 @@ func (r Root) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	// While search is open, allow grid navigation with arrow keys so the
 	// user can pick a result without leaving the input. Letter-based
-	// nav (hjkl) belongs to the input itself.
-	if msg.String() == "up" || msg.String() == "down" || msg.String() == "left" || msg.String() == "right" {
+	// nav (hjkl) belongs to the input itself, so we match by key string
+	// against the arrow-only inputs rather than by binding.
+	if s := msg.String(); s == "up" || s == "down" || s == "left" || s == "right" {
 		return r.gridNav(msg), nil
 	}
 	var cmd tea.Cmd
@@ -483,7 +553,7 @@ func (r Root) updatePkgConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.installViewport.SetContent("")
 		r.installViewport.GotoTop()
 		r.mode = modePkgRunning
-		return r, runPkgCmd(app, cmd)
+		return r, tea.Batch(runPkgCmd(app, cmd), r.spinner.Tick)
 	}
 	return r, nil
 }
@@ -656,7 +726,7 @@ func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if app != nil {
 				r.readme = newReadme(app, r.width, r.height)
 				r.mode = modeReadme
-				return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit())
+				return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit(), r.spinner.Tick)
 			}
 			r.mode = r.installReturnMode
 			return r, nil
@@ -800,36 +870,142 @@ func (r Root) clearFixPath() Root {
 	return r
 }
 
-// updateSubmit drives the "open the registry submit form" overlay.
-// Two phases share one mode, gated on submitOpened:
+// openSubmitForm builds the huh form, resets all submit-flow state,
+// and switches into modeSubmit's form phase. Used by both the browse
+// and readme `+` handlers. Returns the form's Init cmd so the first
+// field's cursor blink (and any field-internal startup work)
+// schedules immediately.
 //
-//   - pre-open: ⏎ opens the URL in the user's browser, esc/q/← backs
-//     out without navigating anywhere (so the `+` keypress is never
-//     load-bearing — you can always cancel before the browser hop).
-//   - post-open: ⏎ or esc dismisses back to where `+` was pressed.
+// submitReturnMode is left as whatever the caller set — they know
+// where to send the user back to on cancel. Everything else (URL,
+// error, opened-flag) is cleared so a previous submission's state
+// can't bleed through into this one.
+func (r Root) openSubmitForm() (tea.Model, tea.Cmd) {
+	r.submitFields = submit.Request{}
+	r.submitURL = ""
+	r.submitErr = nil
+	r.submitPhase = submitPhaseForm
+	r.mode = modeSubmit
+	r.submitForm = newSubmitForm(
+		&r.submitFields,
+		submitFormWidth(r.width),
+		submitFormHeight(r.height),
+	)
+	return r, r.submitForm.Init()
+}
+
+// updateSubmit drives the three-phase submit overlay:
 //
-// We don't block the UI on browser.Open because it Start()s and
-// returns; the overlay just flips into the "opened" phase, and shows
-// the URL as a copy-by-hand fallback if Open errored.
-func (r Root) updateSubmit(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if r.submitOpened {
-		if key.Matches(msg, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
+//   - submitPhaseForm:    huh-driven form. Most messages pass straight
+//                          through to huh; we only intercept esc to
+//                          cancel the whole flow (huh treats esc as
+//                          "abort" but we want to bounce back to the
+//                          return mode without any further prompt).
+//                          When the form's State flips to
+//                          StateCompleted we build the URL and
+//                          advance to confirm.
+//   - submitPhaseConfirm: pre-open preview. ⏎ launches browser.Open;
+//                          esc/q/← backs out without navigating, so
+//                          a stray keypress is never load-bearing.
+//   - submitPhaseOpened:  post-hand-off. ⏎ or esc dismisses back
+//                          to the return mode.
+//
+// We don't block the UI on browser.Open — it Start()s and returns;
+// the overlay just flips into the opened phase and shows the URL as
+// a copy-by-hand fallback if Open errored.
+//
+// updateSubmit takes tea.Msg (not tea.KeyMsg) because the form phase
+// needs to forward non-key messages (window-size, focus events,
+// huh's internal nextField cmds) into the form. The top-level
+// dispatcher in Update wraps key handling around this, so when a
+// non-key message arrives it now reaches updateSubmit too.
+func (r Root) updateSubmit(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch r.submitPhase {
+	case submitPhaseForm:
+		return r.updateSubmitForm(msg)
+	case submitPhaseConfirm:
+		return r.updateSubmitConfirm(msg)
+	case submitPhaseOpened:
+		return r.updateSubmitOpened(msg)
+	}
+	return r, nil
+}
+
+func (r Root) updateSubmitForm(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if r.submitForm == nil {
+		// Defensive: no form means nothing to drive. Bounce back to
+		// the return mode so the user isn't stuck on a blank modal.
+		r.mode = r.submitReturnMode
+		r.submitPhase = submitPhaseForm
+		return r, nil
+	}
+	if km, ok := msg.(tea.KeyMsg); ok {
+		// Esc cancels the whole flow before huh sees the key, so we
+		// don't have to disambiguate "user wanted to clear a field"
+		// from "user wanted out." Huh's own abort is StateAborted,
+		// which we'd handle the same way — short-circuiting here
+		// keeps the cancel path obvious.
+		if key.Matches(km, keys.Escape, keys.Quit) {
 			r.mode = r.submitReturnMode
-			r.submitOpened = false
-			r.submitErr = nil
-			r.submitURL = ""
+			r.submitForm = nil
+			r.submitFields = submit.Request{}
 			return r, nil
 		}
+	}
+
+	form, cmd := r.submitForm.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		r.submitForm = f
+	}
+
+	// Form completion is the trigger to advance phases. submitFields
+	// already holds the typed values (huh wrote through the value
+	// pointers), so we just derive the URL and flip the phase.
+	if r.submitForm.State == huh.StateCompleted {
+		r.submitURL = r.submitFields.URL()
+		r.submitPhase = submitPhaseConfirm
+		r.submitForm = nil
+		return r, nil
+	}
+	if r.submitForm.State == huh.StateAborted {
+		r.mode = r.submitReturnMode
+		r.submitForm = nil
+		r.submitFields = submit.Request{}
+		return r, nil
+	}
+	return r, cmd
+}
+
+func (r Root) updateSubmitConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
+	km, ok := msg.(tea.KeyMsg)
+	if !ok {
 		return r, nil
 	}
 	switch {
-	case key.Matches(msg, keys.Escape, keys.Quit, keys.Left):
+	case key.Matches(km, keys.Escape, keys.Quit, keys.Left):
 		r.mode = r.submitReturnMode
 		r.submitURL = ""
+		r.submitFields = submit.Request{}
 		return r, nil
-	case key.Matches(msg, keys.Enter):
+	case key.Matches(km, keys.Enter):
 		r.submitErr = browser.Open(r.submitURL)
-		r.submitOpened = true
+		r.submitPhase = submitPhaseOpened
+		return r, nil
+	}
+	return r, nil
+}
+
+func (r Root) updateSubmitOpened(msg tea.Msg) (tea.Model, tea.Cmd) {
+	km, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return r, nil
+	}
+	if key.Matches(km, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
+		r.mode = r.submitReturnMode
+		r.submitPhase = submitPhaseForm
+		r.submitErr = nil
+		r.submitURL = ""
+		r.submitFields = submit.Request{}
 		return r, nil
 	}
 	return r, nil
@@ -844,13 +1020,19 @@ func (r Root) updateSidebarOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Enter):
 		r.mode = modeBrowse
 		r = r.syncFocus()
+		// Applying a category from the overlay mirrors the desktop
+		// sidebar behavior: land at the top of the resulting grid.
 		r = r.refilter()
+		r.grid = r.grid.jumpTop()
 		return r, nil
 	}
 	newSB, changed := r.sidebar.update(msg)
 	r.sidebar = newSB
 	if changed {
+		// While the overlay is open, moving category selection should
+		// keep the previewed grid anchored at row 0 for consistency.
 		r = r.refilter()
+		r.grid = r.grid.jumpTop()
 	}
 	return r, nil
 }

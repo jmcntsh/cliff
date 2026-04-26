@@ -9,11 +9,15 @@ import (
 	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/launcher"
 	"github.com/jmcntsh/cliff/internal/pathfix"
+	"github.com/jmcntsh/cliff/internal/submit"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type focusState int
@@ -47,6 +51,33 @@ const (
 
 	modeFixPath // confirm + result screen for auto-adding a dir to $PATH
 	modeSubmit  // confirm screen for opening the registry submit form in a browser
+)
+
+// submitPhase tracks where we are inside modeSubmit. The flow is
+// strictly linear: form (user types fields) → confirm (preview the
+// URL we're about to open) → opened (browser hand-off completed,
+// either successfully or with an error to display). Splitting the
+// phases out of mode (rather than minting three new modes) keeps
+// the top-level mode dispatch table flat and lets the submit
+// overlay own its own internal state machine.
+type submitPhase int
+
+const (
+	// submitPhaseForm is the huh-driven entry form. The user is
+	// filling in name / repo / description / notes; esc cancels
+	// the whole flow, ⏎ on the final field advances to confirm.
+	submitPhaseForm submitPhase = iota
+
+	// submitPhaseConfirm is the "about to open <URL>" preview.
+	// Same UX as the pre-huh submit overlay: the user sees the
+	// URL before we hand off to a browser, so the keypress that
+	// caused the navigation is never load-bearing.
+	submitPhaseConfirm
+
+	// submitPhaseOpened is the post-hand-off state. submitErr
+	// distinguishes success (browser opened) from failure (the
+	// URL is shown for manual paste).
+	submitPhaseOpened
 )
 
 // pkgOp is the active package operation for the shared confirm/running/
@@ -182,17 +213,29 @@ type Root struct {
 
 	// Submit-flow state for modeSubmit. Populated when `+` is pressed
 	// from any mode that allows submission; cleared when the overlay
-	// closes. submitReturnMode is the mode we bounce back to on esc
-	// (browse or readme, depending on where `+` was pressed);
-	// submitOpened flips after a successful browser.Open so the modal
-	// can show the "opened in your browser" confirmation rather than
-	// the initial "about to open" preview, without switching modes.
-	// submitErr holds the browser.Open error so the post-open phase
-	// can fall back to showing the URL for manual paste.
+	// closes.
+	//
+	// The flow has three phases (see submitPhase): a huh-driven form
+	// where the user fills in the manifest seed fields, a confirm
+	// step that previews the URL we're about to open, and the post-
+	// open state that either confirms success or surfaces the URL
+	// for manual paste. submitReturnMode is the mode we bounce back
+	// to on esc/cancel (browse or readme, depending on where `+`
+	// was pressed). submitErr holds the browser.Open error so the
+	// post-open phase can fall back to showing the URL.
+	//
+	// submitFields is the running buffer the huh form writes into;
+	// once the form completes, we hand it to submit.Request to derive
+	// the prefilled GitHub URL. Keeping the request struct as the
+	// source of truth means the CLI verb (cmdSubmit) and the TUI
+	// form share one URL builder — change the schema in one place
+	// and both surfaces follow.
 	submitReturnMode mode
-	submitOpened     bool
+	submitPhase      submitPhase
 	submitErr        error
 	submitURL        string
+	submitFields     submit.Request
+	submitForm       *huh.Form
 
 	// Manage-picker state for modeManage. Populated when Enter is
 	// pressed on an installed app; emptied when the picker closes.
@@ -203,6 +246,47 @@ type Root struct {
 	// the escape hatch for "I meant to re-read docs, not manage."
 	manageActions []manageAction
 	manageCursor  int
+
+	// spinner is a single shared bubbles/spinner reused everywhere
+	// cliff is waiting on something the user can see: install
+	// startup before the first stdout line, README fetches, reel
+	// fetches. One ticker means the glyph rotates in lockstep
+	// across surfaces, and we only post one TickMsg per frame
+	// regardless of how many "loading" states are visible at once.
+	//
+	// The ticker is started lazily — Init() returns nil so the very
+	// first paint isn't gated on a spinner tick — and re-armed
+	// whenever a new loading state begins (see startSpinner). When
+	// nothing's loading, the tick goroutine stays parked until the
+	// next loading state arms it again.
+	spinner spinner.Model
+
+	// titlePhase animates the brand-mark gradient on launch. It
+	// starts at 0 (flat fuchsia flash), ticks toward 1.0 over
+	// ~500ms, and then stays at 1.0 for the rest of the session.
+	// theme.GradientTitlePhase reads this to decide how far each
+	// rune has interpolated from start-color toward its final
+	// gradient slot, so on launch the brand mark "ignites" instead
+	// of just snapping in. Once at 1.0, the rest of the codebase
+	// can keep calling theme.GradientTitle (which is just
+	// GradientTitlePhase(s, 1.0)) and behavior is unchanged.
+	titlePhase float64
+}
+
+// spinnerActive reports whether any UI surface currently wants the
+// spinner ticking. Centralizing the answer here keeps the "do we
+// re-tick?" check in Update consistent with what each view actually
+// renders, and makes adding a new spinning state a one-line change.
+func (r Root) spinnerActive() bool {
+	switch {
+	case r.mode == modePkgRunning && len(r.installLines) == 0:
+		return true
+	case r.mode == modeReadme && r.readme.loading:
+		return true
+	case r.mode == modeReadme && r.readme.reelLoading():
+		return true
+	}
+	return false
 }
 
 // manageAction is one choice on the manage picker. Kind drives what
@@ -235,6 +319,10 @@ func New(c *catalog.Catalog) Root {
 	ti.PlaceholderStyle = theme.MutedItalic
 	ti.Cursor.Style = theme.AccentText
 
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(theme.ColorAccent)
+
 	overrides := binmap.Load()
 	installed := install.InstalledAppsWithOverrides(c.Apps, overrides)
 	r := Root{
@@ -246,6 +334,7 @@ func New(c *catalog.Catalog) Root {
 		binOverrides:    overrides,
 		installViewport: viewport.New(installLogWidth, installLogHeight),
 		launchMethod:    launcher.Detect(launcher.CurrentEnv()),
+		spinner:         sp,
 	}
 	r = r.refilter()
 	return r
@@ -260,7 +349,35 @@ const (
 	installLogHeight = 12
 )
 
-func (r Root) Init() tea.Cmd { return nil }
+func (r Root) Init() tea.Cmd { return launchTitleTick() }
+
+// titleTickMsg drives the launch sweep on the brand-mark gradient.
+// One message arrives every titleTickInterval until phase hits 1.0,
+// at which point the chain self-terminates (see Update). All other
+// rendering ignores the phase: it only feeds GradientTitlePhase.
+type titleTickMsg struct{}
+
+const (
+	// 40fps is the smoothest we can hit without burning frames; below
+	// 30fps the torch motion looks steppy on a word as short as
+	// "cliff." Apple Terminal handles 40fps fine; iTerm and Ghostty
+	// can do more, but it's diminishing returns past 40 for a
+	// 1.2-second one-shot.
+	titleTickInterval = 25 * time.Millisecond
+	// Phase travels 0 → 1.2 (not 0 → 1.0) so the torch sweeps fully
+	// off the right edge and every rune gets a final post-torch
+	// frame. 0.025 step × 1.2 range = 48 ticks × 25ms ≈ 1200ms total,
+	// which is the sweet spot: long enough to register, short enough
+	// to not feel like a splash screen.
+	titleTickStep = 0.025
+	titleTickEnd  = 1.2
+)
+
+func launchTitleTick() tea.Cmd {
+	return tea.Tick(titleTickInterval, func(time.Time) tea.Msg {
+		return titleTickMsg{}
+	})
+}
 
 func (r Root) selectedApp() *catalog.App { return r.grid.selected() }
 
@@ -273,7 +390,14 @@ func (r Root) gridDimensions() (int, int) {
 		gridW -= sidebarWidth + sidebarGap
 	}
 	gridW = max(gridW, 20)
-	gridH := max(r.height-2, 1)
+	// Reserve rows for: title (1) + blank under title (1) + newline
+	// before footer (1) + footer (1) = 4. The previous "-2" only
+	// accounted for the title and blank, which left the grid one row
+	// taller than the available space; the terminal then scrolled
+	// the title and blank off the top so the footer could land at
+	// the bottom row, which is the bug that prompted this fix
+	// (top of screen showed cards directly, no title visible).
+	gridH := max(r.height-4, 1)
 	if r.mode == modeSearch {
 		gridH = max(gridH-3, 1)
 	}

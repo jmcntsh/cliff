@@ -10,6 +10,7 @@ import (
 	rdm "github.com/jmcntsh/cliff/internal/readme"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -60,6 +61,15 @@ type readmeModel struct {
 	reel           reelStrip
 	reelFetchCmd   tea.Cmd
 	hero           heroImage
+}
+
+// reelLoading reports whether the reel strip is still being fetched.
+// Used by the Root spinner to decide whether to keep ticking. The
+// embedded "cliff" reel is ready synchronously, so this only fires
+// for live registry fetches; once applyReelFetched populates the
+// strip and flips reel.ready, the spinner stops.
+func (m readmeModel) reelLoading() bool {
+	return m.app != nil && !m.reel.ready
 }
 
 func newReadme(app *catalog.App, width, height int) readmeModel {
@@ -239,12 +249,12 @@ func (m readmeModel) Update(msg tea.Msg) (readmeModel, tea.Cmd) {
 		m.reel, reelCmd = m.reel.Update(msg)
 		return m, reelCmd
 	}
-	if key, ok := msg.(tea.KeyMsg); ok {
-		switch key.String() {
-		case "up", "k":
+	if km, ok := msg.(tea.KeyMsg); ok {
+		switch {
+		case key.Matches(km, keys.Up):
 			m.viewport.LineUp(scrollStep)
 			return m, nil
-		case "down", "j":
+		case key.Matches(km, keys.Down):
 			m.viewport.LineDown(scrollStep)
 			return m, nil
 		}
@@ -254,12 +264,24 @@ func (m readmeModel) Update(msg tea.Msg) (readmeModel, tea.Cmd) {
 	return m, cmd
 }
 
+// View renders the readme without a live spinner. Used by tests and
+// any caller that doesn't have a Root in scope. Production callers
+// should prefer ViewWithSpinner so the "fetching from github…"
+// footer animates.
 func (m readmeModel) View() string {
+	return m.ViewWithSpinner("")
+}
+
+// ViewWithSpinner is the live-render path. spinnerGlyph is the
+// current frame of the shared Root spinner; when non-empty and the
+// readme is still loading, the footer shows it next to the
+// "fetching from github…" label so the wait state is visible.
+func (m readmeModel) ViewWithSpinner(spinnerGlyph string) string {
 	if !m.ready {
 		return ""
 	}
 	header := m.renderHeader()
-	footer := m.renderFooter()
+	footer := m.renderFooterWithSpinner(spinnerGlyph)
 	if m.reelRightPane {
 		body := lipgloss.JoinHorizontal(
 			lipgloss.Top,
@@ -290,9 +312,9 @@ func (m readmeModel) renderHeader() string {
 	if m.app == nil {
 		return ""
 	}
-	back := lipgloss.NewStyle().Foreground(theme.ColorMuted).Render("◂ back")
-	title := lipgloss.NewStyle().Foreground(theme.ColorAccent).Bold(true).Render(m.app.Name + " · README")
-	meta := lipgloss.NewStyle().Foreground(theme.ColorMuted).Render(
+	back := theme.MutedText.Render("◂ back")
+	title := theme.GradientTitle(m.app.Name + " · README")
+	meta := theme.MutedText.Render(
 		fmt.Sprintf("★ %s · %s", formatStars(m.app.Stars), m.app.Language))
 
 	left := back + "   " + title
@@ -304,28 +326,34 @@ func (m readmeModel) renderHeader() string {
 }
 
 func (m readmeModel) renderFooter() string {
-	pct := fmt.Sprintf("%3.0f%%", m.viewport.ScrollPercent()*100)
-	mutedStyle := lipgloss.NewStyle().Foreground(theme.ColorMuted)
-	scroll := mutedStyle.Render(pct)
+	return m.renderFooterWithSpinner("")
+}
+
+func (m readmeModel) renderFooterWithSpinner(spinnerGlyph string) string {
+	scroll := theme.MutedText.Render(fmt.Sprintf("%3.0f%%", m.viewport.ScrollPercent()*100))
 
 	var status string
 	switch {
 	case m.loading:
-		status = mutedStyle.Italic(true).Render("fetching from github…")
+		label := "fetching from github…"
+		if spinnerGlyph != "" {
+			label = spinnerGlyph + " " + label
+		}
+		status = theme.MutedItalic.Render(label)
 	case m.notFound:
-		status = lipgloss.NewStyle().Foreground(theme.ColorMuted).Render("no README found on github")
+		status = theme.MutedText.Render("no README found on github")
 	case m.rateLimited && m.raw != "":
-		status = mutedStyle.Italic(true).Render("github rate limited; showing cached/bundled")
+		status = theme.MutedItalic.Render("github rate limited; showing cached/bundled")
 	case m.rateLimited:
 		reset := ""
 		if !m.rateLimitReset.IsZero() {
 			reset = fmt.Sprintf(" · resets %s", m.rateLimitReset.Format("15:04"))
 		}
-		status = lipgloss.NewStyle().Foreground(theme.ColorMuted).Render("rate limited" + reset + " · set GITHUB_TOKEN")
+		status = theme.MutedText.Render("rate limited" + reset + " · set GITHUB_TOKEN")
 	case m.fetchErr != nil:
-		status = lipgloss.NewStyle().Foreground(theme.ColorMuted).Render("fetch failed: " + m.fetchErr.Error())
+		status = theme.MutedText.Render("fetch failed: " + m.fetchErr.Error())
 	case m.fromCache:
-		status = mutedStyle.Italic(true).Render("cached")
+		status = theme.MutedItalic.Render("cached")
 	}
 
 	if status == "" {
@@ -373,7 +401,14 @@ func renderMarkdown(md, heroRefRaw string, termWidth int) string {
 	// the terminal — glamour's WithAutoStyle queries OSC 11 from inside
 	// the renderer, which fails once tea is in raw mode + alt screen, so
 	// it always falls back to dark. Pass the explicit style instead.
-	style := "dark"
+	//
+	// On dark terminals we use glamour's "pink" stylesheet — it ships
+	// with the Charm fuchsia for headings, links, and list bullets, so
+	// READMEs render as part of the same brand language as the rest of
+	// the UI rather than as generic dark-mode markdown. Light terminals
+	// stay on the stock "light" style: the pink stylesheet was tuned for
+	// dark backgrounds and washes out on white.
+	style := "pink"
 	if !darkBackground {
 		style = "light"
 	}
