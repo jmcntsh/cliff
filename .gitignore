@@ -17,3 +17,7 @@ web/worker/node_modules/
 
 # goreleaser local builds
 /dist/
+
+# python bytecode caches (e.g. scripts/seed_registry_from_github.py)
+__pycache__/
+*.pyc

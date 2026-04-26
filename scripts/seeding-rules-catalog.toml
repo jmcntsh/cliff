@@ -1,0 +1,38 @@
+[deny]
+terms = [
+  "agent skill",
+  "agent skills",
+  "ai agent",
+  "coding agent",
+  "mcp server",
+  "claude code",
+  "codex",
+  "cursor",
+  "prompt pack",
+  "awesome list",
+  "boilerplate",
+  "starter template",
+  "plugin for",
+  "framework for",
+  "sdk for",
+]
+owners = []
+name_patterns = [
+  "(^|/)awesome[-_]",
+  "(^|/)prompt",
+  "(^|/)skills?($|[-_])",
+]
+
+[allow]
+terms = [
+  "terminal ui",
+  "terminal user interface",
+  "command-line tool",
+  "cli tool",
+  "package manager",
+  "file manager",
+  "download manager",
+  "kubernetes",
+]
+owners = []
+name_patterns = []
