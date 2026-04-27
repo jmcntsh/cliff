@@ -8,6 +8,75 @@ Last updated: 2026-04-26.
 
 ## Latest change
 
+`v0.1.17` (2026-04-26): Charm-flavored visual pass on the TUI, an
+in-TUI submit form, two reel-strip fixes, and `CLIFF_THEME` /
+`CLIFF_BG` documentation.
+
+(1) Visual pass (`internal/ui/theme/styles.go`, `view.go`, `card.go`,
+`overlay_*.go`, `sidebar.go`, `update.go`, `root.go`). Brand mark
+ignites on launch via a torch-sweep gradient that self-terminates
+after ~1.2s. Card / modal / search-bar / help borders use a 4-edge
+fuchsia→indigo gradient routed through a precomputed HCL midpoint
+so the corners flow rather than meeting abruptly. Selected card
+name, sidebar header, focused sidebar row, and every modal header
+render with `theme.GradientTitle` for consistent brand-pop on
+emphasis. Footer hints parse per-keycap so action letters glow and
+descriptions sit muted. README rendering switches to Glamour's
+"pink" style on dark backgrounds. A single
+`bubbles/spinner` instance ticks across every loading surface
+(install startup, README fetch, reel fetch) so glyphs rotate in
+lockstep, on a tick chain that self-arms only while something is
+actually loading. Bug fixes: sidebar category change now jumps the
+grid cursor to row 0 instead of leaving it on the last card of the
+new list; `gridDimensions` reserves 4 chrome rows (title + blank +
+footer newline + footer) instead of 2, so the title and sidebar
+header no longer scroll off-screen on narrow heights.
+
+(2) `+` opens an in-TUI submit form built on
+[`charmbracelet/huh`](https://github.com/charmbracelet/huh)
+(`internal/ui/overlay_submit.go` + `internal/ui/theme/huh.go`)
+instead of bouncing straight to the confirm preview. Validation
+runs on field exit: slug-only name, owner/name repo shape (auto-
+stripping pasted `github.com/` prefixes), 120-char description cap.
+Form completes → existing confirm preview → existing browser
+hand-off; `submit.Request` stays the source of truth so the CLI
+`cliff submit` verb is unchanged. `theme.HuhTheme()` maps cliff's
+adaptive palette into huh's theme struct so the form reads as
+native cliff and honors `CLIFF_THEME` the same way the rest of the
+UI does.
+
+(3) Reel scroll-along (`internal/ui/readme.go`). In stacked mode
+the reel strip now lives inside the README viewport's content
+stream as a hero block above the markdown, instead of as a sibling
+row pinned above it. Scrolling down lets the reel leave the top of
+the panel naturally — same UX as a hero image at the top of a web
+page. Right-pane mode (wide terminals, reel beside the readme) is
+unchanged. The per-tick refresh splices a cached glamour render
+with the live `reel.View()` and preserves `YOffset` across
+`SetContent` so scroll position survives the rebuild.
+
+(4) Reel flicker fix (via reel pin bumped to
+[`jmcntsh/reel@15d1f06`](https://github.com/jmcntsh/reel/commit/15d1f068f7c1)).
+Looping playback used to rebuild a blank screen on every wrap from
+the last frame back to frame 0 and re-apply frame 0's patch. For
+the recorder's common shape — frame 0 emits no paint ops because
+the source app's first stable state diffed cleanly against the
+empty starting grid, frame 1 carries the entire UI — that produced
+a ~9Hz blank/painted strobe. `lazygit.reel` and similar short
+reels in `cliff-registry` were unwatchable. The player now skips
+the blank-out on wrap when frame 0 paints zero cells (no ops, no
+clear, no clear_line — cursor moves and hides still allowed since
+they don't disturb cell contents). Affects every embedded reel,
+not just lazygit's.
+
+(5) `cliff help` gains an Environment section
+(`cmd/cliff/commands.go`) listing `CLIFF_REGISTRY_URL`,
+`GITHUB_TOKEN`, `CLIFF_THEME`, and `CLIFF_BG`. README adds a
+one-line hint for users hitting washed-out colors. `DEVELOPMENT.md`
+gains a "Forcing the theme" subsection explaining when
+`CLIFF_THEME` (whole UI) vs `CLIFF_BG` (Glamour-rendered README
+only) is the right knob.
+
 `v0.1.16` (2026-04-26): two follow-ups on top of v0.1.15 — the
 right-side reel pane and inline README hero images — plus the registry
 guardrail that locks in the reel-publishing pipeline.
@@ -258,7 +327,7 @@ doesn't disappear after a successful off-PATH install.
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index except for the cliff entry, which lands on
   registry.cliff.sh as soon as the `apps/cliff.toml` PR merges.
-- **GitHub releases** — latest `v0.1.14` (2026-04-23). Darwin and
+- **GitHub releases** — latest `v0.1.17` (2026-04-26). Darwin and
   linux, amd64 and arm64, via goreleaser.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
