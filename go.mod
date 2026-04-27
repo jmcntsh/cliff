@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/glamour v1.0.0
 	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
-	github.com/jmcntsh/reel v0.0.0-20260422194406-310408c7c7ec
+	github.com/jmcntsh/reel v0.0.0-20260427001759-15d1f068f7c1
 	github.com/lucasb-eyer/go-colorful v1.3.0
 	github.com/mattn/go-isatty v0.0.21
 	github.com/mattn/go-runewidth v0.0.19
@@ -50,5 +50,3 @@ require (
 	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 )
-
-replace github.com/jmcntsh/reel => ../reel

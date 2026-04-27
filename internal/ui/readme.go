@@ -61,6 +61,12 @@ type readmeModel struct {
 	reel           reelStrip
 	reelFetchCmd   tea.Cmd
 	hero           heroImage
+	// renderedMarkdown is the glamour-rendered, hero-spliced markdown
+	// body cached between SetContent calls. In stacked-mode with a
+	// reel, every reel tick re-prepends the live reel.View() to this
+	// cached body and SetContents the result; caching avoids re-running
+	// glamour 60 times a second for content that hasn't changed.
+	renderedMarkdown string
 }
 
 // reelLoading reports whether the reel strip is still being fetched.
@@ -162,8 +168,8 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) (readmeModel, tea.Cmd) {
 	case r.Err != nil:
 		m.fetchErr = r.Err
 	}
-	rendered := m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
-	m.viewport.SetContent(rendered)
+	m.renderedMarkdown = m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
+	m.refreshViewportContent()
 
 	// Look for a hero image once we have real markdown. The hero
 	// fetches in the background; when it lands, applyHeroFetched
@@ -193,8 +199,8 @@ func (m readmeModel) applyHeroFetched(msg heroImageReadyMsg) readmeModel {
 	wasReady := m.hero.ready
 	m.hero = m.hero.applyHeroFetched(msg)
 	if !wasReady && m.hero.ready {
-		rendered := m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
-		m.viewport.SetContent(rendered)
+		m.renderedMarkdown = m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
+		m.refreshViewportContent()
 	}
 	return m
 }
@@ -215,23 +221,60 @@ func (m readmeModel) resize(width, height int) readmeModel {
 		m.reel.width = reelW
 		m.viewport = viewport.New(m.contentWidth, bodyRows)
 	} else {
-		reelRows := m.reel.Height()
-		if reelRows > 0 {
+		// Stacked mode: the reel (if any) lives inside the viewport's
+		// content stream as a hero block above the markdown, so the
+		// viewport gets the full body height. Scrolling past the reel's
+		// rows lets it leave the top of the panel naturally — same UX
+		// as a hero image on a web page.
+		if m.reel.Height() > 0 {
 			m.reel.width = width
 		}
 		m.contentWidth = width
-		vpHeight := max(bodyRows-reelRows, 1)
-		m.viewport = viewport.New(m.contentWidth, vpHeight)
+		m.viewport = viewport.New(m.contentWidth, bodyRows)
 	}
 	// Keep the hero's centering width in sync with the readme content
 	// width — the right-pane reel mode narrows the readme column, so a
 	// hero centered against the full terminal width would sit off to
 	// the right of the surrounding markdown.
 	m.hero.width = m.contentWidth
-	rendered := m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
-	m.viewport.SetContent(rendered)
+	m.renderedMarkdown = m.hero.spliceInline(renderMarkdown(m.raw, m.hero.refRaw, m.contentWidth))
+	m.refreshViewportContent()
 	m.ready = true
 	return m
+}
+
+// refreshViewportContent rebuilds the viewport's content from the
+// cached markdown render plus, in stacked-with-reel mode, the live
+// reel.View() prepended as a hero block. Called from three places:
+// (1) resize, (2) applyFetch / applyHeroFetched when the markdown
+// changes, and (3) the reel tick path so each animation frame
+// repaints the reel's portion of the scroll buffer.
+//
+// Scroll position is preserved across the SetContent call: bubbles
+// resets YOffset to 0 on SetContent, so we save it, restore it, and
+// clamp to the new content's max so we don't end up scrolled past
+// the bottom (e.g. when the reel finishes loading and content gets
+// taller, or a resize shortens the content).
+//
+// In right-pane mode and stacked-without-reel mode, the reel is
+// either drawn separately or absent, and this just sets the cached
+// markdown verbatim.
+func (m *readmeModel) refreshViewportContent() {
+	content := m.renderedMarkdown
+	if !m.reelRightPane && m.reel.Height() > 0 {
+		// reel.View() is already a multi-line styled block; a single
+		// "\n" between it and the markdown gives one blank-ish row of
+		// breathing space without the markdown's own leading whitespace
+		// stacking on top of the reel's framed border.
+		content = m.reel.View() + "\n" + m.renderedMarkdown
+	}
+	yOff := m.viewport.YOffset
+	m.viewport.SetContent(content)
+	maxOff := max(m.viewport.TotalLineCount()-m.viewport.Height, 0)
+	if yOff > maxOff {
+		yOff = maxOff
+	}
+	m.viewport.SetYOffset(yOff)
 }
 
 // scrollStep is how many lines a single up/down/j/k press moves the
@@ -244,9 +287,18 @@ func (m readmeModel) Update(msg tea.Msg) (readmeModel, tea.Cmd) {
 	// Reel tick messages go to the strip and nowhere else. Handle
 	// them before the key/viewport dispatch so the animation keeps
 	// running regardless of what else the readme model is doing.
+	//
+	// In stacked mode the reel is part of the viewport's scroll
+	// buffer (so it scrolls off when the user scrolls down), which
+	// means a fresh reel frame requires re-spilling the content into
+	// the viewport. In right-pane mode the reel is drawn separately
+	// in View() and no content refresh is needed.
 	if _, isTick := msg.(reelTickMsg); isTick {
 		var reelCmd tea.Cmd
 		m.reel, reelCmd = m.reel.Update(msg)
+		if !m.reelRightPane && m.reel.Height() > 0 {
+			m.refreshViewportContent()
+		}
 		return m, reelCmd
 	}
 	if km, ok := msg.(tea.KeyMsg); ok {
@@ -291,9 +343,10 @@ func (m readmeModel) ViewWithSpinner(spinnerGlyph string) string {
 		)
 		return lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
 	}
-	if m.reel.Height() > 0 {
-		return lipgloss.JoinVertical(lipgloss.Left, header, m.reel.View(), m.viewport.View(), footer)
-	}
+	// Stacked mode: the reel (when present) is spliced into the
+	// viewport's content by refreshViewportContent, so the viewport
+	// alone draws the body. The reel scrolls off the top with the
+	// rest of the readme — same UX as a hero image on a web page.
 	return lipgloss.JoinVertical(lipgloss.Left, header, m.viewport.View(), footer)
 }
 
