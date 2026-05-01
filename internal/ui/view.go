@@ -125,14 +125,42 @@ func (r Root) computeTitle() string {
 		title = fmt.Sprintf("cliff · %d / %d apps", r.grid.cursor+1, total)
 	}
 	if cat != "" {
-		title += " · " + cat
+		title += " · " + categoryDisplay(cat)
 	}
 	if query != "" {
 		title += fmt.Sprintf(" · %q", query)
 	} else {
-		title += " · " + r.sort.label()
+		title += " · " + sortLabelFor(cat, r.sort)
 	}
 	return title
+}
+
+// categoryDisplay maps the internal category sentinels (__new__,
+// __installed__) to the user-facing strings the sidebar uses, so the
+// title bar doesn't leak implementation details. Real category names
+// pass through unchanged.
+func categoryDisplay(cat string) string {
+	switch cat {
+	case categoryNew:
+		return "new"
+	case categoryInstalled:
+		return "installed"
+	default:
+		return cat
+	}
+}
+
+// sortLabelFor returns the sort label that matches what the user is
+// actually seeing in the grid. The New surface overrides the default
+// stars-descending sort with a freshness sort (see filterAndSort), so
+// the title bar must say "freshness ↓" in that one case to stay
+// truthful. Any explicit sort toggle (stars ↑, name) wins, since the
+// filter respects that too.
+func sortLabelFor(cat string, sort sortMode) string {
+	if cat == categoryNew && sort == sortStarsDesc {
+		return "freshness ↓"
+	}
+	return sort.label()
 }
 
 func (r Root) emptyGridView(w, h int) string {
