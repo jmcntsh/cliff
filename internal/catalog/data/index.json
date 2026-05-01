@@ -5,6 +5,7 @@
       "author": "Julien-cpsn",
       "category": "HTTP clients",
       "description": "A feature-full TUI API client — Postman, but in your terminal",
+      "has_reel": true,
       "homepage": "https://github.com/Julien-cpsn/ATAC",
       "install_specs": [
         {
@@ -34,6 +35,7 @@
       "author": "atuinsh",
       "category": "Shell utilities",
       "description": "Magical shell history — SQLite-backed, searchable, syncable across machines",
+      "has_reel": true,
       "homepage": "https://github.com/atuinsh/atuin",
       "install_specs": [
         {
@@ -60,6 +62,7 @@
       "binary": "balatro_tui",
       "category": "Games",
       "description": "Balatro-inspired poker-roguelike played entirely in your terminal",
+      "has_reel": true,
       "homepage": "https://github.com/Passeriform/BalatroTUI",
       "install_specs": [
         {
@@ -85,6 +88,7 @@
       "author": "orhun",
       "category": "Developer tools",
       "description": "Analyze ELF binaries in your terminal — strings, headers, hex, and live disassembly",
+      "has_reel": true,
       "homepage": "https://github.com/orhun/binsider",
       "install_specs": [
         {
@@ -114,6 +118,7 @@
       "author": "pythops",
       "category": "DevOps",
       "description": "Bluetooth device manager in the terminal, with adapter controls, pairing, and connection state",
+      "has_reel": true,
       "homepage": "https://github.com/pythops/bluetui",
       "install_specs": [
         {
@@ -140,6 +145,7 @@
       "binary": "btm",
       "category": "Dashboards",
       "description": "Cross-platform graphical process and system monitor with charts, trees, and a configurable UI",
+      "has_reel": true,
       "homepage": "https://github.com/ClementTsang/bottom",
       "install_specs": [
         {
@@ -169,6 +175,7 @@
       "author": "aristocratos",
       "category": "Dashboards",
       "description": "Resource monitor with extras",
+      "has_reel": true,
       "homepage": "https://github.com/aristocratos/btop",
       "install_specs": [
         {
@@ -193,6 +200,7 @@
       "author": "karlstav",
       "category": "Toys & visualizers",
       "description": "Cross-platform bar spectrum audio visualizer for your terminal",
+      "has_reel": true,
       "homepage": "https://github.com/karlstav/cava",
       "install_specs": [
         {
@@ -218,6 +226,7 @@
       "author": "thomas-mauran",
       "category": "Games",
       "description": "Play chess from your terminal against a bot, a friend, or an engine",
+      "has_reel": true,
       "homepage": "https://github.com/thomas-mauran/chess-tui",
       "install_specs": [
         {
@@ -247,6 +256,7 @@
       "author": "jmcntsh",
       "category": "Developer tools",
       "description": "A terminal-native directory for CLIs and TUIs. Browse, read READMEs, install in one keystroke.",
+      "has_reel": true,
       "homepage": "https://github.com/jmcntsh/cliff",
       "install_specs": [
         {
@@ -280,6 +290,7 @@
       "author": "MatrixFrog",
       "category": "Games",
       "description": "Play crossword puzzles in your terminal",
+      "has_reel": true,
       "homepage": "https://github.com/MatrixFrog/crossword",
       "install_specs": [
         {
@@ -305,6 +316,7 @@
       "author": "kraanzu",
       "category": "Productivity",
       "description": "An awesome todo manager for the terminal",
+      "has_reel": true,
       "homepage": "https://github.com/kraanzu/dooit",
       "install_specs": [
         {
@@ -330,6 +342,7 @@
       "author": "Textualize",
       "category": "Documentation",
       "description": "A Markdown browser for your terminal, by the Textual team",
+      "has_reel": true,
       "homepage": "https://github.com/Textualize/frogmouth",
       "install_specs": [
         {
@@ -359,6 +372,7 @@
       "author": "dlvhdr",
       "category": "Developer tools",
       "description": "A gh extension: your PRs and issues on a beautiful, customizable terminal dashboard",
+      "has_reel": true,
       "homepage": "https://github.com/dlvhdr/gh-dash",
       "install_specs": [
         {
@@ -384,6 +398,7 @@
       "author": "unhappychoice",
       "category": "Toys & visualizers",
       "description": "Cinematic git-history replay with typing animations, syntax highlighting, and file-tree motion",
+      "has_reel": true,
       "homepage": "https://github.com/unhappychoice/gitlogue",
       "install_specs": [
         {
@@ -413,6 +428,7 @@
       "author": "extrawurst",
       "category": "Version control",
       "description": "Blazing-fast terminal UI for git, written in Rust",
+      "has_reel": true,
       "homepage": "https://github.com/extrawurst/gitui",
       "install_specs": [
         {
@@ -441,6 +457,7 @@
       "author": "charmbracelet",
       "category": "Documentation",
       "description": "Render markdown on the CLI, with pizzazz",
+      "has_reel": true,
       "homepage": "https://github.com/charmbracelet/glow",
       "install_specs": [
         {
@@ -469,6 +486,7 @@
       "author": "charmbracelet",
       "category": "Shell utilities",
       "description": "A tool for glamorous shell scripts — make your scripts pop with Charm UI primitives",
+      "has_reel": true,
       "homepage": "https://github.com/charmbracelet/gum",
       "install_specs": [
         {
@@ -498,6 +516,7 @@
       "author": "tconbeer",
       "category": "Databases",
       "description": "The SQL IDE for your terminal — query DuckDB, SQLite, Postgres, and more",
+      "has_reel": true,
       "homepage": "https://github.com/tconbeer/harlequin",
       "install_specs": [
         {
@@ -527,6 +546,7 @@
       "author": "pythops",
       "category": "DevOps",
       "description": "TUI for managing Wi-Fi networks with iwd on Linux, featuring live scans and smooth animations",
+      "has_reel": true,
       "homepage": "https://github.com/pythops/impala",
       "install_specs": [
         {
@@ -552,6 +572,7 @@
       "author": "ynqa",
       "category": "Data tools",
       "description": "Interactive JSON filter using jq",
+      "has_reel": true,
       "homepage": "https://github.com/ynqa/jnv",
       "install_specs": [
         {
@@ -581,6 +602,7 @@
       "author": "ravachol",
       "category": "Music & media",
       "description": "Minimalist terminal music player with ASCII covers, library search, and a visualizer",
+      "has_reel": true,
       "homepage": "https://github.com/ravachol/kew",
       "install_specs": [
         {
@@ -606,6 +628,7 @@
       "author": "jesseduffield",
       "category": "Version control",
       "description": "Simple terminal UI for git commands",
+      "has_reel": true,
       "homepage": "https://github.com/jesseduffield/lazygit",
       "install_specs": [
         {
@@ -634,6 +657,7 @@
       "author": "cpcloud",
       "category": "Games",
       "description": "Classic minesweeper in the terminal, built with tui-rs",
+      "has_reel": true,
       "homepage": "https://github.com/cpcloud/minesweep-rs",
       "install_specs": [
         {
@@ -659,6 +683,7 @@
       "author": "mrjackwills",
       "category": "DevOps",
       "description": "A simple TUI to view and control Docker containers",
+      "has_reel": true,
       "homepage": "https://github.com/mrjackwills/oxker",
       "install_specs": [
         {
@@ -688,6 +713,7 @@
       "author": "Amjad50",
       "category": "Games",
       "description": "NES emulator with a Ratatui terminal UI — play NES ROMs in your shell",
+      "has_reel": true,
       "homepage": "https://github.com/Amjad50/plastic",
       "install_specs": [
         {
@@ -714,6 +740,7 @@
       "author": "darrenburns",
       "category": "HTTP clients",
       "description": "Modern API client that lives in your terminal",
+      "has_reel": true,
       "homepage": "https://github.com/darrenburns/posting",
       "install_specs": [
         {
@@ -743,6 +770,7 @@
       "author": "ricott1",
       "category": "Games",
       "description": "P2P terminal game about space pirates playing basketball across the galaxy",
+      "has_reel": true,
       "homepage": "https://github.com/ricott1/rebels-in-the-sky",
       "install_specs": [
         {
@@ -768,6 +796,7 @@
       "author": "jmcntsh",
       "category": "Developer tools",
       "description": "Record and replay terminal sessions as declarative frames, safe to embed",
+      "has_reel": true,
       "homepage": "https://github.com/jmcntsh/reel",
       "install_specs": [
         {
@@ -793,6 +822,7 @@
       "author": "mierak",
       "category": "Music & media",
       "description": "Modern MPD client with album art, inspired by ncmpcpp and ranger",
+      "has_reel": true,
       "homepage": "https://github.com/mierak/rmpc",
       "install_specs": [
         {
@@ -818,6 +848,7 @@
       "author": "alemidev",
       "category": "Toys & visualizers",
       "description": "A simple oscilloscope, vectorscope, and spectroscope for your terminal",
+      "has_reel": true,
       "homepage": "https://github.com/alemidev/scope-tui",
       "install_specs": [
         {
@@ -843,6 +874,7 @@
       "author": "lusingander",
       "category": "Version control",
       "description": "Rich git commit graph in your terminal, like magic",
+      "has_reel": true,
       "homepage": "https://github.com/lusingander/serie",
       "install_specs": [
         {
@@ -871,6 +903,7 @@
       "author": "Mjoyufull",
       "category": "Games",
       "description": "Falling-block puzzle where the pieces turn to sand and clear by connecting same-colored regions",
+      "has_reel": true,
       "homepage": "https://github.com/Mjoyufull/Setrixtui",
       "install_specs": [
         {
@@ -896,6 +929,7 @@
       "author": "charmbracelet",
       "category": "Version control",
       "description": "The mighty, self-hostable Git server with an SSH-accessible TUI",
+      "has_reel": true,
       "homepage": "https://github.com/charmbracelet/soft-serve",
       "install_specs": [
         {
@@ -927,6 +961,7 @@
       "binary": "spotify_player",
       "category": "Music & media",
       "description": "Spotify client in the terminal with streaming, Spotify Connect, lyrics, and audio visualization",
+      "has_reel": true,
       "homepage": "https://github.com/aome510/spotify-player",
       "install_specs": [
         {
@@ -956,6 +991,7 @@
       "author": "yorukot",
       "category": "File management",
       "description": "Pretty fancy and modern terminal file manager",
+      "has_reel": true,
       "homepage": "https://github.com/yorukot/superfile",
       "install_specs": [
         {
@@ -981,6 +1017,7 @@
       "binary": "syscgo-tui",
       "category": "Toys & visualizers",
       "description": "Interactive TUI launcher for fire, matrix rain, fireworks, and other terminal animations",
+      "has_reel": true,
       "homepage": "https://github.com/Nomadcxx/sysc-Go",
       "install_specs": [
         {
@@ -1006,6 +1043,7 @@
       "author": "alexpasmantier",
       "category": "Shell utilities",
       "description": "Fast and versatile fuzzy finder TUI for files, git, env, docker, and more",
+      "has_reel": true,
       "homepage": "https://github.com/alexpasmantier/television",
       "install_specs": [
         {
@@ -1034,6 +1072,7 @@
       "author": "tramhao",
       "category": "Music & media",
       "description": "Terminal music player inspired by Lolcatjams, with playlists, tag editing, and podcast support",
+      "has_reel": true,
       "homepage": "https://github.com/tramhao/termusic",
       "install_specs": [
         {
@@ -1059,6 +1098,7 @@
       "author": "Broderick-Westrope",
       "category": "Games",
       "description": "Play Tetris in your terminal, following the official 2009 design guideline",
+      "has_reel": true,
       "homepage": "https://github.com/Broderick-Westrope/tetrigo",
       "install_specs": [
         {
@@ -1084,6 +1124,7 @@
       "author": "vyrx-dev",
       "category": "Productivity",
       "description": "Lightning-fast typing TUI with live WPM, multiple modes, themes, and offline-only history",
+      "has_reel": true,
       "homepage": "https://github.com/vyrx-dev/toofan",
       "install_specs": [
         {
@@ -1109,6 +1150,7 @@
       "author": "charmbracelet",
       "category": "Developer tools",
       "description": "Write terminal GIFs as code for integration testing and demos",
+      "has_reel": true,
       "homepage": "https://github.com/charmbracelet/vhs",
       "install_specs": [
         {
@@ -1138,6 +1180,7 @@
       "author": "Veirt",
       "category": "Toys & visualizers",
       "description": "Terminal weather app with live ASCII animations for rain, snow, storms, and sky",
+      "has_reel": true,
       "homepage": "https://github.com/Veirt/weathr",
       "install_specs": [
         {
@@ -1167,6 +1210,7 @@
       "author": "sxyazi",
       "category": "File management",
       "description": "Blazing-fast terminal file manager based on async I/O",
+      "has_reel": true,
       "homepage": "https://github.com/sxyazi/yazi",
       "install_specs": [
         {

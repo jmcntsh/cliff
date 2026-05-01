@@ -14,6 +14,13 @@
 // thing for the listed app. The etag check exists because GitHub
 // Pages returns one for free and it lets us avoid re-downloading on
 // every focus, not because the user would notice if we skipped it.
+//
+// Tracking: by default Fetch routes through the cliff.sh Worker
+// (cliff.sh/r/reel/<slug>), which logs one Analytics Engine data
+// point and 302s to the registry. There is no Authorization header
+// involved, so the cross-domain redirect is lossless. Set
+// TrackingRedirectURL to "" to bypass the redirector and hit the
+// registry directly.
 package reelfetch
 
 import (
@@ -23,10 +30,17 @@ import (
 	"time"
 )
 
-// DefaultBaseURL is the static host the registry CI publishes reels
-// to. Exposed as a var (not const) so tests can point at a httptest
-// server without threading a parameter through every call site.
-var DefaultBaseURL = "https://registry.cliff.sh/reels"
+// TrackingRedirectURL is the cliff.sh Worker route that logs one
+// data point per reel fetch and 302s to the registry. Var, not
+// const, so tests can swap it for a httptest server, and so we can
+// disable tracking at runtime without a client release.
+var TrackingRedirectURL = "https://cliff.sh/r/reel"
+
+// DirectBaseURL is the registry's static reel host. Used when
+// TrackingRedirectURL is empty (tests, opt-out flag in future, or
+// the redirector being down — though Cloudflare and GitHub Pages are
+// in different failure domains so a redirector outage is rare).
+var DirectBaseURL = "https://registry.cliff.sh/reels"
 
 // Result is the outcome of a Fetch call. Exactly one of Bytes, Err,
 // or NotFound is meaningful per result; FromCache tags the Bytes
@@ -44,7 +58,8 @@ type Result struct {
 }
 
 // Fetch returns the reel bytes for the given slug, with a single
-// GET against the registry host and a local file cache for repeat
+// GET against the redirector (or the registry host if the
+// redirector is disabled) and a local file cache for repeat
 // requests. Network errors fall through to cache when one exists,
 // matching the readme fetcher's offline-friendly contract.
 //
@@ -55,8 +70,45 @@ type Result struct {
 // registry's lint step to be `[a-z0-9-]+` only.
 func Fetch(slug string) Result {
 	cached := loadCache(slug)
+	res := fetchFrom(fetchURL(slug), slug, cached)
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s.reel", DefaultBaseURL, slug), nil)
+	// Redirector fallback. If we asked the cliff.sh redirector and it
+	// returned a hard failure (404 / 5xx / network error and no cache
+	// to serve), retry against the registry directly. Mirrors the
+	// readme fetcher's fallback for the same two reasons:
+	//   1. Client may ship before the worker is deployed.
+	//   2. Cloudflare and GitHub Pages are in different failure
+	//      domains; we'd rather miss a tracking event than show
+	//      "no reel" for an app that has one.
+	// 404 is a special case: a real "this app has no reel" 404 from
+	// the registry is the *expected* answer for many apps. We let the
+	// fallback path produce that same NotFound, which lands at the
+	// caller with the same meaning.
+	if TrackingRedirectURL != "" && shouldFallback(res) {
+		return fetchFrom(fmt.Sprintf("%s/%s.reel", DirectBaseURL, slug), slug, cached)
+	}
+	return res
+}
+
+// shouldFallback reports whether the redirector result is bad enough
+// to warrant a direct retry. We retry on 404 and on network errors
+// when there's no cache to serve. A successful fetch, a cache-served
+// result, or a real registry response (3xx/2xx) all stay as-is.
+func shouldFallback(r Result) bool {
+	if len(r.Bytes) > 0 || r.FromCache {
+		return false
+	}
+	if r.NotFound {
+		return true
+	}
+	if r.Err != nil {
+		return true
+	}
+	return false
+}
+
+func fetchFrom(url, slug string, cached *cached) Result {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return Result{Err: err}
 	}
@@ -112,4 +164,14 @@ func Fetch(slug string) Result {
 		}
 		return Result{Err: fmt.Errorf("registry: %s", resp.Status)}
 	}
+}
+
+// fetchURL builds the URL for a reel fetch. Redirector path emits
+// `<base>/<slug>` with no extension (the Worker appends `.reel` on
+// the upstream side); direct path emits `<base>/<slug>.reel`.
+func fetchURL(slug string) string {
+	if TrackingRedirectURL != "" {
+		return fmt.Sprintf("%s/%s", TrackingRedirectURL, slug)
+	}
+	return fmt.Sprintf("%s/%s.reel", DirectBaseURL, slug)
 }

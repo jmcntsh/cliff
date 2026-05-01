@@ -21,6 +21,17 @@ type App struct {
 	Screenshots []string `json:"screenshots,omitempty"`
 	Tags        []string `json:"tags,omitempty"`
 	Binary      string   `json:"binary,omitempty"` // override for the installed executable name; defaults to repo basename
+	// HasReel is the registry's signal that a `.reel` artifact exists
+	// for this app at https://registry.cliff.sh/reels/<name>.reel. The
+	// grid uses it to render a camcorder badge so users can tell which
+	// entries have a recorded demo before navigating into the readme.
+	// We trust the index rather than probing on focus: a per-card HEAD
+	// would mean ~one extra request per visible card on every grid
+	// reflow, and the answer is already known at index-build time.
+	// Apps from a registry build that predates the field unmarshal
+	// with HasReel=false, which renders identically to "no reel" — the
+	// only cost is no badge until the next index publish.
+	HasReel bool `json:"has_reel,omitempty"`
 	// InstallSpecs is the ordered list of install methods. Single-method
 	// manifests produce a one-element slice; multi-method ([[installs]])
 	// manifests produce the list in author order, which is also the

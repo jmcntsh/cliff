@@ -4,9 +4,79 @@ What's actually shipped right now. Updated on every ship. Source of
 truth for "is X live?" — principles docs ([`CLAUDE.md`](CLAUDE.md))
 describe intent, not state.
 
-Last updated: 2026-04-26.
+Last updated: 2026-05-01.
 
 ## Latest change
+
+`v0.1.18` (2026-05-01): per-app view tracking via the cliff.sh
+Worker, plus a registry-side reel-ownership attestation workflow.
+
+**Tracking.** README and reel fetches now route through
+`cliff.sh/r/readme/<owner>/<repo>` and `cliff.sh/r/reel/<slug>`,
+which log one Cloudflare Analytics Engine data point per hit and
+302 to the upstream URL. A daily cron (00:05 UTC) aggregates the
+prior day's events into `daily/<YYYY-MM-DD>.json` in a private R2
+bucket (`cliff-stats`). Surfacing in the TUI is intentionally not
+wired yet — collect first, decide what to publish later.
+
+The client falls back to a direct upstream fetch
+(api.github.com / registry.cliff.sh) when the redirector returns
+404 / 5xx / a network error and there's no cache to serve. This
+covers two cases: a client release that ships before the worker
+is deployed (the v0.1.18 cut), and any future redirector outage.
+Cost of fallback: one wasted round-trip per cold fetch, no
+tracking event for that fetch, nothing user-visible.
+
+Per-event fields: `kind` (`readme` | `reel`), `key`
+(`<owner>/<repo>` or slug), `country` (Cloudflare's `cf.country`),
+and HMAC-SHA256-truncated daily hashes of IP and User-Agent for
+distinct-counting. The HMAC salt rotates every UTC day, so
+distinct counts are valid within a day and unlinkable across days.
+Raw IPs and UAs are never persisted. Posture: this is a
+Cloudflare access log with extra structure, not telemetry — there
+is no client-side beacon and no consent prompt, same posture as
+any CDN access log.
+
+The README path explicitly bypasses the redirector when
+`GITHUB_TOKEN` is set, because Go's HTTP client strips
+`Authorization` headers across cross-domain redirects and silently
+dropping a user from 5000 requests/hour to 60 was the worse
+failure mode than missing those opens in stats.
+
+Worker source: `web/worker/src/index.js` (added `/r/*` handler,
+`scheduled` aggregator, AE/R2 bindings). Client: `internal/readme`
+and `internal/reelfetch` gain a `TrackingRedirectURL` var apiece;
+`fetchURL` builds the appropriate URL; both packages retry against
+the direct upstream when the redirector fails. Tests cover the URL
+builders. No new client dependencies, no new on-disk state, no UI
+change.
+
+**Reel ownership attestation** (in
+[`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry),
+not this repo). New `.github/workflows/reel-attest.yml` runs on
+PRs touching `reels/**`. For each `reels/<slug>.reel` change it
+reads `apps/<slug>.toml`, parses `homepage` for a github.com
+repo, and checks whether the PR author is a collaborator on that
+repo (or a public org member of the owning org). On unanimous
+pass it adds an `attested-owner` label and posts a per-slug
+verdict comment; on any non-pass it strips the label and the PR
+is held for manual review. The workflow uses
+`pull_request_target` so it can comment on fork PRs without
+checking out fork code — only trusted base-branch manifests are
+read.
+
+Maintainer-facing flow, in full: fork the registry, drop your
+`.reel` at `reels/<slug>.reel` (drag-and-drop in the GitHub web
+editor works), open a PR. CI does the verification. Documented
+as "Add a reel for your app" in the registry README. No new
+client subcommand, no `gh` dependency, no scaffolding tooling.
+
+**Plumbing in this cut, no UI yet.** The catalog adds an optional
+`has_reel` boolean (`internal/catalog/catalog.go`), and the
+embedded `internal/catalog/data/index.json` snapshot refresh
+sets it on the apps that currently ship a `.reel`. Nothing reads
+the field yet — the planned UI consumer is a small camcorder
+badge on the grid card, deferred to a later cut.
 
 `v0.1.17` (2026-04-26): Charm-flavored visual pass on the TUI, an
 in-TUI submit form, two reel-strip fixes, and `CLIFF_THEME` /
@@ -327,8 +397,19 @@ doesn't disappear after a successful off-PATH install.
   Embedded snapshot in `internal/catalog/data/index.json` matches
   the live index except for the cliff entry, which lands on
   registry.cliff.sh as soon as the `apps/cliff.toml` PR merges.
-- **GitHub releases** — latest `v0.1.17` (2026-04-26). Darwin and
-  linux, amd64 and arm64, via goreleaser.
+- **GitHub releases** — latest `v0.1.18` (2026-05-01). Darwin and
+  linux, amd64 and arm64, via goreleaser. Client survives a
+  not-yet-deployed worker: a redirector 404 / 5xx / network error
+  with no cache to serve falls through to a direct fetch against
+  api.github.com (readme) or registry.cliff.sh (reels). Same
+  fallback covers a future redirector outage. The cost of an
+  un-deployed worker is one wasted round-trip per cold fetch and
+  zero tracking events; nothing user-visible breaks.
+- **`cliff.sh/r/readme/<owner>/<repo>` and `cliff.sh/r/reel/<slug>`** —
+  per-fetch redirector landing 2026-04-27 with v0.1.18. Logs one
+  Cloudflare Analytics Engine data point per hit, 302s to
+  upstream. Daily aggregate written to private R2 (`cliff-stats`,
+  `daily/<date>.json`). Not yet surfaced anywhere in the client.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
   tagged release, verifies sha256, installs to `/usr/local/bin` or
   `~/.local/bin`.
@@ -352,6 +433,11 @@ doesn't disappear after a successful off-PATH install.
   step in `notes/registry-dispatch.md` added before the remote
   kick fires. Until then the weekly cron + manual button still
   keep the snapshot fresh.
+- **Surfacing per-app views** — `cliff-stats` is collecting from
+  v0.1.18 onward; surfacing decisions (sidebar field? sort key?
+  weekly digest?) deliberately deferred until there's at least
+  two weeks of data to look at and at least one maintainer asking
+  to see numbers for their app.
 
 ## Known issues / gotchas
 

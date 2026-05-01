@@ -7,6 +7,36 @@ routes = [
   { pattern = "www.cliff.sh/*", zone_name = "cliff.sh" },
 ]
 
-# No bindings, no secrets, no env vars — this Worker is fully static
-# beyond the GitHub raw fetch. If we ever add an install-event ping,
-# add a D1 binding here for the events table.
+# Daily aggregation cron. 00:05 UTC gives Cloudflare a few minutes
+# after midnight to flush late-arriving Analytics Engine data points
+# from the previous UTC day before we query.
+[triggers]
+crons = ["5 0 * * *"]
+
+# Analytics Engine: per-redirect event log. Each /r/* hit writes one
+# data point with kind / key / country / hashed IP / hashed UA.
+# Dataset name shows up in the Cloudflare dashboard under Workers &
+# Pages → Analytics Engine.
+[[analytics_engine_datasets]]
+binding = "CLIFF_EVENTS"
+dataset = "cliff_events_v1"
+
+# Private R2 bucket for daily-aggregated stats. Not public-read; the
+# client doesn't fetch from this. We're collecting first; surfacing
+# decisions are deferred. Inspect with:
+#   wrangler r2 object get cliff-stats daily/2026-04-27.json
+[[r2_buckets]]
+binding = "STATS"
+bucket_name = "cliff-stats"
+
+# Vars and secrets. Set the secrets with `wrangler secret put`:
+#
+#   wrangler secret put CLIFF_TRACK_SECRET   # any 32+ byte random string
+#   wrangler secret put CF_API_TOKEN         # token with "Account
+#                                              Analytics Read" scope on
+#                                              the same account
+#
+# CF_ACCOUNT_ID and CLIFF_EVENTS_DATASET are non-secret; left as vars.
+[vars]
+CF_ACCOUNT_ID = ""             # fill in before deploy
+CLIFF_EVENTS_DATASET = "cliff_events_v1"
