@@ -66,11 +66,21 @@ resolve_install_dir() {
     install_dir="$CLIFF_INSTALL_DIR"
     return
   fi
-  if [ -w /usr/local/bin ] 2>/dev/null; then
-    install_dir="/usr/local/bin"
-  else
-    install_dir="$HOME/.local/bin"
-  fi
+  # Prefer a writable directory that's already on PATH so the user can
+  # type `cliff` immediately. Order:
+  #   1. /usr/local/bin            — on PATH on every Mac and most Linux
+  #   2. /opt/homebrew/bin         — on PATH for Apple Silicon Homebrew
+  #                                   users (where /usr/local/bin isn't
+  #                                   writable without sudo)
+  #   3. $HOME/.local/bin          — last resort; not on PATH by default
+  for candidate in /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin"; do
+    if [ -d "$candidate" ] && [ -w "$candidate" ]; then
+      install_dir="$candidate"
+      return
+    fi
+  done
+  # Nothing existed-and-writable; create ~/.local/bin and use that.
+  install_dir="$HOME/.local/bin"
 }
 
 download_and_install() {
@@ -108,14 +118,36 @@ download_and_install() {
 
 print_success() {
   echo
-  echo "Installed cliff ${VERSION} to ${install_dir}/cliff"
   case ":$PATH:" in
     *":$install_dir:"*)
+      echo "Installed cliff ${VERSION} to ${install_dir}/cliff"
       echo "Run: cliff"
       ;;
     *)
-      echo "Note: ${install_dir} is not on your PATH."
-      echo "      Add it to your shell rc, or run: ${install_dir}/cliff"
+      # Lead with the warning so it isn't mistaken for plain success.
+      # Suggest the exact rc-file line for the user's current shell so
+      # the fix is copy-pasteable.
+      shell_name="$(basename "${SHELL:-sh}")"
+      case "$shell_name" in
+        zsh)  rc_file="~/.zshrc" ;;
+        bash) rc_file="~/.bashrc" ;;
+        fish) rc_file="~/.config/fish/config.fish" ;;
+        *)    rc_file="your shell's rc file" ;;
+      esac
+      echo "Installed cliff ${VERSION} to ${install_dir}/cliff"
+      echo
+      echo "WARNING: ${install_dir} is not on your PATH, so typing 'cliff' will not work yet."
+      echo
+      echo "To run cliff right now:"
+      echo "  ${install_dir}/cliff"
+      echo
+      if [ "$shell_name" = "fish" ]; then
+        echo "To make 'cliff' work in new shells, add this to ${rc_file}:"
+        echo "  fish_add_path ${install_dir}"
+      else
+        echo "To make 'cliff' work in new shells, add this to ${rc_file}:"
+        echo "  export PATH=\"${install_dir}:\$PATH\""
+      fi
       ;;
   esac
 }
