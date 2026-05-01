@@ -38,5 +38,5 @@ bucket_name = "cliff-stats"
 #
 # CF_ACCOUNT_ID and CLIFF_EVENTS_DATASET are non-secret; left as vars.
 [vars]
-CF_ACCOUNT_ID = ""             # fill in before deploy
+CF_ACCOUNT_ID = "c8fd943aec72a4652f4a2b7379f9d1b5"
 CLIFF_EVENTS_DATASET = "cliff_events_v1"
