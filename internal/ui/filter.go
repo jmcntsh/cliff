@@ -22,6 +22,12 @@ const categoryInstalled = "__installed__"
 // doesn't live in catalog.Categories.
 const categoryNew = "__new__"
 
+// categoryHot is the sentinel for the "Hot" pseudo-category: apps
+// with a non-zero HotScore from the worker's hot.json sidecar,
+// sorted by that score. Pseudo, like New and Installed: the
+// filter and sort live in code, not the registry.
+const categoryHot = "__hot__"
+
 // newWindow is how far back "new" reaches. One week matches the
 // "new this week" language in README/CLAUDE.
 const newWindow = 7 * 24 * time.Hour
@@ -113,6 +119,10 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 			if _, ok := newRepos[app.Repo]; !ok {
 				continue
 			}
+		case c.category == categoryHot:
+			if app.HotScore <= 0 {
+				continue
+			}
 		case c.category != "":
 			if app.Category != c.category {
 				continue
@@ -129,6 +139,13 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 	// work — user's choice wins when they cycle the sort key.
 	if c.category == categoryNew && c.sort == sortStarsDesc {
 		sortByFreshness(filtered)
+		return filtered
+	}
+	// Symmetric override for the Hot surface: default to
+	// HotScore-descending so the row's name and contents agree.
+	// Same explicit-sort-wins rule as New.
+	if c.category == categoryHot && c.sort == sortStarsDesc {
+		sortApps(filtered, sortHotDesc)
 		return filtered
 	}
 	sortApps(filtered, c.sort)
@@ -163,12 +180,28 @@ func applyFuzzy(apps []catalog.App, query string) []catalog.App {
 func sortApps(apps []catalog.App, mode sortMode) {
 	sort.Slice(apps, func(i, j int) bool {
 		switch mode {
-		case sortStarsAsc:
-			if apps[i].Stars != apps[j].Stars {
-				return apps[i].Stars < apps[j].Stars
+		case sortRecencyDesc:
+			// FreshnessTime falls back across AddedAt and
+			// LastCommit (see catalog.App.FreshnessTime), so a
+			// catalog where some entries lack AddedAt still
+			// produces a meaningful order — same source of
+			// truth as the New-row freshness sort.
+			ti, tj := apps[i].FreshnessTime(), apps[j].FreshnessTime()
+			if !ti.Equal(tj) {
+				return ti.After(tj)
 			}
 			return apps[i].Name < apps[j].Name
-		case sortName:
+		case sortHotDesc:
+			// Apps with no hot signal carry HotScore=0 and tie
+			// at the bottom; star-count is a reasonable
+			// secondary because it puts established apps above
+			// truly unknown ones in the long tail of zeros.
+			if apps[i].HotScore != apps[j].HotScore {
+				return apps[i].HotScore > apps[j].HotScore
+			}
+			if apps[i].Stars != apps[j].Stars {
+				return apps[i].Stars > apps[j].Stars
+			}
 			return apps[i].Name < apps[j].Name
 		default:
 			if apps[i].Stars != apps[j].Stars {

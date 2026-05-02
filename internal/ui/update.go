@@ -108,6 +108,16 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.readme, cmd = r.readme.applyFetch(m)
 		return r, cmd
 
+	case hotFetchedMsg:
+		// Late-arriving sidecar fetch. Routed unconditionally so a
+		// fetch that resolves while the user is in any other mode
+		// (help, install modal, readme) still applies — the score
+		// overlay and sidebar reshape are pure-data, mode-agnostic.
+		// refilter() picks up the score so a sortHotDesc grid (if
+		// the user already cycled there) re-orders to match.
+		r = r.applyHotScores(m)
+		return r.refilter(), nil
+
 	case heroImageReadyMsg:
 		// Late-arriving hero render. Routed unconditionally for the
 		// same reason reelFetchedMsg is — a fetch that completes
@@ -269,7 +279,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return r, nil
 		}
 	case key.Matches(msg, keys.Sort):
-		r.sort = (r.sort + 1) % 3
+		r.sort = r.nextSort()
 		return r.refilter(), nil
 	case key.Matches(msg, keys.Search):
 		r.mode = modeSearch

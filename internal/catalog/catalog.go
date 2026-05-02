@@ -32,6 +32,16 @@ type App struct {
 	// with HasReel=false, which renders identically to "no reel" — the
 	// only cost is no badge until the next index publish.
 	HasReel bool `json:"has_reel,omitempty"`
+	// HotScore is the recency-weighted view-count produced by the
+	// cliff.sh worker's daily hot.json sidecar (see internal/hotfetch
+	// + web/worker/src/index.js aggregateHot). Populated at runtime
+	// after launch; never present in the registry-emitted JSON, which
+	// is why it's tagged json:"-" rather than omitempty. Apps the
+	// sidecar doesn't know about (because it 404'd, or the app is
+	// below the per-app floor) carry HotScore=0, which the sort
+	// comparator and the sidebar reveal threshold both treat as
+	// "no signal" — same effect as if the surface were hidden.
+	HotScore float64 `json:"-"`
 	// InstallSpecs is the ordered list of install methods. Single-method
 	// manifests produce a one-element slice; multi-method ([[installs]])
 	// manifests produce the list in author order, which is also the

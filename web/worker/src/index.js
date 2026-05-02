@@ -218,6 +218,16 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Public hot-score sidecar. Served from cliff.sh/hot.json so we
+    // don't need a second hostname or its DNS work; the client knows
+    // to fetch this exact path. Reads from the (otherwise private)
+    // cliff-stats R2 bucket. 404 is the expected response while the
+    // aggregator is still gated on minimum days-seen — clients
+    // tolerate it (see internal/hotfetch).
+    if (url.pathname === "/hot.json") {
+      return await serveHotJSON(env);
+    }
+
     // Tracking redirectors. Match before the canonical / 404 paths so
     // a future "/r/" route can't be shadowed by /install.sh-style
     // rewrites. trackEvent is best-effort: a logging failure must not
@@ -259,11 +269,15 @@ export default {
 
   // Daily aggregator. Reads the previous UTC day's data points from
   // Analytics Engine via the SQL API and writes a per-day stats.json
-  // to the (private) STATS R2 bucket. Surfacing in the client is
-  // intentionally not wired yet — we're collecting first, deciding
-  // what to publish later.
+  // to the (private) STATS R2 bucket. Then computes a recency-weighted
+  // "hot score" over a 21-day window and writes that to the same
+  // bucket — gated on having seen at least HOT_MIN_DAYS_SEEN distinct
+  // days of data, so the first emit isn't built on a partial window.
+  // Surfacing on the client is gated separately (see
+  // internal/hotfetch + the Hot sidebar reveal threshold).
   async scheduled(event, env, ctx) {
     ctx.waitUntil(aggregateYesterday(env));
+    ctx.waitUntil(aggregateHot(env));
   },
 };
 
@@ -396,6 +410,224 @@ function utcDayString(d) {
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+// ---------- Hot-score sidecar serve ---------------------------------
+
+// serveHotJSON reads the latest hot.json from R2 and returns it with
+// a short edge cache. Returns 404 (not 500) when no file exists yet,
+// because the client treats 404 as "hot data not available; hide the
+// surface" — same as the redirector-fallback contract elsewhere in
+// this file. R2 reads are cheap; we don't bother with a Worker-side
+// cache layer beyond the edge cache header.
+async function serveHotJSON(env) {
+  if (!env.STATS) {
+    return new Response("stats bucket not bound\n", {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+  const obj = await env.STATS.get("hot.json");
+  if (!obj) {
+    return new Response("hot data not yet available\n", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+  // 6h cache: hot.json regenerates daily at 00:05 UTC, so 6h means
+  // a worst-case freshness lag of <quarter-day for clients that
+  // happened to fetch right after the prior day's emit. ETag from
+  // R2 lets clients revalidate cheaply on cache miss.
+  const headers = new Headers();
+  headers.set("content-type", "application/json; charset=utf-8");
+  headers.set("cache-control", "public, max-age=21600");
+  if (obj.etag) headers.set("etag", obj.etag);
+  return new Response(obj.body, { headers });
+}
+
+// ---------- Hot-score aggregation cron ------------------------------
+
+// HOT_HALF_LIFE_DAYS is the time it takes a single viewer-day to
+// decay to half its weight. 7 days mirrors the user-locked design:
+// short enough that "hot" responds to recent behavior, long enough
+// that one viral Tuesday doesn't dominate Friday's ranking.
+const HOT_HALF_LIFE_DAYS = 7;
+
+// HOT_WINDOW_DAYS is how far back the aggregator queries. After
+// ~3× half-life, a viewer-day's weight is ~12% — still measurable
+// but small enough that extending the window further adds noise
+// more than signal. 21 days = 3 half-lives.
+const HOT_WINDOW_DAYS = 21;
+
+// HOT_MIN_DAYS_SEEN gates the first emit. We won't publish hot.json
+// at all until Analytics Engine has seen this many distinct UTC
+// days of data — otherwise the first deploy publishes a real
+// ranking based on whatever happened in the past few hours. Two
+// weeks of data is the minimum that lets a viewer-day from the
+// start of the window meaningfully decay against viewer-days at
+// the end.
+const HOT_MIN_DAYS_SEEN = 14;
+
+// HOT_MIN_LIFETIME_IPS gates per-app emit. An app with very few
+// lifetime distinct viewers shouldn't surface as "hot" no matter
+// the decay arithmetic — its score is dominated by a single small
+// cluster, not signal. 5 is generous enough that genuinely
+// emerging tiny apps still appear once they have any traction at
+// all, strict enough that a single curious cluster doesn't
+// produce a ranked entry.
+const HOT_MIN_LIFETIME_IPS = 5;
+
+// aggregateHot computes a recency-weighted hot score per (kind, key)
+// over the last HOT_WINDOW_DAYS, gates on minimum days-seen, and
+// writes hot.json into R2. The score for one (kind, key) is:
+//
+//   sum over days d in window of:
+//     distinct_ips(d) * exp(-(today - d) / HOT_HALF_LIFE_DAYS)
+//
+// Since AE's uniq() is per-day-bucketed here, an ip that appeared
+// on multiple days contributes once per day. Same posture as the
+// daily file's distinct_ips — we explicitly want "this person came
+// back" to count more than "this person browsed once."
+//
+// Idempotent: re-running the same day overwrites hot.json with the
+// same content modulo `generated_at`. Rerunnable mid-day if you
+// want to test.
+async function aggregateHot(env) {
+  if (!env.STATS) return;
+  if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN || !env.CLIFF_EVENTS_DATASET) {
+    console.log("aggregateHot: missing CF_ACCOUNT_ID / CF_API_TOKEN / CLIFF_EVENTS_DATASET");
+    return;
+  }
+
+  const now = new Date();
+  const today = utcDayString(now);
+
+  // Per-day distinct-IP buckets across the window. Group by
+  // (kind, key, day) so the JS layer can multiply each bucket by
+  // its decay weight. We use toDate(timestamp) rather than
+  // truncating in JS so a row that straddles midnight UTC counts
+  // as two day-buckets, not one — matches how the daily file
+  // partitions events.
+  const sql = `
+    SELECT
+      blob1 AS kind,
+      blob2 AS key,
+      toDate(timestamp) AS day,
+      uniq(blob4) AS distinct_ips
+    FROM ${env.CLIFF_EVENTS_DATASET}
+    WHERE timestamp >= now() - INTERVAL '${HOT_WINDOW_DAYS}' DAY
+    GROUP BY kind, key, day
+    FORMAT JSON
+  `.trim();
+
+  const resp = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.CF_API_TOKEN}`,
+        "Content-Type": "text/plain",
+      },
+      body: sql,
+    },
+  );
+
+  if (!resp.ok) {
+    console.log(`aggregateHot: AE query failed ${resp.status}`);
+    return;
+  }
+
+  const result = await resp.json();
+  const rows = (result && result.data) || [];
+  if (rows.length === 0) {
+    console.log("aggregateHot: no rows in window; skipping emit");
+    return;
+  }
+
+  // Days-seen gate. Count distinct day buckets across the whole
+  // result set. Below the threshold we don't publish at all — the
+  // existing hot.json (if any) stays in place rather than being
+  // overwritten with a thinner score, so a brief AE outage can't
+  // wipe out a good ranking.
+  const daysSeen = new Set(rows.map((r) => r.day)).size;
+  if (daysSeen < HOT_MIN_DAYS_SEEN) {
+    console.log(`aggregateHot: only ${daysSeen}/${HOT_MIN_DAYS_SEEN} days of data; skipping emit`);
+    return;
+  }
+
+  // Bucket rows by (kind, key) and accumulate decayed score plus
+  // raw lifetime distinct-IPs over the window. Lifetime here means
+  // "across the queried window," which is fine for a 21-day window
+  // — outside the window the events have decayed to ~0 anyway.
+  const buckets = new Map(); // composite "kind:key" -> {kind, key, score, lifetime_ips}
+  for (const r of rows) {
+    const kind = r.kind;
+    const key = r.key;
+    if (!kind || !key) continue;
+    const ips = Number(r.distinct_ips) || 0;
+    if (ips <= 0) continue;
+    const ageDays = daysBetween(today, r.day);
+    if (ageDays < 0 || ageDays > HOT_WINDOW_DAYS) continue;
+    const weight = Math.exp(-ageDays / HOT_HALF_LIFE_DAYS);
+    const composite = `${kind}:${key}`;
+    let b = buckets.get(composite);
+    if (!b) {
+      b = { kind, key, score: 0, lifetime_ips: 0 };
+      buckets.set(composite, b);
+    }
+    b.score += ips * weight;
+    b.lifetime_ips += ips;
+  }
+
+  // Per-app floor: drop entries with too few lifetime viewers to
+  // be meaningful. Sort descending by score so the client can take
+  // top-N without resorting if it ever wants to.
+  const filtered = [];
+  for (const b of buckets.values()) {
+    if (b.lifetime_ips < HOT_MIN_LIFETIME_IPS) continue;
+    filtered.push({
+      kind: b.kind,
+      key: b.key,
+      hot_score: Number(b.score.toFixed(3)),
+      lifetime_ips: b.lifetime_ips,
+    });
+  }
+  filtered.sort((a, b) => b.hot_score - a.hot_score);
+
+  const out = {
+    generated_at: now.toISOString(),
+    schema_version: 1,
+    half_life_days: HOT_HALF_LIFE_DAYS,
+    window_days: HOT_WINDOW_DAYS,
+    days_seen: daysSeen,
+    min_lifetime_ips: HOT_MIN_LIFETIME_IPS,
+    rows: filtered,
+  };
+
+  await env.STATS.put(
+    "hot.json",
+    JSON.stringify(out, null, 2),
+    { httpMetadata: { contentType: "application/json" } },
+  );
+  console.log(`aggregateHot: emitted ${filtered.length} rows over ${daysSeen} days`);
+}
+
+// daysBetween returns the integer count of UTC days between two
+// "YYYY-MM-DD" strings, computed via Date.UTC so DST never enters
+// the picture. Used by the hot aggregator to compute a row's
+// recency in days for the decay weight.
+function daysBetween(todayStr, dayStr) {
+  const t = parseUTCDate(todayStr);
+  const d = parseUTCDate(dayStr);
+  if (t == null || d == null) return -1;
+  return Math.round((t - d) / (24 * 60 * 60 * 1000));
+}
+
+function parseUTCDate(s) {
+  if (typeof s !== "string") return null;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
 // ---------- Daily aggregation cron ----------------------------------

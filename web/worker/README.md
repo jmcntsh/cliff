@@ -1,6 +1,6 @@
 # cliff.sh Worker
 
-The Cloudflare Worker behind `cliff.sh`. Three responsibilities:
+The Cloudflare Worker behind `cliff.sh`. Four responsibilities:
 
 1. `curl cliff.sh | sh` returns the install script as `text/plain`.
 2. A browser visiting `https://cliff.sh/` gets a small landing page.
@@ -10,6 +10,10 @@ The Cloudflare Worker behind `cliff.sh`. Three responsibilities:
    client routes its readme and reel fetches through these so we have
    a credible "views per app" signal without a client-side telemetry
    endpoint or any account system.
+4. `cliff.sh/hot.json` serves the daily-computed hot-score sidecar
+   from R2. Returns 404 until the aggregator has accumulated at
+   least 14 days of data — the cliff client treats that 404 as
+   "hot data not available; hide the surface" and degrades cleanly.
 
 Content negotiation (Accept header) decides between (1) and (2).
 `/install.sh` permanently redirects to `/` so both URLs work.
@@ -120,6 +124,63 @@ Schema (`schema_version: 1`):
   ]
 }
 ```
+
+### Hot sidecar (`hot.json`)
+
+A second daily job in the same cron computes a recency-weighted
+"hot score" per app and writes it to `hot.json` in the same R2
+bucket. The serving route at `cliff.sh/hot.json` reads this file.
+
+Score formula, per `(kind, key)`:
+
+```
+hot_score = sum over days d in [today - 21d, today]:
+              distinct_ips(d) * exp(-(today - d) / 7)
+```
+
+7-day half-life over a 21-day window. An app whose distinct viewers
+on day `d` were `n` contributes `n` to today's score and `n/2` to
+the score 7 days from now (assuming no further activity).
+
+Two gates protect against publishing noise:
+
+- **Days-seen gate:** if Analytics Engine has fewer than 14
+  distinct days of data in the window, the aggregator skips the
+  emit entirely. The previous `hot.json` (if any) stays in place.
+  This means the first emit happens ~14 days after the worker
+  goes live.
+- **Per-app floor:** an app with fewer than 5 lifetime distinct
+  IPs in the window is dropped from the output. Prevents single
+  curious-cluster apps from dominating an early ranking.
+
+Schema (`schema_version: 1`):
+
+```json
+{
+  "generated_at": "2026-05-22T00:05:32.000Z",
+  "schema_version": 1,
+  "half_life_days": 7,
+  "window_days": 21,
+  "days_seen": 21,
+  "min_lifetime_ips": 5,
+  "rows": [
+    { "kind": "readme", "key": "Passeriform/BalatroTUI",
+      "hot_score": 47.218, "lifetime_ips": 312 },
+    { "kind": "reel", "key": "weathr",
+      "hot_score": 31.844, "lifetime_ips": 188 }
+  ]
+}
+```
+
+Inspect:
+
+```sh
+wrangler r2 object get cliff-stats hot.json
+# or, after the days-seen gate flips:
+curl -s https://cliff.sh/hot.json | jq '.rows[:10]'
+```
+
+### Ad-hoc queries
 
 For ad-hoc queries against raw events (last 24h, etc.), use the
 Analytics Engine SQL API directly with `CF_API_TOKEN`:

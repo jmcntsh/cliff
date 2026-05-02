@@ -25,17 +25,28 @@ type sidebar struct {
 	focused bool
 }
 
-// newSidebar builds the sidebar with All, New, and Installed pinned at
-// the top, then every catalog category in registry order. The New and
-// Installed counts are derived at runtime — New from FreshnessTime,
-// Installed from the live install map — and refreshed via setInstalled
-// / setNewCount whenever the inputs change.
-func newSidebar(c *catalog.Catalog, installed map[string]bool) sidebar {
+// newSidebar builds the sidebar pinned at the top with All, then
+// either Hot or New (mutually exclusive — they trade places when
+// the worker's hot.json reveals), then Installed, then every catalog
+// category in registry order. Counts are derived at runtime: New
+// from FreshnessTime, Hot from HotScore>0, Installed from the live
+// install map. They refresh via setInstalled / setNewCount /
+// setHotCount whenever the inputs change.
+//
+// hotRevealed is the single source of truth for which top row appears.
+// Caller (Root.applyHotScores) flips it after the hot.json fetch
+// resolves and the catalog has at least hotRevealThreshold non-zero
+// scores. Until then it's false and we keep the New row.
+func newSidebar(c *catalog.Catalog, installed map[string]bool, hotRevealed bool) sidebar {
 	items := []sidebarItem{
 		{name: "", count: len(c.Apps)},
-		{name: categoryNew, count: countNew(c.Apps, time.Now())},
-		{name: categoryInstalled, count: len(installed)},
 	}
+	if hotRevealed {
+		items = append(items, sidebarItem{name: categoryHot, count: countHot(c.Apps)})
+	} else {
+		items = append(items, sidebarItem{name: categoryNew, count: countNew(c.Apps, time.Now())})
+	}
+	items = append(items, sidebarItem{name: categoryInstalled, count: len(installed)})
 	for _, cat := range c.Categories {
 		items = append(items, sidebarItem{name: cat.Name, count: cat.Count})
 	}
@@ -48,6 +59,19 @@ func newSidebar(c *catalog.Catalog, installed map[string]bool) sidebar {
 // fallback cap — so countNew is exactly len(newSet)).
 func countNew(apps []catalog.App, now time.Time) int {
 	return len(newSet(apps, now))
+}
+
+// countHot returns the number of apps with a non-zero HotScore. Same
+// rule as the categoryHot filter in filterAndSort, kept here so the
+// sidebar count matches the row's actual contents one-for-one.
+func countHot(apps []catalog.App) int {
+	n := 0
+	for i := range apps {
+		if apps[i].HotScore > 0 {
+			n++
+		}
+	}
+	return n
 }
 
 // setInstalled refreshes the Installed pseudo-category's count after an
@@ -133,6 +157,8 @@ func (s sidebar) view(height int) string {
 			name = "All"
 		case categoryNew:
 			name = "New"
+		case categoryHot:
+			name = "Hot"
 		case categoryInstalled:
 			name = "Installed"
 		}

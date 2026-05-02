@@ -4,9 +4,60 @@ What's actually shipped right now. Updated on every ship. Source of
 truth for "is X live?" — principles docs ([`CLAUDE.md`](CLAUDE.md))
 describe intent, not state.
 
-Last updated: 2026-05-01.
+Last updated: 2026-05-02.
 
 ## Latest change
+
+`v0.1.19` (2026-05-02): "Hot" surface in the sidebar and sort cycle,
+backed by a daily recency-weighted aggregator. Ascending sorts removed.
+
+**Worker.** A second daily cron in
+`web/worker/src/index.js` (function `aggregateHot`) computes a
+recency-weighted view-count per `(kind, key)` over the last 21 days
+with a 7-day half-life:
+
+```
+hot_score = sum over days d in window of:
+              distinct_ips(d) * exp(-(today - d) / 7)
+```
+
+The output is written to `hot.json` in the same R2 bucket
+(`cliff-stats`) and served at `cliff.sh/hot.json` with a 6-hour edge
+cache. Two gates protect against publishing noise:
+- Days-seen gate: skip emit until AE has seen at least 14 distinct
+  UTC days of data. Means the first emit happens ~14 days after the
+  worker's redirector ships (i.e. ~2026-05-15).
+- Per-app floor: drop apps with fewer than 5 lifetime distinct IPs
+  in the window. Prevents single-cluster apps from gaming the early
+  ranking.
+
+Schema is `schema_version: 1`; the worker README documents the
+format and the SQL.
+
+**Client.** New `internal/hotfetch` package mirrors the readme/reel
+fetch posture (blocking `Fetch()`, ETag cache at
+`~/.cache/cliff/hot/`, 404-tolerant). On launch the TUI batches a
+one-shot fetch alongside the title sweep; the result is layered onto
+`catalog.App.HotScore` and the sidebar/sort-cycle reshape on its
+arrival.
+
+UI changes:
+- Sort cycle is descending-only now: `stars ↓` → `recency ↓` →
+  (`hot ↓` when revealed) → wraps. Ascending stars and alphabetical
+  name are gone — the cycle was three steps where two of them buried
+  high-signal apps.
+- A `Hot` sidebar pseudo-row appears at the top, replacing `New`,
+  once at least 25 apps in the catalog have a non-zero `HotScore`.
+  The two surfaces trade places, not stack — they're answering the
+  same question (what should I look at right now) on different
+  timescales, and both visible would dilute both.
+- Hot's default sort is `hot ↓`; explicit user sort wins, same rule
+  as New's freshness override.
+
+If `hot.json` is 404 (steady state until ~2026-05-15) or the fetch
+fails, `hotRevealed` stays false and the UI behaves identically to
+v0.1.18: New row visible, sort cycle two steps. There is no spinner,
+loading state, or "hot data coming soon" copy.
 
 `v0.1.18` (2026-05-01): per-app view tracking via the cliff.sh
 Worker, plus a registry-side reel-ownership attestation workflow.

@@ -131,24 +131,64 @@ func (o pkgOp) pastVerb() string {
 	}
 }
 
+// sortMode is the user-cyclable sort key. The cycle is descending-only
+// by design: ascending sorts (stars ↑, A→Z name) buried high-signal
+// apps under low-signal ones, which made the cycle feel like "a full
+// rotation = back where I started" rather than "a full rotation = I
+// saw the catalog three useful ways." sortHotDesc only enters the
+// cycle when hot.json is published and the reveal threshold passes
+// (see (Root).visibleSorts).
 type sortMode int
 
 const (
 	sortStarsDesc sortMode = iota
-	sortStarsAsc
-	sortName
+	sortRecencyDesc
+	sortHotDesc
 )
 
 func (s sortMode) label() string {
 	switch s {
 	case sortStarsDesc:
 		return "stars ↓"
-	case sortStarsAsc:
-		return "stars ↑"
-	case sortName:
-		return "name"
+	case sortRecencyDesc:
+		return "recency ↓"
+	case sortHotDesc:
+		return "hot ↓"
 	}
 	return ""
+}
+
+// hotRevealThreshold is the minimum number of apps in the catalog
+// with a nonzero HotScore before the Hot surface (sidebar row +
+// sort-cycle step) appears. Below this we'd be ranking ~all apps
+// by ~all-zero scores, which is just a degenerate alphabetical
+// list.
+const hotRevealThreshold = 25
+
+// visibleSorts is the sort cycle the Sort key actually walks, given
+// the current reveal state. Hot is appended only when revealed, so
+// pressing 's' on a fresh client never lands on a sort that ranks
+// every app at zero.
+func (r Root) visibleSorts() []sortMode {
+	if r.hotRevealed {
+		return []sortMode{sortStarsDesc, sortRecencyDesc, sortHotDesc}
+	}
+	return []sortMode{sortStarsDesc, sortRecencyDesc}
+}
+
+// nextSort returns the next sort in r.visibleSorts() after the
+// current one, wrapping. Used by the Sort keypress handler. If the
+// current sort isn't in the visible list (e.g. the user was on
+// sortHotDesc and the reveal flipped back to false because hot.json
+// disappeared), we fall back to the first visible sort.
+func (r Root) nextSort() sortMode {
+	cycle := r.visibleSorts()
+	for i, s := range cycle {
+		if s == r.sort {
+			return cycle[(i+1)%len(cycle)]
+		}
+	}
+	return cycle[0]
 }
 
 type Root struct {
@@ -162,6 +202,14 @@ type Root struct {
 	helpReturnMode    mode // mode to return to when help is dismissed
 	installReturnMode mode // mode to return to when an install modal is dismissed
 	sort              sortMode
+	// hotRevealed flips true once we've fetched hot.json *and* at least
+	// hotRevealThreshold apps carry a non-zero HotScore. Both the Hot
+	// sidebar row and the sortHotDesc step in the sort cycle are gated
+	// on this flag, so the surface appears in both places at once. The
+	// New sidebar row hides on the same flag — they trade places, not
+	// stack. False is the sticky steady-state until the worker's
+	// days-seen gate flips and the catalog has enough nonzero scores.
+	hotRevealed       bool
 	layout            layoutMode
 	width       int
 	height      int
@@ -328,7 +376,7 @@ func New(c *catalog.Catalog) Root {
 	r := Root{
 		catalog:         c,
 		grid:            newGrid(),
-		sidebar:         newSidebar(c, installed),
+		sidebar:         newSidebar(c, installed, false),
 		search:          ti,
 		installed:       installed,
 		binOverrides:    overrides,
@@ -349,7 +397,14 @@ const (
 	installLogHeight = 12
 )
 
-func (r Root) Init() tea.Cmd { return launchTitleTick() }
+// Init batches the launch-title sweep with a one-shot background
+// hot.json fetch. The fetch is fire-and-forget: if the sidecar is
+// 404 (worker still inside its 14-day days-seen gate) or unreachable,
+// hotFetchedMsg arrives with Available=false and the UI quietly
+// stays in pre-reveal shape. No spinner; nothing to wait for.
+func (r Root) Init() tea.Cmd {
+	return tea.Batch(launchTitleTick(), fetchHotCmd())
+}
 
 // titleTickMsg drives the launch sweep on the brand-mark gradient.
 // One message arrives every titleTickInterval until phase hits 1.0,

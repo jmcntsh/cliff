@@ -40,17 +40,39 @@ func TestSort_StarsDesc(t *testing.T) {
 	}
 }
 
-func TestSort_StarsAsc(t *testing.T) {
-	got := filterAndSort(sample(), filterCriteria{sort: sortStarsAsc})
-	if got[0].Name != "yazi" {
-		t.Errorf("expected yazi first, got %s", got[0].Name)
+func TestSort_RecencyDesc(t *testing.T) {
+	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
+	apps := []catalog.App{
+		{Name: "old", Repo: "a/old", Stars: 100, LastCommit: now.Add(-90 * 24 * time.Hour)},
+		{Name: "mid", Repo: "a/mid", Stars: 1, LastCommit: now.Add(-30 * 24 * time.Hour)},
+		{Name: "new", Repo: "a/new", Stars: 50, LastCommit: now.Add(-1 * time.Hour)},
+	}
+	got := filterAndSort(apps, filterCriteria{sort: sortRecencyDesc, now: now})
+	if got[0].Name != "new" || got[2].Name != "old" {
+		t.Errorf("expected newest first / oldest last, got %v", got)
 	}
 }
 
-func TestSort_Name(t *testing.T) {
-	got := filterAndSort(sample(), filterCriteria{sort: sortName})
-	if got[0].Name != "gh" {
-		t.Errorf("expected gh first (alphabetical), got %s", got[0].Name)
+func TestSort_HotDesc(t *testing.T) {
+	apps := []catalog.App{
+		{Name: "cold", Repo: "a/cold", Stars: 1000, HotScore: 0},
+		{Name: "warm", Repo: "a/warm", Stars: 10, HotScore: 5.5},
+		{Name: "hot", Repo: "a/hot", Stars: 100, HotScore: 42.0},
+	}
+	got := filterAndSort(apps, filterCriteria{sort: sortHotDesc})
+	if got[0].Name != "hot" || got[1].Name != "warm" || got[2].Name != "cold" {
+		t.Errorf("expected hot > warm > cold by score, got %v", got)
+	}
+}
+
+func TestSort_HotDesc_TieBreaksOnStars(t *testing.T) {
+	apps := []catalog.App{
+		{Name: "low-stars", Repo: "a/low", Stars: 10, HotScore: 0},
+		{Name: "high-stars", Repo: "a/high", Stars: 1000, HotScore: 0},
+	}
+	got := filterAndSort(apps, filterCriteria{sort: sortHotDesc})
+	if got[0].Name != "high-stars" {
+		t.Errorf("expected stars to break HotScore ties, got %s first", got[0].Name)
 	}
 }
 
@@ -214,12 +236,16 @@ func TestFilter_New_EmptyWhenNoTimestamps(t *testing.T) {
 func TestFilter_New_RespectsExplicitSort(t *testing.T) {
 	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
 	apps := []catalog.App{
-		{Name: "b-app", Repo: "a/b", Stars: 10, AddedAt: now.Add(-24 * time.Hour)},
-		{Name: "a-app", Repo: "a/a", Stars: 100, AddedAt: now.Add(-48 * time.Hour)},
+		// Newer freshness, lower hot score → freshness sort would
+		// pick this; hot sort should not.
+		{Name: "fresh-cold", Repo: "a/fresh-cold", Stars: 10, HotScore: 1.0, AddedAt: now.Add(-24 * time.Hour)},
+		// Older freshness, higher hot score → hot sort should pick
+		// this when the user explicitly requests it, even on the
+		// New surface where freshness is the default.
+		{Name: "old-hot", Repo: "a/old-hot", Stars: 100, HotScore: 99.0, AddedAt: now.Add(-48 * time.Hour)},
 	}
-	// Name sort overrides freshness sort when user picks it explicitly.
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, sort: sortName, now: now})
-	if got[0].Name != "a-app" {
-		t.Errorf("expected a-app first under name sort, got %s", got[0].Name)
+	got := filterAndSort(apps, filterCriteria{category: categoryNew, sort: sortHotDesc, now: now})
+	if got[0].Name != "old-hot" {
+		t.Errorf("expected explicit hot sort to override New-row freshness override, got %s", got[0].Name)
 	}
 }
