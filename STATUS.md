@@ -4,12 +4,13 @@ What's actually shipped right now. Updated on every ship. Source of
 truth for "is X live?" — principles docs ([`CLAUDE.md`](CLAUDE.md))
 describe intent, not state.
 
-Last updated: 2026-05-02.
+Last updated: 2026-05-04.
 
 ## Latest change
 
-`v0.1.19` (2026-05-02): "Hot" surface in the sidebar and sort cycle,
+`v0.1.19` (2026-05-04): "Hot" surface in the sidebar and sort cycle,
 backed by a daily recency-weighted aggregator. Ascending sorts removed.
+Registry seeder script moved out of this repo.
 
 **Worker.** A second daily cron in
 `web/worker/src/index.js` (function `aggregateHot`) computes a
@@ -58,6 +59,14 @@ If `hot.json` is 404 (steady state until ~2026-05-15) or the fetch
 fails, `hotRevealed` stays false and the UI behaves identically to
 v0.1.18: New row visible, sort cycle two steps. There is no spinner,
 loading state, or "hot data coming soon" copy.
+
+**Repo cleanup.** `scripts/seed_registry_from_github.py` and the
+seeding-rules TOMLs moved to
+[`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)
+under `scripts/seed.py`. The discovery script produced registry
+artifacts and only ever ran from the registry's auto-seed
+workflow; keeping it here forced that workflow to clone two repos.
+No client-facing change.
 
 `v0.1.18` (2026-05-01): per-app view tracking via the cliff.sh
 Worker, plus a registry-side reel-ownership attestation workflow.
