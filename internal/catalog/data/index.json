@@ -1,6 +1,144 @@
 {
   "apps": [
     {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "azat-io",
+      "category": "Other",
+      "description": "🌊 Interactive CLI tool to update GitHub Actions to latest versions with SHA pinning",
+      "homepage": "https://github.com/azat-io/actions-up",
+      "install_specs": [
+        {
+          "package": "actions-up",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-26T08:14:05Z",
+      "license": "MIT",
+      "name": "actions-up",
+      "readme": "https://raw.githubusercontent.com/azat-io/actions-up/main/README.md",
+      "repo": "azat-io/actions-up",
+      "stars": 520,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "d-k-patel",
+      "category": "Other",
+      "description": "AI-powered CLI that translates natural language into safe, reviewable ffmpeg commands.",
+      "homepage": "https://github.com/d-k-patel/ai-ffmpeg-cli",
+      "install_specs": [
+        {
+          "package": "ai-ffmpeg-cli",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-08-22T06:16:12Z",
+      "license": "MIT",
+      "name": "ai-ffmpeg-cli",
+      "readme": "https://raw.githubusercontent.com/d-k-patel/ai-ffmpeg-cli/main/README.md",
+      "repo": "d-k-patel/ai-ffmpeg-cli",
+      "stars": 129,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "rorkai",
+      "category": "Other",
+      "description": "Fast, scriptable CLI for the App Store Connect API. Automate TestFlight, builds, submissions, signing, analytics, scr...",
+      "homepage": "https://github.com/rorkai/App-Store-Connect-CLI",
+      "install_specs": [
+        {
+          "package": "github.com/rorkai/App-Store-Connect-CLI@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T09:24:33Z",
+      "license": "MIT",
+      "name": "app-store-connect-cli",
+      "readme": "https://raw.githubusercontent.com/rorkai/App-Store-Connect-CLI/main/README.md",
+      "repo": "rorkai/App-Store-Connect-CLI",
+      "stars": 4208,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "mexirica",
+      "category": "Other",
+      "description": "TUI package manager for APT-based Linux distributions",
+      "homepage": "https://github.com/mexirica/aptui",
+      "install_specs": [
+        {
+          "package": "github.com/mexirica/aptui@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-02T10:19:10Z",
+      "license": "MIT",
+      "name": "aptui",
+      "readme": "https://raw.githubusercontent.com/mexirica/aptui/main/README.md",
+      "repo": "mexirica/aptui",
+      "stars": 361,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "darksworm",
+      "category": "Other",
+      "description": "Keyboard-first terminal UI for Argo CD. Browse apps, scope by clusters/namespaces/projects, stream live resource stat...",
+      "homepage": "https://github.com/darksworm/argonaut",
+      "install_specs": [
+        {
+          "package": "github.com/darksworm/argonaut@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-29T18:32:24Z",
+      "license": "GPL-3.0",
+      "name": "argonaut",
+      "readme": "https://raw.githubusercontent.com/darksworm/argonaut/main/README.md",
+      "repo": "darksworm/argonaut",
+      "stars": 370,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "grimandgreedy",
+      "category": "Other",
+      "description": "Aria2TUI is a TUI client for the Aria2 download utility.",
+      "homepage": "https://github.com/grimandgreedy/aria2tui",
+      "install_specs": [
+        {
+          "package": "aria2tui",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-02-01T18:51:57Z",
+      "license": "MIT",
+      "name": "aria2tui",
+      "readme": "https://raw.githubusercontent.com/grimandgreedy/aria2tui/master/README.md",
+      "repo": "grimandgreedy/aria2tui",
+      "stars": 89,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
       "added_at": "2026-04-21T23:26:08Z",
       "author": "Julien-cpsn",
       "category": "HTTP clients",
@@ -23,7 +161,7 @@
       "name": "atac",
       "readme": "https://raw.githubusercontent.com/Julien-cpsn/ATAC/main/README.md",
       "repo": "Julien-cpsn/ATAC",
-      "stars": 3578,
+      "stars": 3587,
       "tags": [
         "http",
         "api",
@@ -44,16 +182,39 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-24T22:05:41Z",
+      "last_commit": "2026-05-01T00:48:23Z",
       "license": "MIT",
       "name": "atuin",
       "readme": "https://raw.githubusercontent.com/atuinsh/atuin/main/README.md",
       "repo": "atuinsh/atuin",
-      "stars": 29496,
+      "stars": 29598,
       "tags": [
         "shell",
         "history",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "elC0mpa",
+      "category": "Other",
+      "description": "Powerful open-source CLI to audit security, costs, and best practices in AWS. 🩺 ☁️",
+      "homepage": "https://github.com/elC0mpa/aws-doctor",
+      "install_specs": [
+        {
+          "package": "github.com/elC0mpa/aws-doctor@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-03T19:22:30Z",
+      "license": "MIT",
+      "name": "aws-doctor",
+      "readme": "https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/README.md",
+      "repo": "elC0mpa/aws-doctor",
+      "stars": 419,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -71,16 +232,39 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2025-06-25T18:39:01Z",
+      "last_commit": "2026-05-01T03:36:07Z",
       "license": "GPL-3.0",
       "name": "balatro-tui",
       "readme": "https://raw.githubusercontent.com/Passeriform/BalatroTUI/main/README.md",
       "repo": "Passeriform/BalatroTUI",
-      "stars": 177,
+      "stars": 183,
       "tags": [
         "game",
         "cards",
         "roguelike"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "Dicklesworthstone",
+      "category": "Other",
+      "description": "Graph-aware TUI for the Beads issue tracker: PageRank, critical path, kanban, dependency DAG visualization, and robot...",
+      "homepage": "https://github.com/Dicklesworthstone/beads_viewer",
+      "install_specs": [
+        {
+          "package": "github.com/Dicklesworthstone/beads_viewer@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-29T01:16:43Z",
+      "license": "OTHER",
+      "name": "beads-viewer",
+      "readme": "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/README.md",
+      "repo": "Dicklesworthstone/beads_viewer",
+      "stars": 1493,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -101,12 +285,12 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-26T00:24:48Z",
+      "last_commit": "2026-05-03T00:28:41Z",
       "license": "Apache-2.0",
       "name": "binsider",
       "readme": "https://raw.githubusercontent.com/orhun/binsider/main/README.md",
       "repo": "orhun/binsider",
-      "stars": 4166,
+      "stars": 4180,
       "tags": [
         "binary",
         "analysis",
@@ -127,16 +311,39 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-17T11:01:01Z",
+      "last_commit": "2026-04-29T09:41:52Z",
       "license": "GPL-3.0",
       "name": "bluetui",
       "readme": "https://raw.githubusercontent.com/pythops/bluetui/master/Readme.md",
       "repo": "pythops/bluetui",
-      "stars": 2735,
+      "stars": 2750,
       "tags": [
         "bluetooth",
         "network",
         "linux"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "bugzmanov",
+      "category": "Other",
+      "description": "A terminal EPUB / PDF Book Reader (+djvu)",
+      "homepage": "https://github.com/bugzmanov/bookokrat",
+      "install_specs": [
+        {
+          "package": "bookokrat",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T11:22:17Z",
+      "license": "AGPL-3.0",
+      "name": "bookokrat",
+      "readme": "https://raw.githubusercontent.com/bugzmanov/bookokrat/main/README.md",
+      "repo": "bugzmanov/bookokrat",
+      "stars": 820,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -158,12 +365,12 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-26T01:04:14Z",
+      "last_commit": "2026-05-04T06:54:08Z",
       "license": "MIT",
       "name": "bottom",
       "readme": "https://raw.githubusercontent.com/ClementTsang/bottom/main/README.md",
       "repo": "ClementTsang/bottom",
-      "stars": 13236,
+      "stars": 13274,
       "tags": [
         "monitoring",
         "dashboard",
@@ -184,15 +391,38 @@
         }
       ],
       "language": "C++",
-      "last_commit": "2026-04-26T12:36:51Z",
+      "last_commit": "2026-05-01T16:05:45Z",
       "license": "Apache-2.0",
       "name": "btop",
       "readme": "https://raw.githubusercontent.com/aristocratos/btop/main/README.md",
       "repo": "aristocratos/btop",
-      "stars": 31849,
+      "stars": 31996,
       "tags": [
         "monitoring",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "crocidb",
+      "category": "Other",
+      "description": "bulletty is a pretty feed reader for the terminal that stores the articles as Markdown",
+      "homepage": "https://github.com/crocidb/bulletty",
+      "install_specs": [
+        {
+          "package": "bulletty",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-29T14:16:57Z",
+      "license": "MIT",
+      "name": "bulletty",
+      "readme": "https://raw.githubusercontent.com/crocidb/bulletty/main/README.md",
+      "repo": "crocidb/bulletty",
+      "stars": 388,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -214,7 +444,7 @@
       "name": "cava",
       "readme": "https://raw.githubusercontent.com/karlstav/cava/master/README.md",
       "repo": "karlstav/cava",
-      "stars": 6076,
+      "stars": 6090,
       "tags": [
         "audio",
         "visualizer",
@@ -239,16 +469,39 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-23T13:41:27Z",
+      "last_commit": "2026-05-04T02:27:21Z",
       "license": "MIT",
       "name": "chess-tui",
       "readme": "https://raw.githubusercontent.com/thomas-mauran/chess-tui/main/README.md",
       "repo": "thomas-mauran/chess-tui",
-      "stars": 1018,
+      "stars": 1028,
       "tags": [
         "game",
         "chess",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "eyeblech",
+      "category": "Other",
+      "description": "CineCLI is a cross-platform command-line movie browser built with Python.",
+      "homepage": "https://github.com/eyeblech/cinecli",
+      "install_specs": [
+        {
+          "package": "cinecli",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-02-01T03:36:41Z",
+      "license": "MIT",
+      "name": "cinecli",
+      "readme": "https://raw.githubusercontent.com/eyeblech/cinecli/master/README.md",
+      "repo": "eyeblech/cinecli",
+      "stars": 764,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -269,7 +522,7 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-25T20:14:42Z",
+      "last_commit": "2026-05-04T14:30:22Z",
       "license": "MIT",
       "name": "cliff",
       "readme": "https://raw.githubusercontent.com/jmcntsh/cliff/main/README.md",
@@ -284,6 +537,75 @@
       "uninstall_spec": {
         "command": "rm -f \"${CLIFF_INSTALL_DIR:+$CLIFF_INSTALL_DIR/cliff}\" /usr/local/bin/cliff \"$HOME/.local/bin/cliff\""
       }
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "kavehtehrani",
+      "category": "Other",
+      "description": "CLI for internet speed test via cloudflare",
+      "homepage": "https://github.com/kavehtehrani/cloudflare-speed-cli",
+      "install_specs": [
+        {
+          "package": "cloudflare-speed-cli",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-03T08:49:05Z",
+      "license": "GPL-3.0",
+      "name": "cloudflare-speed-cli",
+      "readme": "https://raw.githubusercontent.com/kavehtehrani/cloudflare-speed-cli/main/README.md",
+      "repo": "kavehtehrani/cloudflare-speed-cli",
+      "stars": 870,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "pchuri",
+      "category": "Other",
+      "description": "A powerful command-line interface for Atlassian Confluence",
+      "homepage": "https://github.com/pchuri/confluence-cli",
+      "install_specs": [
+        {
+          "package": "confluence-cli",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T05:55:44Z",
+      "license": "MIT",
+      "name": "confluence-cli",
+      "readme": "https://raw.githubusercontent.com/pchuri/confluence-cli/main/README.md",
+      "repo": "pchuri/confluence-cli",
+      "stars": 162,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "remorses",
+      "category": "Other",
+      "description": "TUI for reviewing git changes",
+      "homepage": "https://github.com/remorses/critique",
+      "install_specs": [
+        {
+          "package": "critique",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T13:21:14Z",
+      "license": "MIT",
+      "name": "critique",
+      "readme": "https://raw.githubusercontent.com/remorses/critique/main/README.md",
+      "repo": "remorses/critique",
+      "stars": 1162,
+      "tags": [
+        "cli"
+      ]
     },
     {
       "added_at": "2026-04-21T23:26:08Z",
@@ -312,6 +634,75 @@
       ]
     },
     {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "kalfasyan",
+      "category": "Other",
+      "description": "web-interface and cli to manage python and shell scripts in tmux sessions",
+      "homepage": "https://github.com/kalfasyan/desto",
+      "install_specs": [
+        {
+          "package": "desto",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-28T14:46:35Z",
+      "license": "CC-BY-4.0",
+      "name": "desto",
+      "readme": "https://raw.githubusercontent.com/kalfasyan/desto/main/README.md",
+      "repo": "kalfasyan/desto",
+      "stars": 104,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "ayn2op",
+      "category": "Other",
+      "description": "A lightweight, secure, and feature-rich Discord terminal (TUI) client.",
+      "homepage": "https://github.com/ayn2op/discordo",
+      "install_specs": [
+        {
+          "package": "github.com/ayn2op/discordo@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-02T19:57:23Z",
+      "license": "GPL-3.0",
+      "name": "discordo",
+      "readme": "https://raw.githubusercontent.com/ayn2op/discordo/main/README.md",
+      "repo": "ayn2op/discordo",
+      "stars": 5487,
+      "tags": [
+        "tui"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "wagoodman",
+      "category": "Other",
+      "description": "A tool for exploring each layer in a docker image",
+      "homepage": "https://github.com/wagoodman/dive",
+      "install_specs": [
+        {
+          "package": "github.com/wagoodman/dive@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-12-15T17:20:36Z",
+      "license": "MIT",
+      "name": "dive",
+      "readme": "https://raw.githubusercontent.com/wagoodman/dive/main/README.md",
+      "repo": "wagoodman/dive",
+      "stars": 53871,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
       "added_at": "2026-04-21T23:26:08Z",
       "author": "kraanzu",
       "category": "Productivity",
@@ -330,11 +721,103 @@
       "name": "dooit",
       "readme": "https://raw.githubusercontent.com/kraanzu/dooit/main/README.md",
       "repo": "kraanzu/dooit",
-      "stars": 2871,
+      "stars": 2876,
       "tags": [
         "todo",
         "productivity",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "phlx0",
+      "category": "Other",
+      "description": "Terminal screensaver that activates when idle: constellations, rain, particles & more. Press any key to resume.",
+      "homepage": "https://github.com/phlx0/drift",
+      "install_specs": [
+        {
+          "package": "github.com/phlx0/drift@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T06:27:47Z",
+      "license": "MIT",
+      "name": "drift",
+      "readme": "https://raw.githubusercontent.com/phlx0/drift/main/README.md",
+      "repo": "phlx0/drift",
+      "stars": 551,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "muesli",
+      "category": "Other",
+      "description": "Disk Usage/Free Utility - a better 'df' alternative",
+      "homepage": "https://github.com/muesli/duf",
+      "install_specs": [
+        {
+          "package": "github.com/muesli/duf@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-01-13T11:07:14Z",
+      "license": "OTHER",
+      "name": "duf",
+      "readme": "https://raw.githubusercontent.com/muesli/duf/master/README.md",
+      "repo": "muesli/duf",
+      "stars": 14989,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "hanebox",
+      "category": "Other",
+      "description": "A lightweight, fast, terminal-based markdown research tool inspired by Obsidian",
+      "homepage": "https://github.com/hanebox/ekphos",
+      "install_specs": [
+        {
+          "package": "ekphos",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-20T02:26:11Z",
+      "license": "MIT",
+      "name": "ekphos",
+      "readme": "https://raw.githubusercontent.com/hanebox/ekphos/release/README.md",
+      "repo": "hanebox/ekphos",
+      "stars": 929,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "ernestofgonzalez",
+      "category": "Other",
+      "description": "A Python library and CLI tool for inspecting ePub from the terminal",
+      "homepage": "https://github.com/ernestofgonzalez/epub-utils",
+      "install_specs": [
+        {
+          "package": "epub-utils",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-06-14T19:25:33Z",
+      "license": "APACHE-2.0",
+      "name": "epub-utils",
+      "readme": "https://raw.githubusercontent.com/ernestofgonzalez/epub-utils/main/README.md",
+      "repo": "ernestofgonzalez/epub-utils",
+      "stars": 209,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -360,11 +843,34 @@
       "name": "frogmouth",
       "readme": "https://raw.githubusercontent.com/Textualize/frogmouth/main/README.md",
       "repo": "Textualize/frogmouth",
-      "stars": 3143,
+      "stars": 3159,
       "tags": [
         "markdown",
         "reader",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "antonmedv",
+      "category": "Other",
+      "description": "Terminal JSON viewer & processor",
+      "homepage": "https://github.com/antonmedv/fx",
+      "install_specs": [
+        {
+          "package": "github.com/antonmedv/fx@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-28T13:22:52Z",
+      "license": "MIT",
+      "name": "fx",
+      "readme": "https://raw.githubusercontent.com/antonmedv/fx/master/README.md",
+      "repo": "antonmedv/fx",
+      "stars": 20447,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -381,16 +887,62 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-24T20:20:38Z",
+      "last_commit": "2026-05-02T09:11:10Z",
       "license": "MIT",
       "name": "gh-dash",
       "readme": "https://raw.githubusercontent.com/dlvhdr/gh-dash/main/README.md",
       "repo": "dlvhdr/gh-dash",
-      "stars": 11469,
+      "stars": 11555,
       "tags": [
         "github",
         "dashboard",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "abhixdd",
+      "category": "Other",
+      "description": "A simple, pretty terminal tool that lets you search and download files from GitHub without leaving your CLI.",
+      "homepage": "https://github.com/abhixdd/ghgrab",
+      "install_specs": [
+        {
+          "package": "ghgrab",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-23T14:16:19Z",
+      "license": "MIT",
+      "name": "ghgrab",
+      "readme": "https://raw.githubusercontent.com/abhixdd/ghgrab/main/README.md",
+      "repo": "abhixdd/ghgrab",
+      "stars": 859,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "ytreister",
+      "category": "Other",
+      "description": "A smarter CLI for creating Git branches.",
+      "homepage": "https://github.com/ytreister/gibr",
+      "install_specs": [
+        {
+          "package": "gibr",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-01-18T13:22:27Z",
+      "license": "MIT",
+      "name": "gibr",
+      "readme": "https://raw.githubusercontent.com/ytreister/gibr/main/README.md",
+      "repo": "ytreister/gibr",
+      "stars": 109,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -411,16 +963,39 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-23T12:16:22Z",
+      "last_commit": "2026-04-30T17:21:23Z",
       "license": "ISC",
       "name": "gitlogue",
       "readme": "https://raw.githubusercontent.com/unhappychoice/gitlogue/main/README.md",
       "repo": "unhappychoice/gitlogue",
-      "stars": 4638,
+      "stars": 4689,
       "tags": [
         "git",
         "visualizer",
         "animation"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "gitui-org",
+      "category": "Other",
+      "description": "Blazing 💥 fast terminal-ui for git written in rust 🦀",
+      "homepage": "https://github.com/gitui-org/gitui",
+      "install_specs": [
+        {
+          "package": "gitui",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-23T01:39:06Z",
+      "license": "MIT",
+      "name": "gitui-gitui-org",
+      "readme": "https://raw.githubusercontent.com/gitui-org/gitui/master/README.md",
+      "repo": "gitui-org/gitui",
+      "stars": 21871,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -446,7 +1021,7 @@
       "name": "gitui",
       "readme": "https://raw.githubusercontent.com/extrawurst/gitui/master/README.md",
       "repo": "extrawurst/gitui",
-      "stars": 21828,
+      "stars": 21871,
       "tags": [
         "git",
         "tui"
@@ -475,10 +1050,102 @@
       "name": "glow",
       "readme": "https://raw.githubusercontent.com/charmbracelet/glow/master/README.md",
       "repo": "charmbracelet/glow",
-      "stars": 24631,
+      "stars": 24886,
       "tags": [
         "markdown",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "kiki-ki",
+      "category": "Other",
+      "description": "qo is an interactive minimalist TUI to query JSON and CSV using SQL.",
+      "homepage": "https://github.com/kiki-ki/go-qo",
+      "install_specs": [
+        {
+          "package": "github.com/kiki-ki/go-qo@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-02T03:28:33Z",
+      "license": "MIT",
+      "name": "go-qo",
+      "readme": "https://raw.githubusercontent.com/kiki-ki/go-qo/main/README.md",
+      "repo": "kiki-ki/go-qo",
+      "stars": 373,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "0xjuanma",
+      "category": "Other",
+      "description": "The beautiful game in your terminal. Minimal TUI app to keep up with live & recent football/soccer matches written in...",
+      "homepage": "https://github.com/0xjuanma/golazo",
+      "install_specs": [
+        {
+          "package": "github.com/0xjuanma/golazo@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-03T13:56:38Z",
+      "license": "MIT",
+      "name": "golazo",
+      "readme": "https://raw.githubusercontent.com/0xjuanma/golazo/main/README.md",
+      "repo": "0xjuanma/golazo",
+      "stars": 414,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "control-theory",
+      "category": "Other",
+      "description": "Gonzo! The Go based TUI log analysis tool",
+      "homepage": "https://github.com/control-theory/gonzo",
+      "install_specs": [
+        {
+          "package": "github.com/control-theory/gonzo@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-03T01:12:20Z",
+      "license": "MIT",
+      "name": "gonzo",
+      "readme": "https://raw.githubusercontent.com/control-theory/gonzo/main/README.md",
+      "repo": "control-theory/gonzo",
+      "stars": 2621,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "aksakalli",
+      "category": "Other",
+      "description": "System monitoring dashboard for terminal",
+      "homepage": "https://github.com/aksakalli/gtop",
+      "install_specs": [
+        {
+          "package": "gtop",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-11-06T13:55:02Z",
+      "license": "MIT",
+      "name": "gtop",
+      "readme": "https://raw.githubusercontent.com/aksakalli/gtop/master/README.md",
+      "repo": "aksakalli/gtop",
+      "stars": 9916,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -499,12 +1166,12 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-22T14:14:33Z",
+      "last_commit": "2026-05-04T14:06:08Z",
       "license": "MIT",
       "name": "gum",
       "readme": "https://raw.githubusercontent.com/charmbracelet/gum/main/README.md",
       "repo": "charmbracelet/gum",
-      "stars": 23472,
+      "stars": 23526,
       "tags": [
         "shell",
         "scripting",
@@ -529,16 +1196,85 @@
         }
       ],
       "language": "Python",
-      "last_commit": "2026-04-24T20:30:31Z",
+      "last_commit": "2026-05-01T20:42:21Z",
       "license": "MIT",
       "name": "harlequin",
       "readme": "https://raw.githubusercontent.com/tconbeer/harlequin/main/README.md",
       "repo": "tconbeer/harlequin",
-      "stars": 6029,
+      "stars": 6043,
       "tags": [
         "sql",
         "database",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "peters",
+      "category": "Other",
+      "description": "GPU-accelerated terminal board that puts all your sessions on an infinite canvas",
+      "homepage": "https://github.com/peters/horizon",
+      "install_specs": [
+        {
+          "package": "horizon",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T04:38:58Z",
+      "license": "MIT",
+      "name": "horizon",
+      "readme": "https://raw.githubusercontent.com/peters/horizon/main/README.md",
+      "repo": "peters/horizon",
+      "stars": 596,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "ozeranskii",
+      "category": "Other",
+      "description": "Rich-powered CLI that breaks each HTTP request into DNS, connect, TLS, wait, and transfer phases with waterfall timel...",
+      "homepage": "https://github.com/ozeranskii/httptap",
+      "install_specs": [
+        {
+          "package": "httptap",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T09:22:07Z",
+      "license": "APACHE-2.0",
+      "name": "httptap",
+      "readme": "https://raw.githubusercontent.com/ozeranskii/httptap/main/README.md",
+      "repo": "ozeranskii/httptap",
+      "stars": 491,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "i18next",
+      "category": "Other",
+      "description": "A unified, high-performance i18next CLI.",
+      "homepage": "https://github.com/i18next/i18next-cli",
+      "install_specs": [
+        {
+          "package": "i18next-cli",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-29T10:23:34Z",
+      "license": "MIT",
+      "name": "i18next-cli",
+      "readme": "https://raw.githubusercontent.com/i18next/i18next-cli/main/README.md",
+      "repo": "i18next/i18next-cli",
+      "stars": 205,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -560,11 +1296,57 @@
       "name": "impala",
       "readme": "https://raw.githubusercontent.com/pythops/impala/main/README.md",
       "repo": "pythops/impala",
-      "stars": 2593,
+      "stars": 2609,
       "tags": [
         "wifi",
         "network",
         "linux"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "Al00X",
+      "category": "Other",
+      "description": "Awesome CLI and TUI for JDownloader2",
+      "homepage": "https://github.com/Al00X/jdsh",
+      "install_specs": [
+        {
+          "package": "jdsh",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-12-29T21:51:51Z",
+      "license": "MIT",
+      "name": "jdsh",
+      "readme": "https://raw.githubusercontent.com/Al00X/jdsh/main/README.md",
+      "repo": "Al00X/jdsh",
+      "stars": 107,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "ankitpokhrel",
+      "category": "Other",
+      "description": "🔥 Feature-rich interactive Jira command line.",
+      "homepage": "https://github.com/ankitpokhrel/jira-cli",
+      "install_specs": [
+        {
+          "package": "github.com/ankitpokhrel/jira-cli@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-01-20T19:06:00Z",
+      "license": "MIT",
+      "name": "jira-cli",
+      "readme": "https://raw.githubusercontent.com/ankitpokhrel/jira-cli/main/README.md",
+      "repo": "ankitpokhrel/jira-cli",
+      "stars": 5585,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -590,11 +1372,103 @@
       "name": "jnv",
       "readme": "https://raw.githubusercontent.com/ynqa/jnv/main/README.md",
       "repo": "ynqa/jnv",
-      "stars": 6000,
+      "stars": 6006,
       "tags": [
         "json",
         "jq",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "jordond",
+      "category": "Other",
+      "description": "⚡️A terminal-based battery and energy monitor for macOS and Linux.",
+      "homepage": "https://github.com/jordond/jolt",
+      "install_specs": [
+        {
+          "package": "jolt",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T15:56:06Z",
+      "license": "MIT",
+      "name": "jolt",
+      "readme": "https://raw.githubusercontent.com/jordond/jolt/main/README.md",
+      "repo": "jordond/jolt",
+      "stars": 493,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "tw93",
+      "category": "Other",
+      "description": "🎃 A fast, out-of-the-box terminal built for AI coding.",
+      "homepage": "https://github.com/tw93/Kaku",
+      "install_specs": [
+        {
+          "package": "Kaku",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-03T02:41:47Z",
+      "license": "OTHER",
+      "name": "kaku",
+      "readme": "https://raw.githubusercontent.com/tw93/Kaku/main/README.md",
+      "repo": "tw93/Kaku",
+      "stars": 4856,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "trasta298",
+      "category": "Other",
+      "description": "Git genealogy, untangled. A TUI for navigating commit graphs with color and clarity.",
+      "homepage": "https://github.com/trasta298/keifu",
+      "install_specs": [
+        {
+          "package": "keifu",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-23T17:35:08Z",
+      "license": "MIT",
+      "name": "keifu",
+      "readme": "https://raw.githubusercontent.com/trasta298/keifu/main/README.md",
+      "repo": "trasta298/keifu",
+      "stars": 735,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "klpod221",
+      "category": "Other",
+      "description": "// Modern Terminal Emulator & SSH Manager",
+      "homepage": "https://github.com/klpod221/kerminal",
+      "install_specs": [
+        {
+          "package": "kerminal",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-15T04:42:53Z",
+      "license": "GPL-3.0",
+      "name": "kerminal",
+      "readme": "https://raw.githubusercontent.com/klpod221/kerminal/main/README.md",
+      "repo": "klpod221/kerminal",
+      "stars": 426,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -611,16 +1485,131 @@
         }
       ],
       "language": "C",
-      "last_commit": "2026-04-26T10:46:26Z",
+      "last_commit": "2026-04-29T07:43:46Z",
       "license": "GPL-2.0",
       "name": "kew",
       "readme": "https://raw.githubusercontent.com/ravachol/kew/main/README.md",
       "repo": "ravachol/kew",
-      "stars": 2641,
+      "stars": 2660,
       "tags": [
         "music",
         "player",
         "audio"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "krakenfx",
+      "category": "Other",
+      "description": "The first AI-native CLI for trading crypto, stocks, forex, and derivatives.",
+      "homepage": "https://github.com/krakenfx/kraken-cli",
+      "install_specs": [
+        {
+          "package": "kraken-cli",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-20T08:19:01Z",
+      "license": "MIT",
+      "name": "kraken-cli",
+      "readme": "https://raw.githubusercontent.com/krakenfx/kraken-cli/main/README.md",
+      "repo": "krakenfx/kraken-cli",
+      "stars": 576,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "c0m4r",
+      "category": "Other",
+      "description": "Lightweight, self-contained Linux® server monitoring tool",
+      "homepage": "https://github.com/c0m4r/kula",
+      "install_specs": [
+        {
+          "package": "github.com/c0m4r/kula@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-28T19:27:48Z",
+      "license": "AGPL-3.0",
+      "name": "kula",
+      "readme": "https://raw.githubusercontent.com/c0m4r/kula/main/README.md",
+      "repo": "c0m4r/kula",
+      "stars": 1058,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "KartikLabhshetwar",
+      "category": "Other",
+      "description": "A CLI that writes your git commit messages for you with AI using Groq. Never write a commit message again.",
+      "homepage": "https://github.com/KartikLabhshetwar/lazycommit",
+      "install_specs": [
+        {
+          "package": "lazycommit",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-12-12T12:15:54Z",
+      "license": "APACHE-2.0",
+      "name": "lazycommit",
+      "readme": "https://raw.githubusercontent.com/KartikLabhshetwar/lazycommit/main/README.md",
+      "repo": "KartikLabhshetwar/lazycommit",
+      "stars": 229,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "andreybleme",
+      "category": "Other",
+      "description": "Fancy terminal UI for Apple Containers",
+      "homepage": "https://github.com/andreybleme/lazycontainer",
+      "install_specs": [
+        {
+          "package": "github.com/andreybleme/lazycontainer@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-02-16T22:56:41Z",
+      "license": "MIT",
+      "name": "lazycontainer",
+      "readme": "https://raw.githubusercontent.com/andreybleme/lazycontainer/main/README.md",
+      "repo": "andreybleme/lazycontainer",
+      "stars": 354,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "ozemin",
+      "category": "Other",
+      "description": "A simple terminal UI for video trimming",
+      "homepage": "https://github.com/ozemin/lazycut",
+      "install_specs": [
+        {
+          "package": "github.com/ozemin/lazycut@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-06T17:41:35Z",
+      "license": "MIT",
+      "name": "lazycut",
+      "readme": "https://raw.githubusercontent.com/ozemin/lazycut/main/README.md",
+      "repo": "ozemin/lazycut",
+      "stars": 859,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -641,15 +1630,153 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-26T19:35:55Z",
+      "last_commit": "2026-05-04T16:25:33Z",
       "license": "MIT",
       "name": "lazygit",
       "readme": "https://raw.githubusercontent.com/jesseduffield/lazygit/master/README.md",
       "repo": "jesseduffield/lazygit",
-      "stars": 77057,
+      "stars": 77404,
       "tags": [
         "git",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "Adembc",
+      "category": "Other",
+      "description": "A terminal-based SSH manager inspired by lazydocker and k9s - Written in go",
+      "homepage": "https://github.com/Adembc/lazyssh",
+      "install_specs": [
+        {
+          "package": "github.com/Adembc/lazyssh@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-10-09T20:37:29Z",
+      "license": "APACHE-2.0",
+      "name": "lazyssh",
+      "readme": "https://raw.githubusercontent.com/Adembc/lazyssh/main/README.md",
+      "repo": "Adembc/lazyssh",
+      "stars": 3490,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "antoniorodr",
+      "category": "Other",
+      "description": "Lexy is a lightweight CLI tool that fetches programming tutorials from 'Learn X in Y Minutes' directly into your term...",
+      "homepage": "https://github.com/antoniorodr/lexy",
+      "install_specs": [
+        {
+          "package": "lexy",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-29T12:13:31Z",
+      "license": "APACHE-2.0",
+      "name": "lexy",
+      "readme": "https://raw.githubusercontent.com/antoniorodr/lexy/main/README.md",
+      "repo": "antoniorodr/lexy",
+      "stars": 112,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "charmbracelet",
+      "category": "Other",
+      "description": "Style definitions for nice terminal layouts 👄",
+      "homepage": "https://github.com/charmbracelet/lipgloss",
+      "install_specs": [
+        {
+          "package": "github.com/charmbracelet/lipgloss@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-26T00:44:06Z",
+      "license": "MIT",
+      "name": "lipgloss",
+      "readme": "https://raw.githubusercontent.com/charmbracelet/lipgloss/main/README.md",
+      "repo": "charmbracelet/lipgloss",
+      "stars": 11188,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "guhcostan",
+      "category": "Other",
+      "description": "macOS CLI to free disk space — clears caches, logs, Homebrew and Xcode junk",
+      "homepage": "https://github.com/guhcostan/mac-cleaner-cli",
+      "install_specs": [
+        {
+          "package": "mac-cleaner-cli",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-30T19:56:53Z",
+      "license": "MIT",
+      "name": "mac-cleaner-cli",
+      "readme": "https://raw.githubusercontent.com/guhcostan/mac-cleaner-cli/main/README.md",
+      "repo": "guhcostan/mac-cleaner-cli",
+      "stars": 1721,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "2ykwang",
+      "category": "Other",
+      "description": "TUI macOS cleaner that scans caches/logs, shows sizes/paths, lets you select what to delete before Trash.",
+      "homepage": "https://github.com/2ykwang/mac-cleanup-go",
+      "install_specs": [
+        {
+          "package": "github.com/2ykwang/mac-cleanup-go@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T15:29:06Z",
+      "license": "MIT",
+      "name": "mac-cleanup-go",
+      "readme": "https://raw.githubusercontent.com/2ykwang/mac-cleanup-go/main/README.md",
+      "repo": "2ykwang/mac-cleanup-go",
+      "stars": 386,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "1jehuang",
+      "category": "Other",
+      "description": "A fast native Rust Mermaid diagram renderer. No browser required. 500-1000x faster than mermaid-cli.",
+      "homepage": "https://github.com/1jehuang/mermaid-rs-renderer",
+      "install_specs": [
+        {
+          "package": "mermaid-rs-renderer",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-01T20:42:01Z",
+      "license": "MIT",
+      "name": "mermaid-rs-renderer",
+      "readme": "https://raw.githubusercontent.com/1jehuang/mermaid-rs-renderer/master/README.md",
+      "repo": "1jehuang/mermaid-rs-renderer",
+      "stars": 1253,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -671,11 +1798,80 @@
       "name": "minesweep",
       "readme": "https://raw.githubusercontent.com/cpcloud/minesweep-rs/main/README.md",
       "repo": "cpcloud/minesweep-rs",
-      "stars": 234,
+      "stars": 235,
       "tags": [
         "game",
         "minesweeper",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "code-yeongyu",
+      "category": "Other",
+      "description": "omo; the best agent harness - previously oh-my-opencode",
+      "homepage": "https://github.com/code-yeongyu/oh-my-openagent",
+      "install_specs": [
+        {
+          "package": "oh-my-openagent",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T14:58:34Z",
+      "license": "OTHER",
+      "name": "oh-my-openagent",
+      "readme": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/README.md",
+      "repo": "code-yeongyu/oh-my-openagent",
+      "stars": 55738,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "hatoo",
+      "category": "Other",
+      "description": "Ohayou(おはよう), HTTP load generator, inspired by rakyll/hey with tui animation.",
+      "homepage": "https://github.com/hatoo/oha",
+      "install_specs": [
+        {
+          "package": "oha",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-23T09:20:48Z",
+      "license": "MIT",
+      "name": "oha",
+      "readme": "https://raw.githubusercontent.com/hatoo/oha/master/README.md",
+      "repo": "hatoo/oha",
+      "stars": 10227,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "EvilFreelancer",
+      "category": "Other",
+      "description": "Turns any OpenAPI/Swagger API into an CLI with set of commands. One CLI command per endpoint.",
+      "homepage": "https://github.com/EvilFreelancer/openapi-to-cli",
+      "install_specs": [
+        {
+          "package": "openapi-to-cli",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-07T07:14:19Z",
+      "license": "MIT",
+      "name": "openapi-to-cli",
+      "readme": "https://raw.githubusercontent.com/EvilFreelancer/openapi-to-cli/main/README.md",
+      "repo": "EvilFreelancer/openapi-to-cli",
+      "stars": 221,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -701,11 +1897,34 @@
       "name": "oxker",
       "readme": "https://raw.githubusercontent.com/mrjackwills/oxker/main/README.md",
       "repo": "mrjackwills/oxker",
-      "stars": 1631,
+      "stars": 1638,
       "tags": [
         "docker",
         "containers",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "pgplex",
+      "category": "Other",
+      "description": "Terraform-style, declarative schema migration CLI for Postgres. Agent friendly.",
+      "homepage": "https://github.com/pgplex/pgschema",
+      "install_specs": [
+        {
+          "package": "github.com/pgplex/pgschema@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-30T02:40:10Z",
+      "license": "APACHE-2.0",
+      "name": "pgschema",
+      "readme": "https://raw.githubusercontent.com/pgplex/pgschema/main/README.md",
+      "repo": "pgplex/pgschema",
+      "stars": 904,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -736,6 +1955,29 @@
       ]
     },
     {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "Bahaaio",
+      "category": "Other",
+      "description": "Customizable TUI Pomodoro timer with ASCII art, progress bar, desktop notifications, and productivity statistics.",
+      "homepage": "https://github.com/Bahaaio/pomo",
+      "install_specs": [
+        {
+          "package": "github.com/Bahaaio/pomo@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-13T22:05:25Z",
+      "license": "MIT",
+      "name": "pomo",
+      "readme": "https://raw.githubusercontent.com/Bahaaio/pomo/main/README.md",
+      "repo": "Bahaaio/pomo",
+      "stars": 397,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
       "added_at": "2026-04-21T23:26:08Z",
       "author": "darrenburns",
       "category": "HTTP clients",
@@ -758,11 +2000,126 @@
       "name": "posting",
       "readme": "https://raw.githubusercontent.com/darrenburns/posting/main/README.md",
       "repo": "darrenburns/posting",
-      "stars": 11786,
+      "stars": 11832,
       "tags": [
         "http",
         "api",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "devnullvoid",
+      "category": "Other",
+      "description": "Terminal UI for Proxmox VE",
+      "homepage": "https://github.com/devnullvoid/pvetui",
+      "install_specs": [
+        {
+          "package": "github.com/devnullvoid/pvetui@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T10:27:02Z",
+      "license": "MIT",
+      "name": "pvetui",
+      "readme": "https://raw.githubusercontent.com/devnullvoid/pvetui/master/README.md",
+      "repo": "devnullvoid/pvetui",
+      "stars": 665,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "xullexer",
+      "category": "Other",
+      "description": "A modern, high-performance DNS scanner with a beautiful Terminal User Interface (TUI) built with Textual. This tool c...",
+      "homepage": "https://github.com/xullexer/PYDNS-Scanner",
+      "install_specs": [
+        {
+          "package": "PYDNS-Scanner",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-30T15:56:18Z",
+      "license": "MIT",
+      "name": "pydns-scanner",
+      "readme": "https://raw.githubusercontent.com/xullexer/PYDNS-Scanner/main/README.md",
+      "repo": "xullexer/PYDNS-Scanner",
+      "stars": 319,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "mrinfinidy",
+      "category": "Other",
+      "description": "Generate pretty QR codes right from your terminal",
+      "homepage": "https://github.com/mrinfinidy/qrcode-pretty",
+      "install_specs": [
+        {
+          "package": "qrcode-pretty",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-24T21:11:54Z",
+      "license": "OTHER",
+      "name": "qrcode-pretty",
+      "readme": "https://raw.githubusercontent.com/mrinfinidy/qrcode-pretty/main/README.md",
+      "repo": "mrinfinidy/qrcode-pretty",
+      "stars": 87,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "retlehs",
+      "category": "Other",
+      "description": "A better whois and domain intelligence toolkit",
+      "homepage": "https://github.com/retlehs/quien",
+      "install_specs": [
+        {
+          "package": "github.com/retlehs/quien@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-02T23:59:08Z",
+      "license": "MIT",
+      "name": "quien",
+      "readme": "https://raw.githubusercontent.com/retlehs/quien/main/README.md",
+      "repo": "retlehs/quien",
+      "stars": 819,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "vyfor",
+      "category": "Other",
+      "description": "🪇 Minimal terminal spinners for Rust",
+      "homepage": "https://github.com/vyfor/rattles",
+      "install_specs": [
+        {
+          "package": "rattles",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-14T10:03:10Z",
+      "license": "MIT",
+      "name": "rattles",
+      "readme": "https://raw.githubusercontent.com/vyfor/rattles/master/README.md",
+      "repo": "vyfor/rattles",
+      "stars": 957,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -779,12 +2136,12 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-03-24T21:05:42Z",
+      "last_commit": "2026-05-02T19:38:11Z",
       "license": "GPL-3.0",
       "name": "rebels-in-the-sky",
       "readme": "https://raw.githubusercontent.com/ricott1/rebels-in-the-sky/main/README.md",
       "repo": "ricott1/rebels-in-the-sky",
-      "stars": 647,
+      "stars": 657,
       "tags": [
         "game",
         "multiplayer",
@@ -805,7 +2162,7 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-25T18:42:58Z",
+      "last_commit": "2026-04-27T00:18:11Z",
       "license": "MIT",
       "name": "reel",
       "readme": "https://raw.githubusercontent.com/jmcntsh/reel/main/README.md",
@@ -815,6 +2172,75 @@
         "recording",
         "demo",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "shaankhosla",
+      "category": "Other",
+      "description": "Spaced repetition, in your terminal",
+      "homepage": "https://github.com/shaankhosla/repeater",
+      "install_specs": [
+        {
+          "package": "repeater",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T02:50:06Z",
+      "license": "APACHE-2.0",
+      "name": "repeater",
+      "readme": "https://raw.githubusercontent.com/shaankhosla/repeater/main/README.md",
+      "repo": "shaankhosla/repeater",
+      "stars": 390,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "unkn0wn-root",
+      "category": "Other",
+      "description": "Terminal API client for HTTP/GraphQL/gRPC with support for SSH tunnels, WebSockets, SSE, Workflows, Profiling, OpenAP...",
+      "homepage": "https://github.com/unkn0wn-root/resterm",
+      "install_specs": [
+        {
+          "package": "github.com/unkn0wn-root/resterm@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T11:34:35Z",
+      "license": "APACHE-2.0",
+      "name": "resterm",
+      "readme": "https://raw.githubusercontent.com/unkn0wn-root/resterm/main/README.md",
+      "repo": "unkn0wn-root/resterm",
+      "stars": 1644,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "cesarferreira",
+      "category": "Other",
+      "description": "Fuzzy find and kill processes from your terminal",
+      "homepage": "https://github.com/cesarferreira/rip",
+      "install_specs": [
+        {
+          "package": "rip",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-02-03T15:10:36Z",
+      "license": "MIT",
+      "name": "rip",
+      "readme": "https://raw.githubusercontent.com/cesarferreira/rip/main/README.md",
+      "repo": "cesarferreira/rip",
+      "stars": 457,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -831,16 +2257,108 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-24T15:24:00Z",
+      "last_commit": "2026-04-28T18:10:41Z",
       "license": "BSD-3-Clause",
       "name": "rmpc",
       "readme": "https://raw.githubusercontent.com/mierak/rmpc/main/README.md",
       "repo": "mierak/rmpc",
-      "stars": 2714,
+      "stars": 2754,
       "tags": [
         "music",
         "mpd",
         "player"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "NSPC911",
+      "category": "Other",
+      "description": "A post-modern terminal file manager.",
+      "homepage": "https://github.com/NSPC911/rovr",
+      "install_specs": [
+        {
+          "package": "rovr",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T13:52:33Z",
+      "license": "MIT",
+      "name": "rovr",
+      "readme": "https://raw.githubusercontent.com/NSPC911/rovr/master/README.md",
+      "repo": "NSPC911/rovr",
+      "stars": 361,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "rtk-ai",
+      "category": "Other",
+      "description": "CLI proxy that reduces LLM token consumption by 60-90% on common dev commands. Single Rust binary, zero dependencies",
+      "homepage": "https://github.com/rtk-ai/rtk",
+      "install_specs": [
+        {
+          "package": "rtk",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T08:26:05Z",
+      "license": "APACHE-2.0",
+      "name": "rtk",
+      "readme": "https://raw.githubusercontent.com/rtk-ai/rtk/master/README.md",
+      "repo": "rtk-ai/rtk",
+      "stars": 41250,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "domcyrus",
+      "category": "Other",
+      "description": "Per-process network monitoring for your terminal with deep packet inspection. Cross-platform, sandboxed.",
+      "homepage": "https://github.com/domcyrus/rustnet",
+      "install_specs": [
+        {
+          "package": "rustnet",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T15:15:31Z",
+      "license": "APACHE-2.0",
+      "name": "rustnet",
+      "readme": "https://raw.githubusercontent.com/domcyrus/rustnet/main/README.md",
+      "repo": "domcyrus/rustnet",
+      "stars": 2048,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "amanusk",
+      "category": "Other",
+      "description": "Terminal-based CPU stress and monitoring utility",
+      "homepage": "https://github.com/amanusk/s-tui",
+      "install_specs": [
+        {
+          "package": "s-tui",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-27T13:42:35Z",
+      "license": "GPL-2.0",
+      "name": "s-tui",
+      "readme": "https://raw.githubusercontent.com/amanusk/s-tui/master/README.md",
+      "repo": "amanusk/s-tui",
+      "stars": 4988,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -862,11 +2380,34 @@
       "name": "scope-tui",
       "readme": "https://raw.githubusercontent.com/alemidev/scope-tui/dev/README.md",
       "repo": "alemidev/scope-tui",
-      "stars": 579,
+      "stars": 588,
       "tags": [
         "audio",
         "visualizer",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "run-llama",
+      "category": "Other",
+      "description": "Semantic search and document parsing tools for the command line",
+      "homepage": "https://github.com/run-llama/semtools",
+      "install_specs": [
+        {
+          "package": "semtools",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-11T14:30:50Z",
+      "license": "MIT",
+      "name": "semtools",
+      "readme": "https://raw.githubusercontent.com/run-llama/semtools/main/README.md",
+      "repo": "run-llama/semtools",
+      "stars": 1782,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -887,12 +2428,12 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-26T04:44:03Z",
+      "last_commit": "2026-05-03T00:52:21Z",
       "license": "MIT",
       "name": "serie",
       "readme": "https://raw.githubusercontent.com/lusingander/serie/master/README.md",
       "repo": "lusingander/serie",
-      "stars": 1898,
+      "stars": 1908,
       "tags": [
         "git",
         "tui"
@@ -917,11 +2458,103 @@
       "name": "setrixtui",
       "readme": "https://raw.githubusercontent.com/Mjoyufull/Setrixtui/main/README.md",
       "repo": "Mjoyufull/Setrixtui",
-      "stars": 139,
+      "stars": 140,
       "tags": [
         "game",
         "puzzle",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "zZedix",
+      "category": "Other",
+      "description": "A lightweight Linux toolkit for managing GOST, HAProxy, Xray, and iptables — with a built-in WebUI and CLI.",
+      "homepage": "https://github.com/zZedix/Shifter",
+      "install_specs": [
+        {
+          "package": "Shifter",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-10-14T22:58:50Z",
+      "license": "MIT",
+      "name": "shifter",
+      "readme": "https://raw.githubusercontent.com/zZedix/Shifter/main/README.md",
+      "repo": "zZedix/Shifter",
+      "stars": 106,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "jpbruinsslot",
+      "category": "Other",
+      "description": "Slack client for your terminal",
+      "homepage": "https://github.com/jpbruinsslot/slack-term",
+      "install_specs": [
+        {
+          "package": "github.com/jpbruinsslot/slack-term@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2024-04-23T08:35:32Z",
+      "license": "MIT",
+      "name": "slack-term",
+      "readme": "https://raw.githubusercontent.com/jpbruinsslot/slack-term/master/README.md",
+      "repo": "jpbruinsslot/slack-term",
+      "stars": 6600,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "zZedix",
+      "category": "Other",
+      "description": "Modern tunnel management built on GOST, Backhaul, FRP, Chisel and Rathole, featuring an intuitive WebUI, fast CLI, an...",
+      "homepage": "https://github.com/zZedix/Smite",
+      "install_specs": [
+        {
+          "package": "Smite",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-02-24T22:16:40Z",
+      "license": "MIT",
+      "name": "smite",
+      "readme": "https://raw.githubusercontent.com/zZedix/Smite/main/README.md",
+      "repo": "zZedix/Smite",
+      "stars": 353,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "betomoedano",
+      "category": "Other",
+      "description": "AI-powered icon generation CLI for React Native & Expo developers. Generate stunning app icons in seconds using OpenA...",
+      "homepage": "https://github.com/betomoedano/snapai",
+      "install_specs": [
+        {
+          "package": "snapai",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-22T01:36:28Z",
+      "license": "MIT",
+      "name": "snapai",
+      "readme": "https://raw.githubusercontent.com/betomoedano/snapai/main/README.md",
+      "repo": "betomoedano/snapai",
+      "stars": 1805,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -942,17 +2575,63 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-22T14:14:46Z",
+      "last_commit": "2026-05-04T10:21:55Z",
       "license": "MIT",
       "name": "soft-serve",
       "readme": "https://raw.githubusercontent.com/charmbracelet/soft-serve/main/README.md",
       "repo": "charmbracelet/soft-serve",
-      "stars": 6818,
+      "stars": 6872,
       "tags": [
         "git",
         "ssh",
         "server",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "raskrebs",
+      "category": "Other",
+      "description": "CLI tool for inspecting and managing services listening on localhost ports",
+      "homepage": "https://github.com/raskrebs/sonar",
+      "install_specs": [
+        {
+          "package": "github.com/raskrebs/sonar@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-24T07:56:33Z",
+      "license": "MIT",
+      "name": "sonar",
+      "readme": "https://raw.githubusercontent.com/raskrebs/sonar/main/README.md",
+      "repo": "raskrebs/sonar",
+      "stars": 938,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "LargeModGames",
+      "category": "Other",
+      "description": "A fully standalone Spotify client for the terminal. Native streaming included, no daemon required.",
+      "homepage": "https://github.com/LargeModGames/spotatui",
+      "install_specs": [
+        {
+          "package": "spotatui",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T13:06:44Z",
+      "license": "MIT",
+      "name": "spotatui",
+      "readme": "https://raw.githubusercontent.com/LargeModGames/spotatui/main/README.md",
+      "repo": "LargeModGames/spotatui",
+      "stars": 638,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -979,11 +2658,57 @@
       "name": "spotify-player",
       "readme": "https://raw.githubusercontent.com/aome510/spotify-player/master/README.md",
       "repo": "aome510/spotify-player",
-      "stars": 6627,
+      "stars": 6665,
       "tags": [
         "music",
         "spotify",
         "player"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "Maxteabag",
+      "category": "Other",
+      "description": "A user friendly TUI for SQL databases. Written in python. Supports SQL server, Mysql, PostreSQL, SQLite, Turso and more.",
+      "homepage": "https://github.com/Maxteabag/sqlit",
+      "install_specs": [
+        {
+          "package": "sqlit",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-19T14:04:03Z",
+      "license": "MIT",
+      "name": "sqlit",
+      "readme": "https://raw.githubusercontent.com/Maxteabag/sqlit/main/README.md",
+      "repo": "Maxteabag/sqlit",
+      "stars": 4111,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "steipete",
+      "category": "Other",
+      "description": "Point at any URL/YouTube/Podcast or file. Get the gist. CLI and Chrome Extension.",
+      "homepage": "https://github.com/steipete/summarize",
+      "install_specs": [
+        {
+          "package": "summarize",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T00:55:17Z",
+      "license": "OTHER",
+      "name": "summarize",
+      "readme": "https://raw.githubusercontent.com/steipete/summarize/main/README.md",
+      "repo": "steipete/summarize",
+      "stars": 5821,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1000,15 +2725,84 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-23T13:50:44Z",
+      "last_commit": "2026-05-01T23:35:54Z",
       "license": "MIT",
       "name": "superfile",
       "readme": "https://raw.githubusercontent.com/yorukot/superfile/main/README.md",
       "repo": "yorukot/superfile",
-      "stars": 17217,
+      "stars": 17270,
       "tags": [
         "file-manager",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "Jagalite",
+      "category": "Other",
+      "description": "A BitTorrent Client in your Terminal",
+      "homepage": "https://github.com/Jagalite/superseedr",
+      "install_specs": [
+        {
+          "package": "superseedr",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T05:38:11Z",
+      "license": "GPL-3.0",
+      "name": "superseedr",
+      "readme": "https://raw.githubusercontent.com/Jagalite/superseedr/main/README.md",
+      "repo": "Jagalite/superseedr",
+      "stars": 570,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "superset-sh",
+      "category": "Other",
+      "description": "Code Editor for the AI Agents Era - Run an army of Claude Code, Codex, etc. on your machine",
+      "homepage": "https://github.com/superset-sh/superset",
+      "install_specs": [
+        {
+          "package": "superset",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T16:53:30Z",
+      "license": "OTHER",
+      "name": "superset",
+      "readme": "https://raw.githubusercontent.com/superset-sh/superset/main/README.md",
+      "repo": "superset-sh/superset",
+      "stars": 10318,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "SurgeDM",
+      "category": "Other",
+      "description": "Blazing fast TUI download manager built in Go for power users",
+      "homepage": "https://github.com/SurgeDM/Surge",
+      "install_specs": [
+        {
+          "package": "github.com/SurgeDM/Surge@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-02T17:52:34Z",
+      "license": "MIT",
+      "name": "surge",
+      "readme": "https://raw.githubusercontent.com/SurgeDM/Surge/main/README.md",
+      "repo": "SurgeDM/Surge",
+      "stars": 3001,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1031,11 +2825,34 @@
       "name": "syscgo-tui",
       "readme": "https://raw.githubusercontent.com/Nomadcxx/sysc-Go/master/README.md",
       "repo": "Nomadcxx/sysc-Go",
-      "stars": 132,
+      "stars": 133,
       "tags": [
         "animation",
         "screensaver",
         "ascii"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "huseyinbabal",
+      "category": "Other",
+      "description": "Terminal UI for AWS (taws) - A terminal-based AWS resource viewer and manager",
+      "homepage": "https://github.com/huseyinbabal/taws",
+      "install_specs": [
+        {
+          "package": "taws",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-28T09:01:48Z",
+      "license": "MIT",
+      "name": "taws",
+      "readme": "https://raw.githubusercontent.com/huseyinbabal/taws/master/README.md",
+      "repo": "huseyinbabal/taws",
+      "stars": 2216,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1056,15 +2873,61 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-16T08:05:36Z",
+      "last_commit": "2026-04-28T20:55:19Z",
       "license": "MIT",
       "name": "television",
       "readme": "https://raw.githubusercontent.com/alexpasmantier/television/main/README.md",
       "repo": "alexpasmantier/television",
-      "stars": 5772,
+      "stars": 5816,
       "tags": [
         "fuzzy-finder",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "mmulet",
+      "category": "Other",
+      "description": "Run any GUI app in the terminal❗",
+      "homepage": "https://github.com/mmulet/term.everything",
+      "install_specs": [
+        {
+          "package": "github.com/mmulet/term.everything@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-18T19:19:31Z",
+      "license": "AGPL-3.0",
+      "name": "term-everything",
+      "readme": "https://raw.githubusercontent.com/mmulet/term.everything/main/README.md",
+      "repo": "mmulet/term.everything",
+      "stars": 7963,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "gcla",
+      "category": "Other",
+      "description": "A terminal UI for tshark, inspired by Wireshark",
+      "homepage": "https://github.com/gcla/termshark",
+      "install_specs": [
+        {
+          "package": "github.com/gcla/termshark@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2024-04-30T06:15:11Z",
+      "license": "MIT",
+      "name": "termshark",
+      "readme": "https://raw.githubusercontent.com/gcla/termshark/master/README.md",
+      "repo": "gcla/termshark",
+      "stars": 9883,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1086,7 +2949,7 @@
       "name": "termusic",
       "readme": "https://raw.githubusercontent.com/tramhao/termusic/master/README.md",
       "repo": "tramhao/termusic",
-      "stars": 1984,
+      "stars": 2003,
       "tags": [
         "music",
         "player",
@@ -1112,11 +2975,103 @@
       "name": "tetrigo",
       "readme": "https://raw.githubusercontent.com/Broderick-Westrope/tetrigo/main/README.md",
       "repo": "Broderick-Westrope/tetrigo",
-      "stars": 657,
+      "stars": 661,
       "tags": [
         "game",
         "tetris",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "soldatov-ss",
+      "category": "Other",
+      "description": "A CLI tool that deletes half your files — perfectly balanced, as all things should be.",
+      "homepage": "https://github.com/soldatov-ss/thanos",
+      "install_specs": [
+        {
+          "package": "thanos",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-14T15:27:27Z",
+      "license": "MIT",
+      "name": "thanos",
+      "readme": "https://raw.githubusercontent.com/soldatov-ss/thanos/master/README.md",
+      "repo": "soldatov-ss/thanos",
+      "stars": 104,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "achannarasappa",
+      "category": "Other",
+      "description": "Track stocks, crypto, and derivatives prices and positions in real time from your terminal",
+      "homepage": "https://github.com/achannarasappa/ticker",
+      "install_specs": [
+        {
+          "package": "github.com/achannarasappa/ticker@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-29T11:20:30Z",
+      "license": "GPL-3.0",
+      "name": "ticker",
+      "readme": "https://raw.githubusercontent.com/achannarasappa/ticker/master/README.md",
+      "repo": "achannarasappa/ticker",
+      "stars": 6069,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "batrachianai",
+      "category": "Other",
+      "description": "A unified interface for AI in your terminal.",
+      "homepage": "https://github.com/batrachianai/toad",
+      "install_specs": [
+        {
+          "package": "toad",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-19T04:33:11Z",
+      "license": "AGPL-3.0",
+      "name": "toad",
+      "readme": "https://raw.githubusercontent.com/batrachianai/toad/main/README.md",
+      "repo": "batrachianai/toad",
+      "stars": 3007,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "kriuchkov",
+      "category": "Other",
+      "description": "Tock is a powerful time tracking tool for the command line.",
+      "homepage": "https://github.com/kriuchkov/tock",
+      "install_specs": [
+        {
+          "package": "github.com/kriuchkov/tock@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-01T08:45:00Z",
+      "license": "GPL-3.0",
+      "name": "tock",
+      "readme": "https://raw.githubusercontent.com/kriuchkov/tock/master/README.md",
+      "repo": "kriuchkov/tock",
+      "stars": 407,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1133,16 +3088,154 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-24T01:03:26Z",
+      "last_commit": "2026-04-29T09:48:51Z",
       "license": "MIT",
       "name": "toofan",
       "readme": "https://raw.githubusercontent.com/vyrx-dev/toofan/master/README.md",
       "repo": "vyrx-dev/toofan",
-      "stars": 173,
+      "stars": 230,
       "tags": [
         "typing",
         "practice",
         "game"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "Epistates",
+      "category": "Other",
+      "description": "A (TUI/CLI) markdown navigator with tree-based structural navigation.",
+      "homepage": "https://github.com/Epistates/treemd",
+      "install_specs": [
+        {
+          "package": "treemd",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-28T18:23:04Z",
+      "license": "MIT",
+      "name": "treemd",
+      "readme": "https://raw.githubusercontent.com/Epistates/treemd/main/README.md",
+      "repo": "Epistates/treemd",
+      "stars": 618,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "fujiapple852",
+      "category": "Other",
+      "description": "A network diagnostic tool",
+      "homepage": "https://github.com/fujiapple852/trippy",
+      "install_specs": [
+        {
+          "package": "trippy",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T02:53:23Z",
+      "license": "APACHE-2.0",
+      "name": "trippy",
+      "readme": "https://raw.githubusercontent.com/fujiapple852/trippy/master/README.md",
+      "repo": "fujiapple852/trippy",
+      "stars": 6836,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "lance0",
+      "category": "Other",
+      "description": "Fast, modern traceroute with real-time TUI, per-hop stats, ASN/geo lookup, ECMP detection, and MPLS label parsing. A...",
+      "homepage": "https://github.com/lance0/ttl",
+      "install_specs": [
+        {
+          "package": "ttl",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-02T23:13:12Z",
+      "license": "APACHE-2.0",
+      "name": "ttl",
+      "readme": "https://raw.githubusercontent.com/lance0/ttl/master/README.md",
+      "repo": "lance0/ttl",
+      "stars": 980,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "agavra",
+      "category": "Other",
+      "description": "a terminal UI for local code review",
+      "homepage": "https://github.com/agavra/tuicr",
+      "install_specs": [
+        {
+          "package": "tuicr",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T17:37:40Z",
+      "license": "MIT",
+      "name": "tuicr",
+      "readme": "https://raw.githubusercontent.com/agavra/tuicr/main/README.md",
+      "repo": "agavra/tuicr",
+      "stars": 605,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "Gaurav-Gosain",
+      "category": "Other",
+      "description": "Terminal UI OS (Terminal Multiplexer)",
+      "homepage": "https://github.com/Gaurav-Gosain/tuios",
+      "install_specs": [
+        {
+          "package": "github.com/Gaurav-Gosain/tuios@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-13T14:45:51Z",
+      "license": "MIT",
+      "name": "tuios",
+      "readme": "https://raw.githubusercontent.com/Gaurav-Gosain/tuios/main/README.md",
+      "repo": "Gaurav-Gosain/tuios",
+      "stars": 2627,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "akavel",
+      "category": "Other",
+      "description": "Ultimate Plumber is a tool for writing Linux pipes with instant live preview",
+      "homepage": "https://github.com/akavel/up",
+      "install_specs": [
+        {
+          "package": "github.com/akavel/up@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2024-09-05T21:31:37Z",
+      "license": "APACHE-2.0",
+      "name": "up",
+      "readme": "https://raw.githubusercontent.com/akavel/up/master/README.md",
+      "repo": "akavel/up",
+      "stars": 8831,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1163,16 +3256,131 @@
         }
       ],
       "language": "Go",
-      "last_commit": "2026-04-22T14:14:48Z",
+      "last_commit": "2026-05-04T10:16:35Z",
       "license": "MIT",
       "name": "vhs",
       "readme": "https://raw.githubusercontent.com/charmbracelet/vhs/main/README.md",
       "repo": "charmbracelet/vhs",
-      "stars": 19516,
+      "stars": 19588,
       "tags": [
         "gif",
         "recording",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "sachaos",
+      "category": "Other",
+      "description": "👀 A modern watch command. Time machine and pager etc.",
+      "homepage": "https://github.com/sachaos/viddy",
+      "install_specs": [
+        {
+          "package": "viddy",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-02-05T18:28:09Z",
+      "license": "MIT",
+      "name": "viddy",
+      "readme": "https://raw.githubusercontent.com/sachaos/viddy/master/README.md",
+      "repo": "sachaos/viddy",
+      "stars": 5323,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "saulpw",
+      "category": "Other",
+      "description": "A terminal spreadsheet multitool for discovering and arranging data",
+      "homepage": "https://github.com/saulpw/visidata",
+      "install_specs": [
+        {
+          "package": "visidata",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-24T02:00:31Z",
+      "license": "GPL-3.0",
+      "name": "visidata",
+      "readme": "https://raw.githubusercontent.com/saulpw/visidata/develop/README.md",
+      "repo": "saulpw/visidata",
+      "stars": 9062,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "Harry-kp",
+      "category": "Other",
+      "description": "Terminal UI for WireGuard and OpenVPN with real-time telemetry and leak guarding.",
+      "homepage": "https://github.com/Harry-kp/vortix",
+      "install_specs": [
+        {
+          "package": "vortix",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T07:00:06Z",
+      "license": "MIT",
+      "name": "vortix",
+      "readme": "https://raw.githubusercontent.com/Harry-kp/vortix/main/README.md",
+      "repo": "Harry-kp/vortix",
+      "stars": 414,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "jinghaihan",
+      "category": "Other",
+      "description": "A CLI tool to publish VS Code extensions to Marketplace, OpenVSX, and GitHub Releases.",
+      "homepage": "https://github.com/jinghaihan/vsxpub",
+      "install_specs": [
+        {
+          "package": "vsxpub",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-16T14:57:58Z",
+      "license": "MIT",
+      "name": "vsxpub",
+      "readme": "https://raw.githubusercontent.com/jinghaihan/vsxpub/main/README.md",
+      "repo": "jinghaihan/vsxpub",
+      "stars": 82,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "steipete",
+      "category": "Other",
+      "description": "WhatsApp CLI",
+      "homepage": "https://github.com/steipete/wacli",
+      "install_specs": [
+        {
+          "package": "github.com/steipete/wacli@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T09:10:56Z",
+      "license": "OTHER",
+      "name": "wacli",
+      "readme": "https://raw.githubusercontent.com/steipete/wacli/main/README.md",
+      "repo": "steipete/wacli",
+      "stars": 2172,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1193,16 +3401,177 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-03-31T04:52:34Z",
+      "last_commit": "2026-04-30T16:54:56Z",
       "license": "GPL-3.0",
       "name": "weathr",
       "readme": "https://raw.githubusercontent.com/Veirt/weathr/main/README.md",
       "repo": "Veirt/weathr",
-      "stars": 2749,
+      "stars": 2773,
       "tags": [
         "weather",
         "animation",
         "ascii"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "ramonvermeulen",
+      "category": "Other",
+      "description": "Local Area Network discovery tool with an interactive Terminal User Interface (TUI) written in Go.  Discover, explore...",
+      "homepage": "https://github.com/ramonvermeulen/whosthere",
+      "install_specs": [
+        {
+          "package": "github.com/ramonvermeulen/whosthere@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-04T17:00:47Z",
+      "license": "APACHE-2.0",
+      "name": "whosthere",
+      "readme": "https://raw.githubusercontent.com/ramonvermeulen/whosthere/main/README.md",
+      "repo": "ramonvermeulen/whosthere",
+      "stars": 2212,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-05-04T17:18:08Z",
+      "author": "wtfutil",
+      "category": "Other",
+      "description": "The personal information dashboard for your terminal",
+      "homepage": "https://github.com/wtfutil/wtf",
+      "install_specs": [
+        {
+          "package": "github.com/wtfutil/wtf@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-01T02:52:02Z",
+      "license": "MPL-2.0",
+      "name": "wtf",
+      "readme": "https://raw.githubusercontent.com/wtfutil/wtf/trunk/README.md",
+      "repo": "wtfutil/wtf",
+      "stars": 16881,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "satococoa",
+      "category": "Other",
+      "description": "🌳 A powerful Git worktree CLI tool with automated setup, branch tracking, and smart navigation",
+      "homepage": "https://github.com/satococoa/wtp",
+      "install_specs": [
+        {
+          "package": "github.com/satococoa/wtp@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-30T03:14:39Z",
+      "license": "MIT",
+      "name": "wtp",
+      "readme": "https://raw.githubusercontent.com/satococoa/wtp/main/README.md",
+      "repo": "satococoa/wtp",
+      "stars": 481,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "lance0",
+      "category": "Other",
+      "description": "A modern iperf3 alternative with a live TUI, multi-client server, and QUIC support. Built in Rust.",
+      "homepage": "https://github.com/lance0/xfr",
+      "install_specs": [
+        {
+          "package": "xfr",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-03T23:22:35Z",
+      "license": "APACHE-2.0",
+      "name": "xfr",
+      "readme": "https://raw.githubusercontent.com/lance0/xfr/master/README.md",
+      "repo": "lance0/xfr",
+      "stars": 479,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "jackwener",
+      "category": "Other",
+      "description": "小红书命令行工具 — 搜索、阅读、点赞、收藏、评论，全在终端完成 | Xiaohongshu CLI",
+      "homepage": "https://github.com/jackwener/xhs-cli",
+      "install_specs": [
+        {
+          "package": "xhs-cli",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-03-14T12:23:55Z",
+      "license": "APACHE-2.0",
+      "name": "xhs-cli",
+      "readme": "https://raw.githubusercontent.com/jackwener/xhs-cli/main/README.md",
+      "repo": "jackwener/xhs-cli",
+      "stars": 456,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:55Z",
+      "author": "bgreenwell",
+      "category": "Other",
+      "description": "A fast terminal Excel viewer with an interactive TUI. Features full-text search, formula display, lazy loading for la...",
+      "homepage": "https://github.com/bgreenwell/xleak",
+      "install_specs": [
+        {
+          "package": "xleak",
+          "type": "cargo"
+        }
+      ],
+      "language": "",
+      "last_commit": "2025-12-06T16:13:22Z",
+      "license": "MIT",
+      "name": "xleak",
+      "readme": "https://raw.githubusercontent.com/bgreenwell/xleak/main/README.md",
+      "repo": "bgreenwell/xleak",
+      "stars": 1366,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:54:46Z",
+      "author": "xdagiz",
+      "category": "Other",
+      "description": "A Beautiful YouTube Downloader/Player TUI",
+      "homepage": "https://github.com/xdagiz/xytz",
+      "install_specs": [
+        {
+          "package": "github.com/xdagiz/xytz@latest",
+          "type": "go"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-27T18:13:10Z",
+      "license": "MIT",
+      "name": "xytz",
+      "readme": "https://raw.githubusercontent.com/xdagiz/xytz/main/README.md",
+      "repo": "xdagiz/xytz",
+      "stars": 453,
+      "tags": [
+        "cli"
       ]
     },
     {
@@ -1219,15 +3588,61 @@
         }
       ],
       "language": "Rust",
-      "last_commit": "2026-04-26T08:22:18Z",
+      "last_commit": "2026-05-04T17:37:19Z",
       "license": "MIT",
       "name": "yazi",
       "readme": "https://raw.githubusercontent.com/sxyazi/yazi/main/README.md",
       "repo": "sxyazi/yazi",
-      "stars": 37091,
+      "stars": 37474,
       "tags": [
         "file-manager",
         "tui"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:07Z",
+      "author": "involvex",
+      "category": "Other",
+      "description": "A powerful Terminal User Interface (TUI) music player for YouTube Music",
+      "homepage": "https://github.com/involvex/youtube-music-cli",
+      "install_specs": [
+        {
+          "package": "youtube-music-cli",
+          "type": "npm"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-05-02T20:45:20Z",
+      "license": "MIT",
+      "name": "youtube-music-cli",
+      "readme": "https://raw.githubusercontent.com/involvex/youtube-music-cli/main/README.md",
+      "repo": "involvex/youtube-music-cli",
+      "stars": 298,
+      "tags": [
+        "cli"
+      ]
+    },
+    {
+      "added_at": "2026-04-26T22:55:01Z",
+      "author": "kaifcodec",
+      "category": "Other",
+      "description": "The ytconverter is a CLI tool for downloading YouTube videos in various format directly from the terminal. It leverag...",
+      "homepage": "https://github.com/kaifcodec/ytconverter",
+      "install_specs": [
+        {
+          "package": "ytconverter",
+          "type": "pipx"
+        }
+      ],
+      "language": "",
+      "last_commit": "2026-04-30T17:10:03Z",
+      "license": "MIT",
+      "name": "ytconverter",
+      "readme": "https://raw.githubusercontent.com/kaifcodec/ytconverter/main/README.md",
+      "repo": "kaifcodec/ytconverter",
+      "stars": 477,
+      "tags": [
+        "cli"
       ]
     }
   ],
@@ -1273,6 +3688,10 @@
       "name": "Music & media"
     },
     {
+      "count": 105,
+      "name": "Other"
+    },
+    {
       "count": 2,
       "name": "Productivity"
     },
@@ -1289,7 +3708,7 @@
       "name": "Version control"
     }
   ],
-  "generated_at": "2026-04-26T22:31:04.292934126Z",
+  "generated_at": "2026-05-04T17:39:54.877930982Z",
   "schema_version": 1,
-  "source_commit": "7cb0bad03bef2de168fd365c6306ad13737680a9"
+  "source_commit": "dacb9e371b5d2228938805197628deed618e9564"
 }

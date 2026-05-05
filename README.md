@@ -9,7 +9,7 @@ $ curl cliff.sh | sh
 $ cliff
 ```
 
-Today: ~600 apps, rendered READMEs, fuzzy search, one-key install
+Today: 149 apps, rendered READMEs, fuzzy search, one-key install
 via the project's own package manager (brew / cargo / npm / pipx /
 `go install`). No accounts, no payments, no hosted binaries.
 
@@ -61,11 +61,13 @@ That's the whole product. It is small on purpose.
 - **Client:** Go single static binary (Bubble Tea stack).
   Distributed via `curl cliff.sh | sh`, `brew`, `go install`.
 - **Registry:** TOML manifests in the registry repo, compiled to
-  `index.json` by CI, served via GitHub Pages (planned canonical
-  URL: `https://registry.cliff.sh/index.json`). No database.
+  `index.json` by CI, served via GitHub Pages at
+  `https://registry.cliff.sh/index.json`. No catalog database.
 - **Distribution of apps:** wrap existing package managers. We
   host zero binaries and never will.
-- **Backend:** none.
+- **Backend:** a small Cloudflare Worker serves `cliff.sh`, redirects
+  README/reel requests, and publishes hotness data. No app catalog
+  server.
 
 See [`CLAUDE.md`](CLAUDE.md) for operating principles, and
 [`DEVELOPMENT.md`](DEVELOPMENT.md) for how to build and run.
@@ -86,4 +88,5 @@ type = "brew"                    # brew | cargo | npm | pipx | go | script
 package = "lazygit"
 ```
 
-Full schema in [`notes/manifest.md`](notes/manifest.md).
+Use `[[installs]]` instead when an app supports multiple package
+managers. Full schema in [`notes/manifest.md`](notes/manifest.md).

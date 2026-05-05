@@ -8,8 +8,9 @@ The TUI fetches `index.json` from a registry URL (overridable via
 `CLIFF_REGISTRY_URL`) with an ETag-cached fallback, then falls
 back further to a build-time snapshot of the same index embedded
 in the binary if everything upstream fails. The `i` install action
-shells out via the manifest's `[install]` block; installed apps
-are detected by scanning `$PATH` and marked with `✓` in the list.
+shells out via the manifest's `[install]` or `[[installs]]` block;
+installed apps are detected by scanning `$PATH` and marked with `✓`
+in the list.
 
 The registry itself lives in [`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry):
 TOML manifests under `apps/`, lint + build commands, and a CI
@@ -140,7 +141,8 @@ CI already did the work.
 - `~/.cliff/cache/index.json` + `.etag` — fetched registry index.
 
 Installed-state is derived from `$PATH` at runtime, not persisted.
-No config file, no telemetry.
+No config file and no client-side telemetry. README/reel requests may
+pass through `cliff.sh/r/*` server-side redirects, with upstream fallback.
 
 ## Common maintainer tasks
 
@@ -163,4 +165,5 @@ Chosen for speed to MVP and single-binary distribution. See [CLAUDE.md](CLAUDE.m
 cliff does not have accounts, hosted binaries, a server-side catalog
 database, client telemetry, or sandboxed installs. The remaining
 curation work is mostly editorial/product surface area, such as a
-weekly digest and deciding how much of the collected view data to show.
+weekly digest and deciding how much of the collected redirect data to
+show.

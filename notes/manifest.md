@@ -1,7 +1,7 @@
 # cliff — Manifest Schema v0
 
 One TOML file per app, lives at `apps/<name>.toml` in
-`cliffsh/registry`. CI validates and compiles all manifests into
+`jmcntsh/cliff-registry`. CI validates and compiles all manifests into
 `index.json`.
 
 Manifests describe an app and how to install it. They do not
@@ -41,11 +41,11 @@ package = "lazygit"    # or `command = "..."` for type=script
 
 ### Recommended (drives in-TUI richness)
 - `readme` — raw URL to a markdown file. Rendered in detail view.
-- `demo` — asciinema cast URL or ID. Will play in-TUI in a future
-  release; currently informational.
-- `screenshots` — array of image URLs. Currently listed as URLs;
-  in-TUI rendering planned.
-- `tags` — array of lowercase tags. CI lowercases and dedupes.
+- `demo` — URL for an external demo artifact. Registry-hosted `.reel`
+  previews are added separately under `reels/<name>.reel` and exposed
+  in `index.json` as `has_reel`.
+- `screenshots` — array of image URLs. Reserved for future UI use.
+- `tags` — array of lowercase tags.
 - `license` — SPDX identifier.
 - `binary` — name of the installed executable when it doesn't match
   the repo basename (e.g. `cli/cli` → `gh`, `ClementTsang/bottom` →
@@ -193,9 +193,9 @@ it.
 
 Checks:
 - Schema validity.
-- `name` uniqueness; matches `[a-z0-9-]`.
-- `tags` lowercased and deduped.
-- URL reachability (readme, homepage, screenshots, demo).
+- `name` uniqueness; matches `[a-z0-9][a-z0-9-]*`.
+- `tags` are lowercase.
+- URL shape (readme, homepage, screenshots, demo).
 - Exactly one of `[install]` or `[[installs]]` is declared.
 - Within `[[installs]]`, each entry's type is unique.
 - `[uninstall]` present when any method has `type = "script"`.

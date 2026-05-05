@@ -3,7 +3,7 @@
 Current shipped state. Product principles live in `CLAUDE.md`; historical
 release notes live in `CHANGELOG.md`.
 
-Last updated: 2026-05-04.
+Last updated: 2026-05-05.
 
 ## Current Release
 
@@ -25,8 +25,9 @@ Latest release: `v0.1.19` (2026-05-04).
   browsers through the Cloudflare Worker in `web/worker`.
 - **`registry.cliff.sh/index.json`** is published by `cliff-registry` CI and
   is the canonical catalog source.
-- **Catalog** has 44 apps across 14 categories. The embedded snapshot at
-  `internal/catalog/data/index.json` is the offline fallback.
+- **Catalog** has 149 live apps across 15 categories. The embedded snapshot
+  at `internal/catalog/data/index.json` is refreshed to the 2026-05-04
+  registry build and remains the offline fallback.
 - **GitHub releases** publish darwin/linux binaries for amd64 and arm64.
 - **Install paths** are live through `curl cliff.sh | sh`,
   `go install github.com/jmcntsh/cliff/cmd/cliff@latest`, and
