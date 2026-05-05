@@ -114,6 +114,23 @@ download_and_install() {
   mkdir -p "$install_dir"
   mv "$tmp/cliff" "$install_dir/cliff"
   chmod +x "$install_dir/cliff"
+
+  write_install_state
+}
+
+# write_install_state drops a tiny breadcrumb at ~/.cliff/install.json
+# so `cliff self-uninstall` knows where this script put the binary,
+# without re-deriving (and possibly drifting from) the candidate-path
+# list above. Best-effort: a write failure must not fail the install,
+# self-uninstall falls back to os.Executable() when the file's missing.
+write_install_state() {
+  state_dir="$HOME/.cliff"
+  state_file="$state_dir/install.json"
+  mkdir -p "$state_dir" 2>/dev/null || return 0
+  # Hand-rolled JSON keeps us free of jq; the three values are all
+  # path/version strings under our control, no quoting hazards.
+  printf '{"install_dir":"%s","install_method":"script","version":"%s"}\n' \
+    "$install_dir" "$VERSION" >"$state_file" 2>/dev/null || return 0
 }
 
 print_success() {

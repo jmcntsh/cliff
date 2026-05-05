@@ -18,6 +18,8 @@ func main() {
 			os.Exit(cmdInstall(os.Args[2:]))
 		case "uninstall":
 			os.Exit(cmdUninstall(os.Args[2:]))
+		case "self-uninstall":
+			os.Exit(cmdSelfUninstall(os.Args[2:]))
 		case "upgrade":
 			os.Exit(cmdUpgrade(os.Args[2:]))
 		case "installed":

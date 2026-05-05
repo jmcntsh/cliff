@@ -6,7 +6,8 @@ import (
 )
 
 // version is overridden at build time via:
-//   go build -ldflags "-X main.version=v0.1.0"
+//
+//	go build -ldflags "-X main.version=v0.1.0"
 var version = "dev"
 
 func cmdVersion() int {
@@ -28,6 +29,7 @@ Usage:
   cliff upgrade <pkg>          upgrade an app to its latest version
   cliff installed              list catalog apps detected on your system
   cliff submit [name|repo]     nominate an app for the cliff registry
+  cliff self-uninstall         remove cliff itself (binary + ~/.cliff)
   cliff help                   show this message
   cliff version                print the installed version
   cliff completions <shell>    emit shell completion script
@@ -108,7 +110,7 @@ _cliff() {
     local cur prev verbs
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    verbs="install uninstall upgrade installed submit completions help version"
+    verbs="install uninstall upgrade installed submit self-uninstall completions help version"
 
     if [ "$COMP_CWORD" -eq 1 ]; then
         COMPREPLY=( $(compgen -W "$verbs" -- "$cur") )
@@ -141,6 +143,7 @@ _cliff() {
         'upgrade:upgrade an app to its latest version'
         'installed:list catalog apps detected on your system'
         'submit:nominate an app for the cliff registry'
+        'self-uninstall:remove cliff itself (binary + ~/.cliff)'
         'completions:emit shell completion script'
         'help:show help'
         'version:print the installed version'
@@ -173,8 +176,9 @@ complete -c cliff -n '__fish_use_subcommand' -a 'install'     -d 'install an app
 complete -c cliff -n '__fish_use_subcommand' -a 'uninstall'   -d 'uninstall a previously installed app'
 complete -c cliff -n '__fish_use_subcommand' -a 'upgrade'     -d 'upgrade an app to its latest version'
 complete -c cliff -n '__fish_use_subcommand' -a 'installed'   -d 'list catalog apps detected on your system'
-complete -c cliff -n '__fish_use_subcommand' -a 'submit'      -d 'nominate an app for the cliff registry'
-complete -c cliff -n '__fish_use_subcommand' -a 'completions' -d 'emit shell completion script'
+complete -c cliff -n '__fish_use_subcommand' -a 'submit'         -d 'nominate an app for the cliff registry'
+complete -c cliff -n '__fish_use_subcommand' -a 'self-uninstall' -d 'remove cliff itself (binary + ~/.cliff)'
+complete -c cliff -n '__fish_use_subcommand' -a 'completions'    -d 'emit shell completion script'
 complete -c cliff -n '__fish_use_subcommand' -a 'help'        -d 'show help'
 complete -c cliff -n '__fish_use_subcommand' -a 'version'     -d 'print the installed version'
 
