@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -19,6 +20,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 )
+
+var errNoInstallCommand = errors.New("no install command after prerequisite setup")
 
 type flashClearMsg struct{}
 
@@ -123,6 +126,34 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case installResultMsg:
 		res := m.Result
+		if r.installBootstrapping {
+			r.installCancel = nil
+			if res.Err == nil {
+				install.ApplyBootstrapEnv(r.installBootstrapType)
+				r.installBootstrapping = false
+				r.installBootstrapType = ""
+				r.installLines = nil
+				r.installViewport.SetContent("")
+				r.installViewport.GotoTop()
+				cmd := pkgOpCommand(r.installApp, r.installOp)
+				if cmd == "" {
+					r.installRes = &install.Result{App: r.installApp, Err: errNoInstallCommand}
+					r.mode = modePkgResult
+					return r, nil
+				}
+				r.installRunningCmd = cmd
+				r.mode = modePkgRunning
+				return r, tea.Batch(runPkgCmd(r.installApp, cmd), r.spinner.Tick)
+			}
+			r.installBootstrapping = false
+			r.installBootstrapType = ""
+			r.installRes = &res
+			r.mode = modePkgResult
+			r.launchErr = nil
+			r.installViewport.SetContent(strings.TrimRight(res.Output, "\n"))
+			r.installViewport.GotoTop()
+			return r, nil
+		}
 		r.installRes = &res
 		r.installCancel = nil
 		r.mode = modePkgResult
@@ -434,19 +465,38 @@ func (r Root) updatePkgConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.mode = r.installReturnMode
 		r.installApp = nil
 		r.installOp = pkgOpInstall
+		r.installBootstrapping = false
+		r.installBootstrapType = ""
+		r.installRunningCmd = ""
 		return r, nil
 	case key.Matches(msg, keys.Enter):
+		if r.installOp == pkgOpInstall {
+			if spec := selectedInstallSpec(r.installApp); spec != nil && !install.ToolAvailable(spec.Type) {
+				if cmd := install.BootstrapCommand(spec.Type); cmd != "" {
+					r.installLines = nil
+					r.installViewport.SetContent("")
+					r.installViewport.GotoTop()
+					r.installBootstrapping = true
+					r.installBootstrapType = spec.Type
+					r.installRunningCmd = cmd
+					r.mode = modePkgRunning
+					return r, tea.Batch(runPkgCmd(r.installApp, cmd), r.spinner.Tick)
+				}
+			}
+		}
 		cmd := pkgOpCommand(r.installApp, r.installOp)
 		if cmd == "" {
 			r.mode = r.installReturnMode
 			r.installApp = nil
 			r.installOp = pkgOpInstall
+			r.installRunningCmd = ""
 			return r, nil
 		}
 		app := r.installApp
 		r.installLines = nil
 		r.installViewport.SetContent("")
 		r.installViewport.GotoTop()
+		r.installRunningCmd = cmd
 		r.mode = modePkgRunning
 		return r, tea.Batch(runPkgCmd(app, cmd), r.spinner.Tick)
 	}
@@ -496,6 +546,7 @@ func (r Root) updatePkgResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.installApp = nil
 		r.installRes = nil
 		r.installOp = pkgOpInstall
+		r.installRunningCmd = ""
 		r.launchErr = nil
 		return r, nil
 	}
@@ -516,6 +567,7 @@ func (r Root) updatePkgResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.installApp = nil
 		r.installRes = nil
 		r.installOp = pkgOpInstall
+		r.installRunningCmd = ""
 		r.launchErr = nil
 		return r, nil
 	}
@@ -535,12 +587,19 @@ func pkgOpCommand(app *catalog.App, op pkgOp) string {
 	case pkgOpUpgrade:
 		return app.UpgradeCommand()
 	default:
-		s := app.PrimaryInstallSpec()
+		s := selectedInstallSpec(app)
 		if s == nil {
 			return ""
 		}
 		return s.Shell()
 	}
+}
+
+func selectedInstallSpec(app *catalog.App) *catalog.InstallSpec {
+	if app == nil {
+		return nil
+	}
+	return app.PreferredInstallSpec("", install.ToolAvailable)
 }
 
 // updateManage drives the installed-app action picker.
@@ -820,7 +879,7 @@ func clearFlashCmd() tea.Cmd {
 }
 
 func preferredInstall(app *catalog.App) string {
-	s := app.PrimaryInstallSpec()
+	s := selectedInstallSpec(app)
 	if s == nil {
 		return ""
 	}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -36,7 +35,7 @@ func cmdInstall(args []string) int {
 		return 2
 	}
 	return runPkgVerb("install", installArgs, func(app *catalog.App, _ map[string]string) string {
-		spec := app.PreferredInstallSpec(via, toolAvailable)
+		spec := app.PreferredInstallSpec(via, install.ToolAvailable)
 		if spec == nil {
 			if via != "" {
 				fmt.Fprintf(os.Stderr, "cliff: %s has no --via %s install method\n", app.Name, via)
@@ -46,25 +45,6 @@ func cmdInstall(args []string) int {
 		}
 		return spec.Shell()
 	}, mode)
-}
-
-// toolAvailable reports whether the package-manager CLI for a given
-// install type is on the user's $PATH. Used by PreferredInstallSpec
-// to skip methods the user can't actually run. script returns true by
-// convention — there's no tool to probe, the shell runs the command
-// as-is, and the install's own failure surfaces if something's wrong.
-func toolAvailable(installType string) bool {
-	var bin string
-	switch installType {
-	case "brew", "cargo", "go", "npm", "pipx":
-		bin = installType
-	case "script":
-		return true
-	default:
-		return false
-	}
-	_, err := exec.LookPath(bin)
-	return err == nil
 }
 
 func installMethodsList(app *catalog.App) string {

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
 	"github.com/charmbracelet/lipgloss"
@@ -81,7 +82,7 @@ func (r Root) View() string {
 	}
 	if r.mode == modePkgRunning {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
-			pkgRunningView(r.installApp, r.installOp, r.installViewport, len(r.installLines) > 0, r.spinner.View(), r.width))
+			pkgRunningView(r.installApp, r.installOp, r.installRunningCmd, r.installBootstrapping, r.installBootstrapType, r.installViewport, len(r.installLines) > 0, r.spinner.View(), r.width))
 	}
 	if r.mode == modePkgResult {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
@@ -226,13 +227,25 @@ func (r Root) footer() string {
 		}
 		hints = readmeVerb + " · o github · ? help · ← back"
 	case modePkgConfirm:
-		hints = "⏎ run · esc cancel"
+		if r.installOp == pkgOpInstall {
+			if spec := selectedInstallSpec(r.installApp); spec != nil && !install.ToolAvailable(spec.Type) && install.BootstrapCommand(spec.Type) != "" {
+				hints = "⏎ install setup and app · esc cancel"
+			} else {
+				hints = "⏎ run · esc cancel"
+			}
+		} else {
+			hints = "⏎ run · esc cancel"
+		}
 	case modePkgRunning:
 		// Label the cancel with the op's verb so "esc" is unambiguous —
 		// "cancel install" reads differently from "cancel uninstall,"
 		// and we want the user to see exactly which child process
 		// they're about to kill.
-		hints = "↑↓ scroll logs  esc cancel " + strings.ToLower(r.installOp.verb())
+		if r.installBootstrapping {
+			hints = "↑↓ scroll logs  esc cancel setup"
+		} else {
+			hints = "↑↓ scroll logs  esc cancel " + strings.ToLower(r.installOp.verb())
+		}
 	case modePkgResult:
 		if r.installOp == pkgOpInstall && r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
 			hints = "⏎ fix PATH · esc close"

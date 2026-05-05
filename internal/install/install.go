@@ -208,6 +208,77 @@ var toolHints = map[string]string{
 	"npm":   "npm isn't installed.\nInstall Node.js at https://nodejs.org",
 }
 
+// ToolForType returns the executable Cliff needs before it can run an
+// install method. script returns empty because the user's shell runs it.
+func ToolForType(installType string) string {
+	switch installType {
+	case "brew", "cargo", "go", "npm", "pipx":
+		return installType
+	default:
+		return ""
+	}
+}
+
+// ToolAvailable reports whether the package-manager CLI for a given
+// install type is on the user's $PATH. script returns true by convention:
+// there is no tool to probe, and the command itself will surface failures.
+func ToolAvailable(installType string) bool {
+	if installType == "script" {
+		return true
+	}
+	bin := ToolForType(installType)
+	if bin == "" {
+		return false
+	}
+	_, err := exec.LookPath(bin)
+	return err == nil
+}
+
+// BootstrapCommand returns a safe, non-interactive prerequisite installer
+// for install methods Cliff can bootstrap before resuming the app install.
+func BootstrapCommand(installType string) string {
+	switch installType {
+	case "cargo":
+		return `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path`
+	default:
+		return ""
+	}
+}
+
+// BootstrapName is the user-facing name for a prerequisite installer.
+func BootstrapName(installType string) string {
+	switch installType {
+	case "cargo":
+		return "Rust/Cargo"
+	default:
+		return ToolForType(installType)
+	}
+}
+
+// ApplyBootstrapEnv updates the current Cliff process after a successful
+// bootstrap so the resumed install can find the newly installed tool.
+func ApplyBootstrapEnv(installType string) {
+	switch installType {
+	case "cargo":
+		home, err := os.UserHomeDir()
+		if err == nil && home != "" {
+			prependPath(filepath.Join(home, ".cargo", "bin"))
+		}
+	}
+}
+
+func prependPath(dir string) {
+	if dir == "" {
+		return
+	}
+	for _, existing := range filepath.SplitList(os.Getenv("PATH")) {
+		if existing == dir {
+			return
+		}
+	}
+	_ = os.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
 // Diagnose turns recognized install failures into short hints.
 func Diagnose(res Result) string {
 	if res.Err == nil {

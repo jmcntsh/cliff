@@ -176,6 +176,52 @@ func TestDiagnose_NoHintOnUnknownFailure(t *testing.T) {
 	}
 }
 
+func TestToolForType(t *testing.T) {
+	cases := map[string]string{
+		"brew":   "brew",
+		"cargo":  "cargo",
+		"go":     "go",
+		"npm":    "npm",
+		"pipx":   "pipx",
+		"script": "",
+	}
+	for typ, want := range cases {
+		if got := ToolForType(typ); got != want {
+			t.Errorf("ToolForType(%q) = %q, want %q", typ, got, want)
+		}
+	}
+}
+
+func TestCargoBootstrap(t *testing.T) {
+	cmd := BootstrapCommand("cargo")
+	if !strings.Contains(cmd, "https://sh.rustup.rs") {
+		t.Errorf("cargo bootstrap should use rustup, got %q", cmd)
+	}
+	if got := BootstrapName("cargo"); got != "Rust/Cargo" {
+		t.Errorf("BootstrapName(cargo) = %q", got)
+	}
+}
+
+func TestApplyBootstrapEnvPrependsCargoBin(t *testing.T) {
+	home := t.TempDir()
+	oldPath := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("PATH", oldPath)
+
+	ApplyBootstrapEnv("cargo")
+
+	wantPrefix := filepath.Join(home, ".cargo", "bin")
+	parts := filepath.SplitList(os.Getenv("PATH"))
+	if len(parts) == 0 || parts[0] != wantPrefix {
+		t.Fatalf("PATH = %q, want prefix %q", os.Getenv("PATH"), wantPrefix)
+	}
+
+	ApplyBootstrapEnv("cargo")
+	if strings.Count(os.Getenv("PATH"), wantPrefix) != 1 {
+		t.Fatalf("cargo bin should be present once, PATH=%q", os.Getenv("PATH"))
+	}
+}
+
 func TestInstalledApps_MatchesByRepoBasename(t *testing.T) {
 	dir := t.TempDir()
 	exe := filepath.Join(dir, "glow")

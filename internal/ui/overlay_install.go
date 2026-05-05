@@ -100,6 +100,14 @@ func pkgConfirmView(app *catalog.App, op pkgOp, width int) string {
 				theme.MutedText.Render("esc close"))
 	}
 
+	if op == pkgOpInstall {
+		if spec := selectedInstallSpec(app); spec != nil && !install.ToolAvailable(spec.Type) {
+			if bootstrapCmd := install.BootstrapCommand(spec.Type); bootstrapCmd != "" {
+				return pkgBootstrapConfirmView(app, spec, bootstrapCmd, width)
+			}
+		}
+	}
+
 	cmd := pkgOpCommand(app, op)
 	if cmd == "" {
 		return pkgNotAvailableView(app, op, width)
@@ -115,7 +123,7 @@ func pkgConfirmView(app *catalog.App, op pkgOp, width int) string {
 
 	// Script-type warning is install-only: uninstall/upgrade use
 	// derived commands that don't curl-pipe-sh an unknown URL.
-	if op == pkgOpInstall && app.PrimaryInstallSpec() != nil && app.PrimaryInstallSpec().Type == "script" {
+	if op == pkgOpInstall && selectedInstallSpec(app) != nil && selectedInstallSpec(app).Type == "script" {
 		body = append(body,
 			"",
 			theme.WarnText.Render("⚠  This is a `script`-type install."),
@@ -126,6 +134,24 @@ func pkgConfirmView(app *catalog.App, op pkgOp, width int) string {
 	}
 
 	body = append(body, "", theme.MutedText.Render("⏎ run     esc cancel"))
+	return modalBox(width, strings.Join(body, "\n"))
+}
+
+func pkgBootstrapConfirmView(app *catalog.App, spec *catalog.InstallSpec, bootstrapCmd string, width int) string {
+	toolName := install.BootstrapName(spec.Type)
+	appCmd := spec.Shell()
+	body := []string{
+		theme.GradientTitle("Install " + app.Name + "?"),
+		theme.WarnText.Render(app.Name + " needs " + toolName + " first."),
+		"",
+		theme.MutedText.Render("Cliff will run this setup step:"),
+		theme.MutedText.Render(bootstrapCmd),
+		"",
+		theme.MutedText.Render("Then Cliff will continue with:"),
+		theme.MutedText.Render(appCmd),
+		"",
+		theme.MutedText.Render("⏎ install setup and app     esc cancel"),
+	}
 	return modalBox(width, strings.Join(body, "\n"))
 }
 
@@ -178,18 +204,25 @@ func pkgNotAvailableView(app *catalog.App, op pkgOp, width int) string {
 // spinnerGlyph is the rotating dot from the Root spinner; passed in
 // (rather than imported) so the view stays a pure renderer and the
 // modal still works in tests that construct a static frame.
-func pkgRunningView(app *catalog.App, op pkgOp, vp viewport.Model, hasOutput bool, spinnerGlyph string, width int) string {
-	header := theme.GradientTitle(op.runningVerb() + " " + app.Name)
+func pkgRunningView(app *catalog.App, op pkgOp, cmd string, bootstrapping bool, bootstrapType string, vp viewport.Model, hasOutput bool, spinnerGlyph string, width int) string {
+	title := op.runningVerb() + " " + app.Name
+	if bootstrapping {
+		title = "Installing " + install.BootstrapName(bootstrapType)
+	}
+	header := theme.GradientTitle(title)
 	placeholder := "starting…"
 	if spinnerGlyph != "" {
 		placeholder = spinnerGlyph + " " + placeholder
+	}
+	if cmd == "" {
+		cmd = pkgOpCommand(app, op)
 	}
 	outputBlock := renderLogViewport(vp, hasOutput, placeholder)
 
 	body := []string{
 		header,
 		"",
-		theme.MutedText.Render(pkgOpCommand(app, op)),
+		theme.MutedText.Render(cmd),
 		"",
 		outputBlock,
 		"",

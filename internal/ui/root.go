@@ -185,12 +185,15 @@ type modeState struct {
 
 // pkgState is the shared install / uninstall / upgrade flow.
 type pkgState struct {
-	installCancel   context.CancelFunc // non-nil while an install/uninstall is running
-	installLines    []string           // streamed output from the running op (source of truth)
-	installViewport viewport.Model     // derived view for scrolling logs
-	installApp      *catalog.App
-	installRes      *install.Result
-	installOp       pkgOp
+	installCancel        context.CancelFunc // non-nil while an install/uninstall is running
+	installLines         []string           // streamed output from the running op (source of truth)
+	installViewport      viewport.Model     // derived view for scrolling logs
+	installApp           *catalog.App
+	installRes           *install.Result
+	installOp            pkgOp
+	installBootstrapping bool
+	installBootstrapType string
+	installRunningCmd    string
 }
 
 // fixPathState backs the post-install PATH follow-up flow.
