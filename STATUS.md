@@ -4,9 +4,41 @@ What's actually shipped right now. Updated on every ship. Source of
 truth for "is X live?" — principles docs ([`CLAUDE.md`](CLAUDE.md))
 describe intent, not state.
 
-Last updated: 2026-05-01.
+Last updated: 2026-05-04.
 
 ## Latest change
+
+`v0.1.19` (2026-05-04): `cliff self-uninstall` and a
+breadcrumb-driven uninstall path that closes a bug where
+`curl cliff.sh | sh` could land the binary in
+`/opt/homebrew/bin/cliff` (Apple Silicon, no sudo needed) but
+the registry's `[uninstall]` recipe didn't list that directory,
+so `cliff uninstall cliff` reported success while leaving the
+binary in place.
+
+Root cause was duplication: install.sh's candidate-path list and
+the recipe's `rm` list lived in two repos and drifted. Fix is to
+make the binary uninstall itself rather than have the recipe
+re-derive paths in shell. `scripts/install.sh` now writes
+`~/.cliff/install.json` (`{install_dir, install_method, version}`)
+at the end of a successful install. New `cliff self-uninstall`
+reads that file for the exact path, falls back to `os.Executable`
+when the file is missing (brew tap, `go install`), refuses on
+symlinks or `/Cellar/` paths so brew installs aren't half-removed
+by mistake, and clears `~/.cliff/` after rm-ing the binary.
+Supports `--dry-run`. Wired into help text and bash/zsh/fish
+completions.
+
+[`cliff-registry`](https://github.com/jmcntsh/cliff-registry)'s
+`apps/cliff.toml` `[uninstall]` block now prefers
+`cliff self-uninstall` when the verb is available; older clients
+fall through to a path-list `rm` that — finally —
+includes `/opt/homebrew/bin/cliff`, so v0.1.18 and earlier also
+get the fix without needing to upgrade. The `~/.cliff/install.json`
+breadcrumb is the third file under `~/.cliff` (alongside
+`cache/binmap.json` and `logs/bin-audit.log`); like the others
+it's a hint, not a state-of-record — missing or stale, the
+fallback path is exact enough to remove the right binary.
 
 `v0.1.18` (2026-05-01): per-app view tracking via the cliff.sh
 Worker, plus a registry-side reel-ownership attestation workflow.
@@ -411,8 +443,10 @@ doesn't disappear after a successful off-PATH install.
   upstream. Daily aggregate written to private R2 (`cliff-stats`,
   `daily/<date>.json`). Not yet surfaced anywhere in the client.
 - **`curl cliff.sh | sh`** — end-to-end working; downloads the
-  tagged release, verifies sha256, installs to `/usr/local/bin` or
-  `~/.local/bin`.
+  tagged release, verifies sha256, installs to the first writable
+  dir among `/usr/local/bin`, `/opt/homebrew/bin`, or
+  `~/.local/bin`. Records the chosen path to
+  `~/.cliff/install.json` so `cliff self-uninstall` is exact.
 - **`go install github.com/jmcntsh/cliff/cmd/cliff@latest`** —
   works.
 - **`brew install jmcntsh/tap/cliff`** — Homebrew tap live at
@@ -458,6 +492,12 @@ doesn't disappear after a successful off-PATH install.
   the right-name hint until the next install. `~/.cliff/logs/
   bin-audit.log` is an append-only record of every detected ≠
   derived event, for back-filling `binary` fields into the registry.
+- `~/.cliff/install.json` (v0.1.19+) is a breadcrumb written by
+  `scripts/install.sh`, not a state-of-record: deleting it just
+  forces `cliff self-uninstall` to fall back to `os.Executable()`,
+  which lands the same answer in the common case. It only exists
+  for `curl cliff.sh | sh` installs — brew tap and `go install`
+  paths leave it absent, and that's the intended shape.
 
 ## How to update this file
 
