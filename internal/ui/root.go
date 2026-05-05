@@ -37,14 +37,8 @@ const (
 	modeReadme
 	modeManage // picker: Update / Uninstall / Readme for installed apps
 
-	// Package-operation modes are shared across install / uninstall /
-	// upgrade. The specific verb is carried on r.installOp, which the
-	// view/update handlers branch on for labels and op-specific flows
-	// (PathWarning + launcher handoff are install-only). Collapsing
-	// the previous 3×3 = 9 modes into a single 3-phase machine halves
-	// the dispatch table and keeps the three ops in lockstep by
-	// construction — adding a new phase (e.g. a post-diagnose retry
-	// screen) doesn't require adding three parallel modes.
+	// Package-operation modes are shared across install / uninstall / upgrade;
+	// r.installOp carries the active verb.
 	modePkgConfirm
 	modePkgRunning
 	modePkgResult
@@ -53,30 +47,14 @@ const (
 	modeSubmit  // confirm screen for opening the registry submit form in a browser
 )
 
-// submitPhase tracks where we are inside modeSubmit. The flow is
-// strictly linear: form (user types fields) → confirm (preview the
-// URL we're about to open) → opened (browser hand-off completed,
-// either successfully or with an error to display). Splitting the
-// phases out of mode (rather than minting three new modes) keeps
-// the top-level mode dispatch table flat and lets the submit
-// overlay own its own internal state machine.
+// submitPhase tracks the form → confirm → opened flow inside modeSubmit.
 type submitPhase int
 
 const (
-	// submitPhaseForm is the huh-driven entry form. The user is
-	// filling in name / repo / description / notes; esc cancels
-	// the whole flow, ⏎ on the final field advances to confirm.
 	submitPhaseForm submitPhase = iota
 
-	// submitPhaseConfirm is the "about to open <URL>" preview.
-	// Same UX as the pre-huh submit overlay: the user sees the
-	// URL before we hand off to a browser, so the keypress that
-	// caused the navigation is never load-bearing.
 	submitPhaseConfirm
 
-	// submitPhaseOpened is the post-hand-off state. submitErr
-	// distinguishes success (browser opened) from failure (the
-	// URL is shown for manual paste).
 	submitPhaseOpened
 )
 
@@ -91,10 +69,6 @@ const (
 	pkgOpUpgrade
 )
 
-// verb returns the short gerund used in running-state headers ("Installing",
-// "Uninstalling", "Updating"). Centralizing the strings keeps
-// pkgRunningView consistent with the confirm/result headers without
-// each call site having to duplicate a switch.
 func (o pkgOp) verb() string {
 	switch o {
 	case pkgOpUninstall:
@@ -131,13 +105,7 @@ func (o pkgOp) pastVerb() string {
 	}
 }
 
-// sortMode is the user-cyclable sort key. The cycle is descending-only
-// by design: ascending sorts (stars ↑, A→Z name) buried high-signal
-// apps under low-signal ones, which made the cycle feel like "a full
-// rotation = back where I started" rather than "a full rotation = I
-// saw the catalog three useful ways." sortHotDesc only enters the
-// cycle when hot.json is published and the reveal threshold passes
-// (see (Root).visibleSorts).
+// sortMode is the user-cyclable, descending-only sort key.
 type sortMode int
 
 const (
@@ -158,17 +126,9 @@ func (s sortMode) label() string {
 	return ""
 }
 
-// hotRevealThreshold is the minimum number of apps in the catalog
-// with a nonzero HotScore before the Hot surface (sidebar row +
-// sort-cycle step) appears. Below this we'd be ranking ~all apps
-// by ~all-zero scores, which is just a degenerate alphabetical
-// list.
+// hotRevealThreshold avoids showing Hot while almost every score is zero.
 const hotRevealThreshold = 25
 
-// visibleSorts is the sort cycle the Sort key actually walks, given
-// the current reveal state. Hot is appended only when revealed, so
-// pressing 's' on a fresh client never lands on a sort that ranks
-// every app at zero.
 func (r Root) visibleSorts() []sortMode {
 	if r.hotRevealed {
 		return []sortMode{sortStarsDesc, sortRecencyDesc, sortHotDesc}
@@ -176,11 +136,6 @@ func (r Root) visibleSorts() []sortMode {
 	return []sortMode{sortStarsDesc, sortRecencyDesc}
 }
 
-// nextSort returns the next sort in r.visibleSorts() after the
-// current one, wrapping. Used by the Sort keypress handler. If the
-// current sort isn't in the visible list (e.g. the user was on
-// sortHotDesc and the reveal flipped back to false because hot.json
-// disappeared), we fall back to the first visible sort.
 func (r Root) nextSort() sortMode {
 	cycle := r.visibleSorts()
 	for i, s := range cycle {
@@ -192,139 +147,90 @@ func (r Root) nextSort() sortMode {
 }
 
 type Root struct {
-	catalog     *catalog.Catalog
-	grid        grid
-	sidebar     sidebar
-	search      textinput.Model
-	readme      readmeModel
-	focus             focusState
-	mode              mode
-	helpReturnMode    mode // mode to return to when help is dismissed
-	installReturnMode mode // mode to return to when an install modal is dismissed
-	sort              sortMode
-	// hotRevealed flips true once we've fetched hot.json *and* at least
-	// hotRevealThreshold apps carry a non-zero HotScore. Both the Hot
-	// sidebar row and the sortHotDesc step in the sort cycle are gated
-	// on this flag, so the surface appears in both places at once. The
-	// New sidebar row hides on the same flag — they trade places, not
-	// stack. False is the sticky steady-state until the worker's
-	// days-seen gate flips and the catalog has enough nonzero scores.
-	hotRevealed       bool
-	layout            layoutMode
+	catalog *catalog.Catalog
+	grid    grid
+	sidebar sidebar
+	search  textinput.Model
+	readme  readmeModel
+	focus   focusState
+	mode    mode
+	sort    sortMode
+
+	modeState
+	pkgState
+	fixPathState
+	launchState
+	submitState
+	manageState
+	spinnerState
+
+	// Gates the Hot sidebar row and sort step; New hides when Hot appears.
+	hotRevealed bool
+	layout      layoutMode
 	width       int
 	height      int
 	ready       bool
 	flashMsg    string
 	flashExpiry time.Time
 
-	installed       map[string]bool    // repo -> installed, derived from $PATH via install.Detect
-	// binOverrides is a repo→binary-name map learned from previous
-	// installs (internal/binmap). It corrects manifest-derived
-	// BinaryName() guesses when they're wrong (e.g. cargo crate
-	// "minesweep" installed from repo "cpcloud/minesweep-rs" ships
-	// as `minesweep`, not `minesweep-rs`). Loaded once at startup,
-	// mutated on successful install, written through binmap.Remember.
-	binOverrides    map[string]string
+	installed    map[string]bool // repo -> installed, derived from $PATH via install.Detect
+	binOverrides map[string]string
+}
+
+// modeState remembers where modal-style screens should return.
+type modeState struct {
+	helpReturnMode    mode
+	installReturnMode mode
+}
+
+// pkgState is the shared install / uninstall / upgrade flow.
+type pkgState struct {
 	installCancel   context.CancelFunc // non-nil while an install/uninstall is running
 	installLines    []string           // streamed output from the running op (source of truth)
 	installViewport viewport.Model     // derived view for scrolling logs
-	installApp   *catalog.App
-	installRes   *install.Result
-	// installOp distinguishes the package operation in flight: install vs
-	// uninstall. The running/result modes share one state machine (same
-	// command streamer, same viewport, same Result), but the modals need
-	// to render different verbs and the install-side-only follow-ups
-	// (PathWarning, launcher) must stay suppressed when uninstalling.
-	installOp pkgOp
+	installApp      *catalog.App
+	installRes      *install.Result
+	installOp       pkgOp
+}
 
-	// Fix-PATH follow-up flow. When a post-install PathWarning fires,
-	// Enter on the result modal lifts us into modeFixPath with a
-	// plan ready to apply. fixApplied flips to true once we've
-	// written the rc file (success or error). fixAlreadyPresent
-	// snapshots Plan.Present at Detect time so the result screen can
-	// distinguish "just added" from "was already there" after Apply
-	// has clobbered Plan.Present to true.
-	fixPlan            *pathfix.Plan
-	fixErr             error
-	fixApplied         bool
-	fixAlreadyPresent  bool
+// fixPathState backs the post-install PATH follow-up flow.
+type fixPathState struct {
+	fixPlan           *pathfix.Plan
+	fixErr            error
+	fixApplied        bool
+	fixAlreadyPresent bool
+}
 
-	// Post-install launcher state. launchMethod is detected once at
-	// startup (via launcher.Detect on CurrentEnv) so every install's
-	// result screen can render the right affordance — "⏎ open in new
-	// tab" when we can do that, "⏎ copy command" otherwise — without
-	// re-detecting on every keypress. launchErr holds the last spawn
-	// error if Launch failed, so the result view can surface a hint
-	// rather than silently swallowing it.
+// launchState is detected once and reused on install/fix-PATH result screens.
+type launchState struct {
 	launchMethod launcher.Method
 	launchErr    error
+}
 
-	// Submit-flow state for modeSubmit. Populated when `+` is pressed
-	// from any mode that allows submission; cleared when the overlay
-	// closes.
-	//
-	// The flow has three phases (see submitPhase): a huh-driven form
-	// where the user fills in the manifest seed fields, a confirm
-	// step that previews the URL we're about to open, and the post-
-	// open state that either confirms success or surfaces the URL
-	// for manual paste. submitReturnMode is the mode we bounce back
-	// to on esc/cancel (browse or readme, depending on where `+`
-	// was pressed). submitErr holds the browser.Open error so the
-	// post-open phase can fall back to showing the URL.
-	//
-	// submitFields is the running buffer the huh form writes into;
-	// once the form completes, we hand it to submit.Request to derive
-	// the prefilled GitHub URL. Keeping the request struct as the
-	// source of truth means the CLI verb (cmdSubmit) and the TUI
-	// form share one URL builder — change the schema in one place
-	// and both surfaces follow.
+// submitState holds the three-phase `+` flow: form, confirm, opened.
+type submitState struct {
 	submitReturnMode mode
 	submitPhase      submitPhase
 	submitErr        error
 	submitURL        string
 	submitFields     submit.Request
 	submitForm       *huh.Form
+}
 
-	// Manage-picker state for modeManage. Populated when Enter is
-	// pressed on an installed app; emptied when the picker closes.
-	// The picker is a horizontal row of actions (Update / Uninstall /
-	// Readme), with Update default-selected because it's the most
-	// common "what do I want to do with this installed thing" and is
-	// benign. Uninstall is destructive so never default; Readme is
-	// the escape hatch for "I meant to re-read docs, not manage."
+// manageState backs the installed-app action picker.
+type manageState struct {
 	manageActions []manageAction
 	manageCursor  int
+}
 
-	// spinner is a single shared bubbles/spinner reused everywhere
-	// cliff is waiting on something the user can see: install
-	// startup before the first stdout line, README fetches, reel
-	// fetches. One ticker means the glyph rotates in lockstep
-	// across surfaces, and we only post one TickMsg per frame
-	// regardless of how many "loading" states are visible at once.
-	//
-	// The ticker is started lazily — Init() returns nil so the very
-	// first paint isn't gated on a spinner tick — and re-armed
-	// whenever a new loading state begins (see startSpinner). When
-	// nothing's loading, the tick goroutine stays parked until the
-	// next loading state arms it again.
+// spinnerState groups transient animation state.
+type spinnerState struct {
 	spinner spinner.Model
 
-	// titlePhase animates the brand-mark gradient on launch. It
-	// starts at 0 (flat fuchsia flash), ticks toward 1.0 over
-	// ~500ms, and then stays at 1.0 for the rest of the session.
-	// theme.GradientTitlePhase reads this to decide how far each
-	// rune has interpolated from start-color toward its final
-	// gradient slot, so on launch the brand mark "ignites" instead
-	// of just snapping in. Once at 1.0, the rest of the codebase
-	// can keep calling theme.GradientTitle (which is just
-	// GradientTitlePhase(s, 1.0)) and behavior is unchanged.
+	// titlePhase drives the one-shot launch gradient.
 	titlePhase float64
 }
 
-// spinnerActive reports whether any UI surface currently wants the
-// spinner ticking. Centralizing the answer here keeps the "do we
-// re-tick?" check in Update consistent with what each view actually
-// renders, and makes adding a new spinning state a one-line change.
 func (r Root) spinnerActive() bool {
 	switch {
 	case r.mode == modePkgRunning && len(r.installLines) == 0:
@@ -337,12 +243,6 @@ func (r Root) spinnerActive() bool {
 	return false
 }
 
-// manageAction is one choice on the manage picker. Kind drives what
-// happens on Enter; enabled gates arrow navigation and dimming
-// (Update is disabled when the app has no UpgradeCommand; Uninstall
-// is disabled when the app has no uninstall recipe). The Readme
-// action is always enabled and is always the third/last slot, because
-// it's the fallback "I meant to read about it, not change it."
 type manageAction struct {
 	kind    manageKind
 	label   string
@@ -374,15 +274,15 @@ func New(c *catalog.Catalog) Root {
 	overrides := binmap.Load()
 	installed := install.InstalledAppsWithOverrides(c.Apps, overrides)
 	r := Root{
-		catalog:         c,
-		grid:            newGrid(),
-		sidebar:         newSidebar(c, installed, false),
-		search:          ti,
-		installed:       installed,
-		binOverrides:    overrides,
-		installViewport: viewport.New(installLogWidth, installLogHeight),
-		launchMethod:    launcher.Detect(launcher.CurrentEnv()),
-		spinner:         sp,
+		catalog:      c,
+		grid:         newGrid(),
+		sidebar:      newSidebar(c, installed, false),
+		search:       ti,
+		installed:    installed,
+		binOverrides: overrides,
+		pkgState:     pkgState{installViewport: viewport.New(installLogWidth, installLogHeight)},
+		launchState:  launchState{launchMethod: launcher.Detect(launcher.CurrentEnv())},
+		spinnerState: spinnerState{spinner: sp},
 	}
 	r = r.refilter()
 	return r

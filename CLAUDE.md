@@ -3,8 +3,9 @@
 Operating principles for working in this repo. Pitch lives in
 [`README.md`](README.md); build/test instructions in
 [`DEVELOPMENT.md`](DEVELOPMENT.md); manifest schema in
-[`notes/manifest.md`](notes/manifest.md); **what's currently shipped
-vs pending lives in [`STATUS.md`](STATUS.md)**.
+[`notes/manifest.md`](notes/manifest.md); **current shipped state
+lives in [`STATUS.md`](STATUS.md), with release history in
+[`CHANGELOG.md`](CHANGELOG.md)**.
 
 Strategy, roadmap, and active checklist live in a separate private
 repo (`jmcntsh/cliff-notes`). If you're working on cliff with
@@ -19,9 +20,9 @@ thing.** `curl -sI` a URL, `gh release list`, `dig +short`. This
 file (`CLAUDE.md`) describes intent and principles; it does not
 track shipped state and will mislead you if you treat it that way.
 
-If you ship something user-visible, update `STATUS.md` in the same
-change. If you find `STATUS.md` is stale, fix it before answering
-the question it was stale about.
+If you ship something user-visible, update `STATUS.md` and add release
+notes to `CHANGELOG.md` in the same change. If either file is stale, fix
+it before answering the question it was stale about.
 
 ## What this repo is
 

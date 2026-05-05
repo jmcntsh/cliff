@@ -160,7 +160,7 @@ Chosen for speed to MVP and single-binary distribution. See [CLAUDE.md](CLAUDE.m
 
 ## What's not in the tool today
 
-Curation surfaces (hand-picked seed, "new this week" view),
-`cliff submit`, asciinema playback, image rendering, live GitHub
-stats, `cliff installed`/`update`/`uninstall` — none of these
-exist yet. The current tool is browse + read README + install.
+cliff does not have accounts, hosted binaries, a server-side catalog
+database, client telemetry, or sandboxed installs. The remaining
+curation work is mostly editorial/product surface area, such as a
+weekly digest and deciding how much of the collected view data to show.

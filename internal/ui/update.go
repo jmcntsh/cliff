@@ -23,12 +23,8 @@ import (
 type flashClearMsg struct{}
 
 func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Spinner ticks are handled before the main switch so the
-	// glyph keeps animating across modes without each handler
-	// having to know about it. We only re-arm the next tick
-	// while a loading state is actually visible — once nothing
-	// wants the spinner, the tick chain naturally terminates and
-	// we go back to zero per-frame work.
+	// Spinner ticks are global, but only re-arm while a visible surface
+	// still needs animation.
 	if tick, ok := msg.(spinner.TickMsg); ok {
 		var cmd tea.Cmd
 		r.spinner, cmd = r.spinner.Update(tick)
@@ -39,13 +35,8 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if _, ok := msg.(titleTickMsg); ok {
-		// Advance the launch sweep. We re-arm the next tick only
-		// while phase < titleTickEnd, so the chain self-terminates
-		// ~1.2s after launch and produces zero per-frame work
-		// afterwards. titleTickEnd > 1.0 so the torch sweeps fully
-		// off the right edge of "cliff" before we settle — without
-		// the overshoot, the rightmost char never gets a clean
-		// post-torch frame and the animation ends mid-glow.
+		// Overshoot so the launch sweep fully clears the word before
+		// the tick chain stops.
 		r.titlePhase += titleTickStep
 		if r.titlePhase >= titleTickEnd {
 			r.titlePhase = titleTickEnd
@@ -54,18 +45,8 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, launchTitleTick()
 	}
 
-	// Submit-form non-key routing. The huh form needs to see internal
-	// messages like nextFieldMsg, tea.BlinkMsg from its text inputs,
-	// and any focus events — none of which are tea.KeyMsg, so they'd
-	// otherwise fall through the dispatch below. Routing them here
-	// keeps the rest of the type switch focused on app-level events
-	// without each handler having to know about huh's wire protocol.
-	//
-	// Key messages still flow through the tea.KeyMsg case so the
-	// modal-level esc-cancel intercept (in updateSubmitForm) runs
-	// before huh sees the key. WindowSizeMsg falls through to its
-	// own case so the form picks up the new width via resize() →
-	// re-init path; routing it here would double-handle.
+	// Huh forms need non-key messages too; key and resize messages stay
+	// in the main switch so esc-cancel and form rebuilds happen first.
 	if r.mode == modeSubmit && r.submitPhase == submitPhaseForm && r.submitForm != nil {
 		switch msg.(type) {
 		case tea.KeyMsg, tea.WindowSizeMsg:
@@ -87,12 +68,7 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if r.readme.ready {
 			r.readme = r.readme.resize(m.Width, m.Height)
 		}
-		// If the submit form is on screen, rebuild it at the new
-		// width so the input fields don't render off the modal's
-		// content column. Cheaper than threading WithWidth through
-		// huh's resize internals — the user-typed values live on
-		// r.submitFields, not on the form, so a fresh form picks
-		// them up via the same value pointers.
+		// Rebuild the huh form on resize; typed values live in submitFields.
 		if r.mode == modeSubmit && r.submitPhase == submitPhaseForm {
 			r.submitForm = newSubmitForm(
 				&r.submitFields,
@@ -109,44 +85,19 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, cmd
 
 	case hotFetchedMsg:
-		// Late-arriving sidecar fetch. Routed unconditionally so a
-		// fetch that resolves while the user is in any other mode
-		// (help, install modal, readme) still applies — the score
-		// overlay and sidebar reshape are pure-data, mode-agnostic.
-		// refilter() picks up the score so a sortHotDesc grid (if
-		// the user already cycled there) re-orders to match.
+		// Hot scores are mode-agnostic and may arrive behind any overlay.
 		r = r.applyHotScores(m)
 		return r.refilter(), nil
 
-	case heroImageReadyMsg:
-		// Late-arriving hero render. Routed unconditionally for the
-		// same reason reelFetchedMsg is — a fetch that completes
-		// while the user is in the help overlay should still populate
-		// the strip when they come back.
-		r.readme = r.readme.applyHeroFetched(m)
-		return r, nil
-
 	case reelFetchedMsg:
-		// Late-arriving registry fetch. Routed unconditionally
-		// (not gated on r.mode == modeReadme) so a fetch that
-		// resolves while the help overlay is open still populates
-		// the strip; when the user dismisses the overlay back to
-		// the readme, the reel is already there and animating.
-		// applyReelFetched is a no-op when the slug doesn't match
-		// the strip currently held in the readme model — covers
-		// the case where the user moved on to another app's
-		// readme during the fetch.
+		// Unconditional; stale or unrelated reel fetches are ignored by
+		// the readme model.
 		var cmd tea.Cmd
 		r.readme, cmd = r.readme.applyReelFetched(m)
 		return r, cmd
 
 	case reelTickMsg:
-		// Reel ticks only drive the reel strip inside the readme view.
-		// We route them unconditionally (not gated on r.mode == modeReadme)
-		// so a brief mode switch — opening the help overlay from the
-		// readme, for instance — doesn't pause or reset the animation.
-		// Advance is cheap and tolerates being called on a zero-value
-		// strip, so this is safe when no strip is active.
+		// Keep reel playback moving through brief overlay mode switches.
 		var cmd tea.Cmd
 		r.readme, cmd = r.readme.Update(m)
 		return r, cmd
@@ -157,16 +108,12 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case installLineMsg:
 		r.installLines = append(r.installLines, m.Line)
-		// Cap buffered lines so chatty installs don't grow unbounded.
-		// Copy the tail in place rather than re-slicing, so the dropped
-		// prefix doesn't stay pinned by the backing array.
+		// Keep only recent output without pinning the old backing array.
 		if len(r.installLines) > 2000 {
 			copy(r.installLines, r.installLines[len(r.installLines)-2000:])
 			r.installLines = r.installLines[:2000]
 		}
-		// Tail-follow: auto-scroll to bottom only if the user was already
-		// at the bottom. If they've scrolled up to read earlier output,
-		// respect that and let them stay.
+		// Tail-follow only while the user is already at the bottom.
 		wasAtBottom := r.installViewport.AtBottom()
 		r.installViewport.SetContent(strings.Join(r.installLines, "\n"))
 		if wasAtBottom {
@@ -179,21 +126,12 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.installRes = &res
 		r.installCancel = nil
 		r.mode = modePkgResult
-		// Reset per-modal transient error from any previous install.
 		r.launchErr = nil
-		// Replace with the canonical full output from Result — Stream's
-		// onLine callback misses any partial final line (no trailing \n),
-		// and having the result view show the same bytes Result.Output
-		// holds keeps the two modes consistent.
+		// Result.Output includes any final partial line missed by onLine.
 		r.installViewport.SetContent(strings.TrimRight(res.Output, "\n"))
 		r.installViewport.GotoTop()
 		if res.Err == nil && res.App != nil {
-			// Learn/forget the binary-name override before re-scanning
-			// so the fresh InstalledAppsWithOverrides call sees the
-			// correct name and the ✓ lights up immediately, even when
-			// the manifest's derived BinaryName() is wrong. Best-
-			// effort: we ignore write errors so an unwritable
-			// ~/.cliff can't wedge the TUI.
+			// Update binary-name overrides before re-scanning installed state.
 			switch r.installOp {
 			case pkgOpInstall:
 				if len(res.DetectedBinaries) > 0 {
@@ -207,12 +145,7 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_ = binmap.Forget(res.App.Repo)
 				delete(r.binOverrides, res.App.Repo)
 			}
-			// Re-scan $PATH rather than blindly marking res.App.Repo
-			// installed or uninstalled. This keeps the ✓ markers honest:
-			// if an install reported success but didn't actually land a
-			// binary on PATH (unusual but possible for odd scripts), or
-			// if an uninstall "succeeded" but the binary is still there
-			// (wrong GOBIN, asdf, etc.), we don't lie.
+			// Re-scan instead of trusting the package command's exit status.
 			r.installed = install.InstalledAppsWithOverrides(r.catalog.Apps, r.binOverrides)
 			r.sidebar = r.sidebar.setInstalled(r.installed)
 			r = r.refilter()
@@ -290,21 +223,11 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.mode = modeHelp
 		return r, nil
 	case key.Matches(msg, keys.Submit):
-		// From browse, submit with no app context — we don't assume
-		// the currently-cursored app is "the one to submit" because
-		// a user hitting `+` is usually thinking of something that
-		// _isn't_ in the catalog. Blank fields; the form lets them
-		// fill it in.
+		// Submit always starts blank; the current app is already listed.
 		r.submitReturnMode = modeBrowse
 		return r.openSubmitForm()
 	case key.Matches(msg, keys.Enter):
 		if app := r.selectedApp(); app != nil {
-			// Installed apps open the manage picker instead of the
-			// readme. The assumption is that if you've installed it,
-			// your next Enter is almost always "change something
-			// about it" (update, uninstall) rather than "re-read the
-			// README"; the picker still exposes Readme as the third
-			// option for the "wait, I wanted to skim docs again" case.
 			if r.installed[app.Repo] {
 				r.installApp = app
 				r.installReturnMode = modeBrowse
@@ -326,10 +249,6 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return r, nil
 	case key.Matches(msg, keys.Upgrade):
-		// Direct-keybind path for "update" — skips the manage picker
-		// for users who know they want to upgrade. Only meaningful
-		// when the app is both installed and has an upgrade recipe;
-		// silently no-ops otherwise (same pattern as `u`).
 		if app := r.selectedApp(); app != nil && r.installed[app.Repo] && app.UpgradeCommand() != "" {
 			r.installApp = app
 			r.installOp = pkgOpUpgrade
@@ -338,11 +257,6 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return r, nil
 	case key.Matches(msg, keys.Uninstall):
-		// `u` is only meaningful when the selected app is actually
-		// installed. Silently no-op otherwise: showing a confirm
-		// modal for "uninstall something you don't have" would just
-		// confuse, and making `u` flash-warn on every stray press
-		// would be noisy.
 		if app := r.selectedApp(); app != nil && r.installed[app.Repo] {
 			r.installApp = app
 			r.installOp = pkgOpUninstall
@@ -367,9 +281,6 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	if r.focus == focusSidebar {
-		// Right arrow / l from the sidebar hops focus into the grid.
-		// Mirrors the leftmost-column-Left behavior in gridNav so the
-		// two panes feel like one continuous 2D space.
 		if key.Matches(msg, keys.Right) {
 			r = r.setFocus(focusGrid)
 			return r, nil
@@ -377,10 +288,6 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		newSB, changed := r.sidebar.update(msg)
 		r.sidebar = newSB
 		if changed {
-			// Sidebar category changes should start the grid at the top
-			// of the newly filtered list. Preserving the prior selected
-			// repo here causes a surprising jump into the middle/bottom
-			// of the new category when that repo exists there too.
 			r = r.refilter()
 			r.grid = r.grid.jumpTop()
 		}
@@ -428,18 +335,10 @@ func (r Root) updateHelp(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// Left arrow / h = back to the grid. Mirrors the "◂ back" affordance
-	// in the readme header. esc/q also work.
 	if key.Matches(msg, keys.Escape, keys.Quit, keys.Left) {
 		r.mode = modeBrowse
 		return r, nil
 	}
-	// In the readme, ⏎ is "go deeper" = install for uninstalled apps,
-	// or the manage picker for installed ones. Keeping ⏎ = primary
-	// action is consistent with browse mode and keeps the spatial
-	// model intact. `i` always triggers install (even on installed
-	// apps — counts as reinstall); `U`/`u` give direct access to
-	// update/uninstall without routing through the picker.
 	if key.Matches(msg, keys.Enter) {
 		if app := r.selectedApp(); app != nil {
 			if r.installed[app.Repo] {
@@ -496,10 +395,6 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return r, nil
 	}
 	if key.Matches(msg, keys.Submit) {
-		// `+` from readme is the same blank-submit as from browse.
-		// The currently-readme'd app is already in the catalog, so
-		// we don't prefill its repo — submit is always "cliff should
-		// also list <X>" where X is whatever the user just thought of.
 		r.submitReturnMode = modeReadme
 		return r.openSubmitForm()
 	}
@@ -532,11 +427,7 @@ func (r Root) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return r.refilter(), cmd
 }
 
-// updatePkgConfirm handles the confirm modal for any package op
-// (install, uninstall, upgrade). ⏎ runs the op's command via the
-// unified runPkgCmd; esc backs out. Op-specific command derivation
-// lives in pkgOpCommand — the rest of this handler is the same for
-// all three verbs, which is the whole reason the modes collapsed.
+// updatePkgConfirm handles the shared install / uninstall / upgrade confirm modal.
 func (r Root) updatePkgConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Escape, keys.Quit):
@@ -547,18 +438,12 @@ func (r Root) updatePkgConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Enter):
 		cmd := pkgOpCommand(r.installApp, r.installOp)
 		if cmd == "" {
-			// Either no app, no install spec (install side), or no
-			// derived recipe (uninstall/upgrade for script-type
-			// without an explicit block). The view surfaces this
-			// plainly; ⏎ here is a dismiss, not a silent error.
 			r.mode = r.installReturnMode
 			r.installApp = nil
 			r.installOp = pkgOpInstall
 			return r, nil
 		}
 		app := r.installApp
-		// Clear any previous op's line buffer and viewport when
-		// entering the running view so each run starts blank.
 		r.installLines = nil
 		r.installViewport.SetContent("")
 		r.installViewport.GotoTop()
@@ -568,11 +453,7 @@ func (r Root) updatePkgConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
-// updatePkgRunning is op-agnostic: esc cancels the in-flight child via
-// the stored context.CancelFunc, everything else scrolls the log
-// viewport. Completion arrives as installResultMsg and the top-level
-// receiver flips us into modePkgResult; the op carried on r.installOp
-// then drives which verb + follow-ups the result view renders.
+// updatePkgRunning handles cancellation and log scrolling for any package op.
 func (r Root) updatePkgRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, keys.Escape, keys.Quit) {
 		if r.installCancel != nil {
@@ -585,17 +466,12 @@ func (r Root) updatePkgRunning(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return r, cmd
 }
 
-// updatePkgResult handles the terminal modal for any package op. For
-// install there are three possible ⏎ meanings (fix PATH, open in new
-// tab, or plain dismiss) — all op-specific logic is gated on
-// r.installOp == pkgOpInstall. Uninstall and upgrade have no follow-
-// up action: ⏎ and esc both dismiss, like the old updateUninstallResult.
+// updatePkgResult handles the terminal modal for any package op.
 func (r Root) updatePkgResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	installing := r.installOp == pkgOpInstall
 
 	if key.Matches(msg, keys.Enter) {
-		// Install: PathWarning gets priority — the user can't run the
-		// freshly-installed binary until PATH is fixed.
+		// Install follow-ups: fix PATH first, then offer launch.
 		if installing && r.installRes != nil && r.installRes.Err == nil && r.installRes.PathWarning != nil {
 			plan, err := pathfix.Detect(r.installRes.PathWarning.Dir)
 			r.fixPlan = plan
@@ -610,15 +486,12 @@ func (r Root) updatePkgResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.launchErr = nil
 			return r, nil
 		}
-		// Install clean-success path: offer to launch the binary.
 		if installing && r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
 			bin := r.installApp.ResolvedBinaryName(r.binOverrides)
 			if bin != "" {
 				return r.tryLaunchOrCopy(bin)
 			}
 		}
-		// Everything else (uninstall, upgrade, install with no
-		// binary, failed ops): plain dismiss.
 		r.mode = r.installReturnMode
 		r.installApp = nil
 		r.installRes = nil
@@ -626,10 +499,6 @@ func (r Root) updatePkgResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.launchErr = nil
 		return r, nil
 	}
-	// `c` is the install-only explicit "copy command" shortcut — the
-	// escape hatch when the launch affordance is available but the
-	// user doesn't want a new tab. Ignored for other ops since there's
-	// nothing meaningful to copy post-uninstall/upgrade.
 	if installing && msg.String() == "c" {
 		if r.installRes != nil && r.installRes.Err == nil && r.installApp != nil {
 			bin := r.installApp.ResolvedBinaryName(r.binOverrides)
@@ -655,14 +524,7 @@ func (r Root) updatePkgResult(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return r, cmd
 }
 
-// pkgOpCommand returns the literal shell command to run for the given
-// app + op, or "" when none is available ("no install spec", "no
-// uninstall recipe", etc.). Centralizing the derivation here keeps
-// updatePkgConfirm and the running-state view pulling the same string
-// for the same (app, op) pair — the old triplet had three near-
-// identical InstallSpec.Shell / UninstallCommand / UpgradeCommand
-// branches, one per handler, which is the exact duplication this
-// helper exists to eliminate.
+// pkgOpCommand returns the shell command for an app/op pair, or "".
 func pkgOpCommand(app *catalog.App, op pkgOp) string {
 	if app == nil {
 		return ""
@@ -681,11 +543,7 @@ func pkgOpCommand(app *catalog.App, op pkgOp) string {
 	}
 }
 
-// updateManage drives the horizontal picker shown when ⏎ is pressed on
-// an installed app. Left/Right (and h/l) move the cursor between
-// actions, skipping disabled ones so the user can't pick a no-op.
-// Enter runs the focused action, routing to the appropriate confirm/
-// readme mode. esc backs out to whatever opened the picker.
+// updateManage drives the installed-app action picker.
 func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Escape, keys.Quit):
@@ -706,9 +564,6 @@ func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		a := r.manageActions[r.manageCursor]
 		if !a.enabled {
-			// Shouldn't happen (manageStep skips disabled), but
-			// guard anyway — silently no-op rather than running the
-			// wrong command.
 			return r, nil
 		}
 		app := r.installApp
@@ -726,11 +581,6 @@ func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			r.mode = modePkgConfirm
 			return r, nil
 		case manageReadme:
-			// The manage picker might have been opened from readme
-			// mode itself (when the user pressed ⏎ on an installed
-			// app from the readme). Going back there on "Readme" is
-			// a no-op; open a fresh readme anyway to guarantee a
-			// refetched copy. Cheap and keeps the behavior uniform.
 			r.manageActions = nil
 			r.manageCursor = 0
 			if app != nil {
@@ -745,12 +595,7 @@ func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
-// manageStep advances the manage-picker cursor by delta (±1), skipping
-// disabled actions so the user can't land on a dimmed option. Clamps
-// at the ends rather than wrapping — wrapping in a 3-item horizontal
-// row is surprising ("I pressed Right and the cursor jumped to the
-// leftmost one?"), and the picker is small enough that clamping never
-// gets in the way.
+// manageStep advances by delta, skipping disabled actions and clamping at ends.
 func manageStep(actions []manageAction, cursor, delta int) int {
 	if len(actions) == 0 {
 		return 0
@@ -762,18 +607,10 @@ func manageStep(actions []manageAction, cursor, delta int) int {
 		}
 		i += delta
 	}
-	// Off the end without finding an enabled slot — stay put.
 	return cursor
 }
 
 // tryLaunchOrCopy runs the post-install "open in new tab" action.
-// When the host terminal exposes a tab-spawn mechanism we call it and,
-// on success, dismiss the modal and return the user to the catalog —
-// their new app is now running next door. When no launcher is
-// available, we copy the command to the clipboard (native tool
-// preferred, OSC52 fallback) and flash an honest toast based on
-// whether the copy actually worked. Either way the user gets a single
-// keystroke path to "go try it," which is the whole point.
 func (r Root) tryLaunchOrCopy(bin string) (tea.Model, tea.Cmd) {
 	if r.launchMethod == launcher.MethodUnsupported {
 		err := clipboard.Write(bin)
@@ -782,27 +619,15 @@ func (r Root) tryLaunchOrCopy(bin string) (tea.Model, tea.Cmd) {
 		r.installRes = nil
 		r.launchErr = nil
 		if err != nil {
-			// Copy failed — don't claim it worked. Show the command
-			// so the user can copy it by hand (or by mouse) from the
-			// toast. Keeping it short so it doesn't overflow the
-			// flash line: the full command is still on the modal
-			// behind, so this is supplementary.
 			return r.flash("couldn't copy — run: " + bin), clearFlashCmd()
 		}
 		return r.flash("copied: " + bin + " — paste in a new terminal"), clearFlashCmd()
 	}
 	if err := launcher.Launch(r.launchMethod, bin); err != nil {
-		// Leave the modal open, record the error, let the view
-		// surface it alongside the "run this yourself" fallback.
-		// We deliberately don't also copy-to-clipboard on error —
-		// that would steal the user's clipboard after a failed
-		// action; better to show the hint and let them retry or
-		// press `c` to copy explicitly.
+		// Keep the modal open and let `c` be the explicit copy fallback.
 		r.launchErr = err
 		return r, nil
 	}
-	// Success: dismiss back to the catalog. The newly spawned tab has
-	// the app running in it; cliff stays open here.
 	r.mode = modeBrowse
 	r.installApp = nil
 	r.installRes = nil
@@ -810,33 +635,17 @@ func (r Root) tryLaunchOrCopy(bin string) (tea.Model, tea.Cmd) {
 	return r.flash("launched " + bin + " in new tab"), clearFlashCmd()
 }
 
-// updateFixPath runs the modeFixPath screen. It has two phases:
-//
-//   - !fixApplied: we're asking "OK to append this line to <rc>?"
-//     Enter confirms and runs Apply; esc/q/← backs out without
-//     writing anything.
-//   - fixApplied: we've written (or tried). Enter or esc dismisses
-//     back to the grid.
-//
-// Split into phases so the keybinds stay simple and the user can't
-// accidentally double-apply by holding Enter.
+// updateFixPath handles the confirm/result flow for adding a bin dir to PATH.
 func (r Root) updateFixPath(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if r.fixApplied {
-		// Post-apply, Enter means "open in new tab" (if we can) and
-		// esc/q/← means "done, back to the catalog". This mirrors
-		// updateInstallResult — after a successful hand-off step,
-		// Enter is always "forward motion," never just dismiss.
 		if key.Matches(msg, keys.Enter) {
 			if r.fixErr == nil && r.installApp != nil {
 				bin := r.installApp.ResolvedBinaryName(r.binOverrides)
 				if bin != "" {
-					// clearFixPath first so the modeBrowse fall-through
-					// in tryLaunchOrCopy doesn't land on a stale plan.
 					r = r.clearFixPath()
 					return r.tryLaunchOrCopy(bin)
 				}
 			}
-			// No launch possible — plain dismiss (existing behavior).
 			r = r.clearFixPath()
 			r.mode = modeBrowse
 			r.installApp = nil
@@ -854,10 +663,6 @@ func (r Root) updateFixPath(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return r, nil
 	}
 	if key.Matches(msg, keys.Enter) {
-		// Only Apply for shells we support. Detect already returned
-		// ErrShellUnsupported for fish/unknown — honor that and show
-		// the user the hand-edit fallback rather than writing bash
-		// syntax into a fish config.
 		if r.fixErr == nil && r.fixPlan != nil {
 			r.fixErr = pathfix.Apply(r.fixPlan)
 		}
@@ -880,16 +685,7 @@ func (r Root) clearFixPath() Root {
 	return r
 }
 
-// openSubmitForm builds the huh form, resets all submit-flow state,
-// and switches into modeSubmit's form phase. Used by both the browse
-// and readme `+` handlers. Returns the form's Init cmd so the first
-// field's cursor blink (and any field-internal startup work)
-// schedules immediately.
-//
-// submitReturnMode is left as whatever the caller set — they know
-// where to send the user back to on cancel. Everything else (URL,
-// error, opened-flag) is cleared so a previous submission's state
-// can't bleed through into this one.
+// openSubmitForm resets submit state and enters the huh form phase.
 func (r Root) openSubmitForm() (tea.Model, tea.Cmd) {
 	r.submitFields = submit.Request{}
 	r.submitURL = ""
@@ -904,31 +700,7 @@ func (r Root) openSubmitForm() (tea.Model, tea.Cmd) {
 	return r, r.submitForm.Init()
 }
 
-// updateSubmit drives the three-phase submit overlay:
-//
-//   - submitPhaseForm:    huh-driven form. Most messages pass straight
-//                          through to huh; we only intercept esc to
-//                          cancel the whole flow (huh treats esc as
-//                          "abort" but we want to bounce back to the
-//                          return mode without any further prompt).
-//                          When the form's State flips to
-//                          StateCompleted we build the URL and
-//                          advance to confirm.
-//   - submitPhaseConfirm: pre-open preview. ⏎ launches browser.Open;
-//                          esc/q/← backs out without navigating, so
-//                          a stray keypress is never load-bearing.
-//   - submitPhaseOpened:  post-hand-off. ⏎ or esc dismisses back
-//                          to the return mode.
-//
-// We don't block the UI on browser.Open — it Start()s and returns;
-// the overlay just flips into the opened phase and shows the URL as
-// a copy-by-hand fallback if Open errored.
-//
-// updateSubmit takes tea.Msg (not tea.KeyMsg) because the form phase
-// needs to forward non-key messages (window-size, focus events,
-// huh's internal nextField cmds) into the form. The top-level
-// dispatcher in Update wraps key handling around this, so when a
-// non-key message arrives it now reaches updateSubmit too.
+// updateSubmit drives the form, confirm, and post-open submit phases.
 func (r Root) updateSubmit(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch r.submitPhase {
 	case submitPhaseForm:
@@ -950,11 +722,6 @@ func (r Root) updateSubmitForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 	}
 	if km, ok := msg.(tea.KeyMsg); ok {
-		// Esc cancels the whole flow before huh sees the key, so we
-		// don't have to disambiguate "user wanted to clear a field"
-		// from "user wanted out." Huh's own abort is StateAborted,
-		// which we'd handle the same way — short-circuiting here
-		// keeps the cancel path obvious.
 		if key.Matches(km, keys.Escape, keys.Quit) {
 			r.mode = r.submitReturnMode
 			r.submitForm = nil
@@ -968,9 +735,6 @@ func (r Root) updateSubmitForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.submitForm = f
 	}
 
-	// Form completion is the trigger to advance phases. submitFields
-	// already holds the typed values (huh wrote through the value
-	// pointers), so we just derive the URL and flip the phase.
 	if r.submitForm.State == huh.StateCompleted {
 		r.submitURL = r.submitFields.URL()
 		r.submitPhase = submitPhaseConfirm
@@ -1030,8 +794,6 @@ func (r Root) updateSidebarOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Enter):
 		r.mode = modeBrowse
 		r = r.syncFocus()
-		// Applying a category from the overlay mirrors the desktop
-		// sidebar behavior: land at the top of the resulting grid.
 		r = r.refilter()
 		r.grid = r.grid.jumpTop()
 		return r, nil
@@ -1039,8 +801,6 @@ func (r Root) updateSidebarOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	newSB, changed := r.sidebar.update(msg)
 	r.sidebar = newSB
 	if changed {
-		// While the overlay is open, moving category selection should
-		// keep the previewed grid anchored at row 0 for consistency.
 		r = r.refilter()
 		r.grid = r.grid.jumpTop()
 	}

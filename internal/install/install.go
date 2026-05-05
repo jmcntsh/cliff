@@ -55,17 +55,8 @@ type Result struct {
 	Output      string // combined stdout+stderr
 	Err         error
 	PathWarning *PathWarning // non-nil when install OK but binary isn't on $PATH
-	// DetectedBinaries names executables that the install actually
-	// produced. Populated on success by two independent signals:
-	// (a) scraping installer output for phrases like cargo's
-	//     "executable 'foo'" or pipx's "These apps are now globally
-	//     available"; (b) diffing the contents of manager bin dirs
-	//     before vs. after the install (catches `go install`,
-	//     `script`, and anything else that's mute on stdout).
-	// Order is not semantically meaningful; first entry is what
-	// callers should present as the canonical "run this" name.
-	// Empty when detection couldn't confirm anything — fall back to
-	// catalog.App.BinaryName() in that case.
+	// DetectedBinaries names executables produced by the install, if cliff
+	// could infer them from output or bin-dir diffs.
 	DetectedBinaries []string
 }
 
@@ -98,23 +89,8 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 	}
 	res.Command = cmd
 
-	// Snapshot bin dirs before the install so we can diff after.
-	// Only relevant for the "this IS an install" path; uninstall and
-	// upgrade callers re-enter StreamCmd with a non-install cmd, and
-	// the DetectedBinaries field is ignored for those.
-	//
 	// Brew is exempt: a single `brew install` drops the primary
-	// package AND every transitive dep into the same shared bin dir,
-	// and neither stdout scraping nor dir-diffing can tell them apart
-	// (e.g. `brew install cava` also deposits fftw's fftw-wisdom /
-	// fftwf-wisdom / fftwl-wisdom, which the diff happily reports as
-	// "cava's binary"). Detection for brew does strictly more harm
-	// than good; for brew installs the manifest is the source of
-	// truth (package + optional `binary` override).
-	// Match cmd against any of the app's declared install methods. For
-	// single-method manifests this collapses to the primary; for
-	// multi-method ([[installs]]) we want detection to fire regardless
-	// of which method the user picked via --via.
+	// package and deps into the same bin dir, so detection is too noisy.
 	var preSnap map[string]struct{}
 	var matchedSpec *catalog.InstallSpec
 	if app != nil {
@@ -175,13 +151,6 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 	res.ExitCode = 0
 
 	if isInstall {
-		// Detect which executables this install actually produced.
-		// Two signals, unioned in a stable order: output scrape first
-		// (it names the primary binary cargo/pipx care about), then
-		// dir-diff fallback (catches go install + script + any mute
-		// installer). The first entry becomes the canonical "run
-		// this" name the UI shows. Brew is intentionally excluded —
-		// see the comment next to `detectable` above.
 		var detected []string
 		if detectable {
 			detected = scrapeBinaries(matchedSpec.Type, res.Output)
@@ -189,13 +158,7 @@ func StreamCmd(ctx context.Context, app *catalog.App, cmd string, onLine func(st
 			res.DetectedBinaries = detected
 		}
 
-		// Post-install PATH sanity check. If the install reported
-		// success but the binary ended up in a known off-PATH dir
-		// (classic `go install` → ~/go/bin on a fresh machine),
-		// surface it so the user doesn't silently think cliff or
-		// the app is broken when they try to run it. Prefer the
-		// detected name over the manifest-derived guess — that's
-		// the whole point of detection.
+		// Prefer detected names when checking for off-PATH installs.
 		warnBin := firstNonEmpty(detected...)
 		if warnBin == "" {
 			warnBin = app.BinaryName()
@@ -236,10 +199,7 @@ func appendUnique(into []string, more ...string) []string {
 	return into
 }
 
-// toolHints maps install.Type → a human-readable diagnosis for the case
-// where the package manager itself isn't installed. Keyed by the same
-// values that InstallSpec.Type accepts. The UI consults these via
-// Diagnose to turn exit-127 failures into actionable guidance.
+// toolHints maps install types to missing-package-manager guidance.
 var toolHints = map[string]string{
 	"brew":  "Homebrew isn't installed.\nGet it at https://brew.sh",
 	"cargo": "Cargo isn't installed.\nInstall Rust at https://rustup.rs",
@@ -248,16 +208,7 @@ var toolHints = map[string]string{
 	"npm":   "npm isn't installed.\nInstall Node.js at https://nodejs.org",
 }
 
-// Diagnose turns a failed install Result into a short human-readable
-// hint, or "" if the failure isn't one we recognize. Two signals are
-// consulted, in order of reliability:
-//  1. Exit code 127 + a known InstallSpec.Type — shells set 127 when
-//     the command wasn't found, and we know which tool we asked for.
-//  2. Stderr scrape for "<tool>: command not found" — catches the
-//     cases where the wrapper command exited differently.
-//
-// Callers display the hint verbatim alongside the raw output, so the
-// user sees both "what actually happened" and "what to do about it".
+// Diagnose turns recognized install failures into short hints.
 func Diagnose(res Result) string {
 	if res.Err == nil {
 		return ""
@@ -268,10 +219,7 @@ func Diagnose(res Result) string {
 		}
 	}
 	for tool, h := range toolHints {
-		// Word-boundary match so "go" doesn't latch inside "cargo": the
-		// output "/bin/sh: cargo: command not found" contains the
-		// substring "go: command not found", and Go's randomized map
-		// iteration would otherwise make the hint nondeterministic.
+		// Word-boundary match keeps "go" from latching inside "cargo".
 		if cmdNotFoundRes[tool].MatchString(res.Output) {
 			return h
 		}
@@ -332,12 +280,7 @@ func addExecutables(out map[string]bool, dir string) {
 	}
 }
 
-// managerBinDirs returns the extra directories where package managers
-// drop binaries by default, beyond $PATH. These are the dirs most
-// likely to hold a binary the user just installed via `go install` or
-// `cargo install` without the dir being on their PATH. Order and
-// contents are best-effort: $GOBIN/$GOPATH resolution mirrors the Go
-// toolchain's own fallback order.
+// managerBinDirs returns common package-manager bin dirs beyond $PATH.
 func managerBinDirs() []string {
 	var dirs []string
 	add := func(d string) {
@@ -405,13 +348,7 @@ func LocateBinary(name string) (dir string, onPath bool) {
 	return "", false
 }
 
-// InstalledApps returns a repo→installed map for the given catalog.
-// A binary counts as installed if it's on $PATH or in a known manager
-// default dir ($GOBIN, $GOPATH/bin, ~/go/bin, ~/.cargo/bin,
-// ~/.local/bin). The broader scan keeps the ✓ marker accurate
-// immediately after a successful `go install` or `cargo install`,
-// even when the user hasn't added those dirs to their shell rc yet —
-// Stream's PathWarning will have already told them to do so.
+// InstalledApps returns apps whose binary is on PATH or in a manager bin dir.
 func InstalledApps(apps []catalog.App) map[string]bool {
 	bins := Detect()
 	for _, d := range managerBinDirs() {
@@ -426,13 +363,7 @@ func InstalledApps(apps []catalog.App) map[string]bool {
 	return out
 }
 
-// InstalledAppsWithOverrides is InstalledApps but consults a
-// repo→binary override map learned from previous installs (see
-// internal/binmap). The override wins when present; otherwise we
-// fall back to BinaryName(). This is what keeps the ✓ accurate for
-// apps whose manifest-derived binary name is wrong (cargo package
-// minesweep vs. repo basename minesweep-rs) without requiring every
-// such manifest to be hand-edited.
+// InstalledAppsWithOverrides applies learned repo→binary overrides.
 func InstalledAppsWithOverrides(apps []catalog.App, overrides map[string]string) map[string]bool {
 	bins := Detect()
 	for _, d := range managerBinDirs() {
@@ -451,18 +382,7 @@ func InstalledAppsWithOverrides(apps []catalog.App, overrides map[string]string)
 	return out
 }
 
-// snapshotBinDirs returns the set of executable basenames currently
-// present across $PATH + manager default dirs. diffBinDirs compares
-// a before/after pair to find newly-created executables, which is
-// the installer-agnostic way to learn what a `go install` or
-// `script` install produced (neither is chatty about file names).
-//
-// We deliberately don't restrict to the dir the installer targets
-// because we don't always know it (script installs can drop
-// binaries anywhere; `cargo install --root` exists; etc.). A global
-// diff is noisier but strictly more correct; the noise is bounded
-// by "what else happened on this machine in the second the install
-// took," which in practice is nothing.
+// snapshotBinDirs returns executable basenames across PATH and manager dirs.
 func snapshotBinDirs() map[string]struct{} {
 	out := map[string]struct{}{}
 	dirs := filepath.SplitList(os.Getenv("PATH"))
@@ -508,28 +428,7 @@ func diffBinDirs(before, after map[string]struct{}) []string {
 	return out
 }
 
-// scrapeBinaries extracts executable names from an installer's
-// stdout+stderr, keyed by install type. The patterns are narrow on
-// purpose: only the exact phrase each manager emits on the happy
-// path is matched. False positives here would mislead the "Try it"
-// hint, which is the one place where an authoritative-looking name
-// is wrong-worse-than-missing.
-//
-// Patterns:
-//   - cargo: "Installed package '<pkg> v...' (executable '<bin>')"
-//     and the "(executables 'a', 'b')" multi-binary variant.
-//   - pipx:  "These apps are now globally available:\n  - <bin>"
-//   - brew:  no stdout scrape — dir-diff only. Brew's output
-//     mentions `/bin/<name>` paths for every transitive dependency
-//     (e.g. `brew install cava` surfaces fftw's `fftwl-wisdom`),
-//     and there's no reliable way to tell the primary package's
-//     bins apart from a dep's without reparsing brew's graph. The
-//     dir-diff against the manager's bin dirs only sees the files
-//     that actually landed on $PATH, which is the right answer.
-//   - go:    no reliable stdout signal; rely on the diff fallback.
-//   - npm:   no reliable stdout signal either (the "added <pkg>@<ver>"
-//     line is the package name, not the binary name); diff fallback.
-//   - script: unknown by construction; diff fallback.
+// scrapeBinaries extracts narrow, manager-specific executable names.
 func scrapeBinaries(installType, output string) []string {
 	var out []string
 	switch installType {
