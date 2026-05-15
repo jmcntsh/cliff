@@ -5,6 +5,11 @@ and PRs for implementation detail.
 
 ## Unreleased
 
+## v0.1.20 - 2026-05-15
+
+- Added a `Featured` sidebar panel for launch-friendly, eye-catching apps.
+- Added Cargo bootstrap in the TUI: when an install needs Cargo, Cliff can
+  install Rust/Cargo first and then continue the original app install.
 - Removed inline README hero-image fetching/rendering. Reels are the visual
   preview surface; README rendering is markdown-only again.
 
