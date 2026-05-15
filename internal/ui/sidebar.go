@@ -25,13 +25,13 @@ type sidebar struct {
 	focused bool
 }
 
-// newSidebar builds the sidebar pinned at the top with All, then
-// either Hot or New (mutually exclusive — they trade places when
+// newSidebar builds the sidebar pinned at the top with All, Featured,
+// then either Hot or New (mutually exclusive — they trade places when
 // the worker's hot.json reveals), then Installed, then every catalog
-// category in registry order. Counts are derived at runtime: New
-// from FreshnessTime, Hot from HotScore>0, Installed from the live
-// install map. They refresh via setInstalled / setNewCount /
-// setHotCount whenever the inputs change.
+// category in registry order. Counts are derived at runtime: Featured
+// from the curated repo list, New from FreshnessTime, Hot from HotScore>0,
+// Installed from the live install map. They refresh via setInstalled /
+// setNewCount / setHotCount whenever the inputs change.
 //
 // hotRevealed is the single source of truth for which top row appears.
 // Caller (Root.applyHotScores) flips it after the hot.json fetch
@@ -40,6 +40,7 @@ type sidebar struct {
 func newSidebar(c *catalog.Catalog, installed map[string]bool, hotRevealed bool) sidebar {
 	items := []sidebarItem{
 		{name: "", count: len(c.Apps)},
+		{name: categoryFeatured, count: countFeatured(c.Apps)},
 	}
 	if hotRevealed {
 		items = append(items, sidebarItem{name: categoryHot, count: countHot(c.Apps)})
@@ -51,6 +52,16 @@ func newSidebar(c *catalog.Catalog, installed map[string]bool, hotRevealed bool)
 		items = append(items, sidebarItem{name: cat.Name, count: cat.Count})
 	}
 	return sidebar{items: items}
+}
+
+func countFeatured(apps []catalog.App) int {
+	n := 0
+	for i := range apps {
+		if _, ok := featuredRank[apps[i].Repo]; ok {
+			n++
+		}
+	}
+	return n
 }
 
 // countNew returns how many apps currently qualify as New relative to
@@ -159,6 +170,8 @@ func (s sidebar) view(height int) string {
 			name = "New"
 		case categoryHot:
 			name = "Hot"
+		case categoryFeatured:
+			name = "Featured"
 		case categoryInstalled:
 			name = "Installed"
 		}

@@ -28,6 +28,33 @@ const categoryNew = "__new__"
 // filter and sort live in code, not the registry.
 const categoryHot = "__hot__"
 
+// categoryFeatured is a launch-focused hand-picked surface for apps
+// that make Cliff feel visual, fun, or immediately understandable.
+// It is intentionally client-side while the launch set is still small.
+const categoryFeatured = "__featured__"
+
+var featuredRepos = []string{
+	"Passeriform/BalatroTUI",
+	"thomas-mauran/chess-tui",
+	"Broderick-Westrope/tetrigo",
+	"Mjoyufull/Setrixtui",
+	"jmcntsh/draw",
+	"sxyazi/yazi",
+	"yorukot/superfile",
+	"aome510/spotify-player",
+	"RafidMuhymin/termusic",
+	"darrenburns/posting",
+	"charmbracelet/glow",
+}
+
+var featuredRank = func() map[string]int {
+	out := make(map[string]int, len(featuredRepos))
+	for i, repo := range featuredRepos {
+		out[repo] = i
+	}
+	return out
+}()
+
 // newWindow is how far back "new" reaches. One week matches the
 // "new this week" language in README/CLAUDE.
 const newWindow = 7 * 24 * time.Hour
@@ -123,6 +150,10 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 			if app.HotScore <= 0 {
 				continue
 			}
+		case c.category == categoryFeatured:
+			if _, ok := featuredRank[app.Repo]; !ok {
+				continue
+			}
 		case c.category != "":
 			if app.Category != c.category {
 				continue
@@ -148,8 +179,26 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 		sortApps(filtered, sortHotDesc)
 		return filtered
 	}
+	if c.category == categoryFeatured && c.sort == sortStarsDesc {
+		sortByFeatured(filtered)
+		return filtered
+	}
 	sortApps(filtered, c.sort)
 	return filtered
+}
+
+func sortByFeatured(apps []catalog.App) {
+	sort.SliceStable(apps, func(i, j int) bool {
+		ri, iok := featuredRank[apps[i].Repo]
+		rj, jok := featuredRank[apps[j].Repo]
+		if iok && jok {
+			return ri < rj
+		}
+		if iok != jok {
+			return iok
+		}
+		return apps[i].Name < apps[j].Name
+	})
 }
 
 // sortByFreshness sorts newest-first by FreshnessTime, tie-breaking on

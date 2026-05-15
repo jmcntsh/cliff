@@ -144,6 +144,8 @@ func categoryDisplay(cat string) string {
 	switch cat {
 	case categoryNew:
 		return "new"
+	case categoryFeatured:
+		return "featured"
 	case categoryInstalled:
 		return "installed"
 	default:
@@ -160,6 +162,9 @@ func categoryDisplay(cat string) string {
 func sortLabelFor(cat string, sort sortMode) string {
 	if cat == categoryNew && sort == sortStarsDesc {
 		return "freshness ↓"
+	}
+	if cat == categoryFeatured && sort == sortStarsDesc {
+		return "featured"
 	}
 	return sort.label()
 }

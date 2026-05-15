@@ -15,6 +15,9 @@ func sample() []catalog.App {
 		{Name: "gitui", Repo: "extrawurst/gitui", Description: "fast git tui", Category: "Git", Language: "Rust", Stars: 12000},
 		{Name: "yazi", Repo: "sxyazi/yazi", Description: "file manager", Category: "Files", Language: "Rust", Stars: 9000},
 		{Name: "ranger", Repo: "ranger/ranger", Description: "vim-inspired fm", Category: "Files", Language: "Python", Stars: 15000},
+		{Name: "balatro-tui", Repo: "Passeriform/BalatroTUI", Description: "terminal card game", Category: "Games", Language: "Rust", Stars: 200},
+		{Name: "tetrigo", Repo: "Broderick-Westrope/tetrigo", Description: "terminal tetris", Category: "Games", Language: "Go", Stars: 100},
+		{Name: "draw", Repo: "jmcntsh/draw", Description: "terminal canvas", Category: "Creative", Language: "Go", Stars: 1},
 	}
 }
 
@@ -35,8 +38,8 @@ func TestSort_StarsDesc(t *testing.T) {
 	if got[0].Name != "lazygit" {
 		t.Errorf("expected lazygit first, got %s", got[0].Name)
 	}
-	if got[len(got)-1].Name != "yazi" {
-		t.Errorf("expected yazi last, got %s", got[len(got)-1].Name)
+	if got[len(got)-1].Name != "draw" {
+		t.Errorf("expected draw last, got %s", got[len(got)-1].Name)
 	}
 }
 
@@ -139,6 +142,26 @@ func TestFilter_Installed_SpansCategories(t *testing.T) {
 	})
 	if len(got) != 2 {
 		t.Fatalf("expected 2 apps across categories, got %d", len(got))
+	}
+}
+
+func TestFilter_Featured(t *testing.T) {
+	got := filterAndSort(sample(), filterCriteria{category: categoryFeatured})
+	if len(got) != 4 {
+		t.Fatalf("expected 4 featured apps, got %d", len(got))
+	}
+	want := []string{"balatro-tui", "tetrigo", "draw", "yazi"}
+	for i, name := range want {
+		if got[i].Name != name {
+			t.Errorf("at %d: expected %s, got %s", i, name, got[i].Name)
+		}
+	}
+}
+
+func TestFilter_Featured_ExplicitSort(t *testing.T) {
+	got := filterAndSort(sample(), filterCriteria{category: categoryFeatured, sort: sortRecencyDesc})
+	if got[0].Name != "balatro-tui" {
+		t.Errorf("expected zero recency tie to sort by name, got %s", got[0].Name)
 	}
 }
 
