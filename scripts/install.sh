@@ -66,6 +66,21 @@ resolve_install_dir() {
     install_dir="$CLIFF_INSTALL_DIR"
     return
   fi
+  # If cliff is already installed somewhere writable on PATH, replace
+  # that exact binary. This makes in-app self-update work for users who
+  # originally installed with `go install` or a previous script run into
+  # a custom bin dir; otherwise a newer binary can be installed elsewhere
+  # while the old one keeps shadowing it on PATH.
+  existing="$(command -v cliff 2>/dev/null || true)"
+  case "$existing" in
+    */cliff)
+      existing_dir="$(dirname "$existing")"
+      if [ -d "$existing_dir" ] && [ -w "$existing_dir" ]; then
+        install_dir="$existing_dir"
+        return
+      fi
+      ;;
+  esac
   # Prefer a writable directory that's already on PATH so the user can
   # type `cliff` immediately. Order:
   #   1. /usr/local/bin            — on PATH on every Mac and most Linux
