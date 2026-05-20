@@ -5,6 +5,15 @@ and PRs for implementation detail.
 
 ## Unreleased
 
+## v0.1.23 - 2026-05-20
+
+- README screenshots render inline only on terminals with a graphics
+  protocol (Kitty, iTerm, Sixel). macOS Terminal and other basic emulators
+  skip the screenshot strip instead of showing blocky half-block previews.
+- Improved screenshot rendering on capable terminals: pixel-sized Kitty
+  output, protocol warm-up before the TUI starts, and
+  `CLIFF_IMAGE_PROTOCOL` override.
+
 ## v0.1.22 - 2026-05-20
 
 - Screenshot gallery now auto-loads inline at the top of the README view,
