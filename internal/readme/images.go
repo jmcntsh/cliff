@@ -12,7 +12,7 @@ const MaxGalleryImages = 8
 var (
 	imgRe         = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)`)
 	htmlImgRe     = regexp.MustCompile(`<img\s[^>]*src\s*=\s*["']?([^"'\s>]+)`)
-	htmlImgTagRe  = regexp.MustCompile(`(?i)<img\s+[^>]*?>`)
+	htmlImgTagRe  = regexp.MustCompile(`(?i)<img\b[^>]*?>`)
 	htmlAttrSrcRe = regexp.MustCompile(`(?i)src\s*=\s*["']([^"']+)["']`)
 	htmlAttrAltRe = regexp.MustCompile(`(?i)alt\s*=\s*["']([^"']*)["']`)
 )
@@ -38,6 +38,9 @@ var badgeHosts = map[string]bool{
 	"badgen.net":            true,
 	"gitter.im":             true,
 	"gitpod.io":             true,
+	"static.pepy.tech":      true,
+	"pepy.tech":             true,
+	"workflow-badge.vercel.app": true,
 }
 
 type imageRef struct {

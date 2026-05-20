@@ -1,6 +1,6 @@
 module github.com/jmcntsh/cliff
 
-go 1.25.1
+go 1.26
 
 require (
 	github.com/blacktop/go-termimg v0.1.26
@@ -14,6 +14,7 @@ require (
 	github.com/mattn/go-isatty v0.0.21
 	github.com/mattn/go-runewidth v0.0.19
 	github.com/sahilm/fuzzy v0.1.1
+	golang.org/x/image v0.36.0
 )
 
 require (
@@ -51,7 +52,6 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yuin/goldmark v1.7.13 // indirect
 	github.com/yuin/goldmark-emoji v1.0.6 // indirect
-	golang.org/x/image v0.36.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/term v0.42.0 // indirect

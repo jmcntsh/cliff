@@ -35,7 +35,6 @@ const (
 	modeSearch
 	modeHelp
 	modeReadme
-	modeGallery // screenshot browser overlay from README view
 	modeManage // picker: Update / Uninstall / Readme for installed apps
 
 	// Package-operation modes are shared across install / uninstall / upgrade;
@@ -153,7 +152,6 @@ type Root struct {
 	sidebar sidebar
 	search  textinput.Model
 	readme  readmeModel
-	gallery galleryState
 	focus   focusState
 	mode    mode
 	sort    sortMode
@@ -244,7 +242,7 @@ func (r Root) spinnerActive() bool {
 		return true
 	case r.mode == modeReadme && r.readme.reelLoading():
 		return true
-	case r.mode == modeGallery && r.gallery.loading:
+	case r.mode == modeReadme && r.readme.galleryLoading():
 		return true
 	}
 	return false

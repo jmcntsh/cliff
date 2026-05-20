@@ -69,14 +69,13 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.height = m.Height
 		r.ready = true
 		if r.readme.ready {
+			wasGallery := r.readme.gallery.rendered != ""
 			r.readme = r.readme.resize(m.Width, m.Height)
-		}
-		if r.mode == modeGallery && len(r.readme.screenshots) > 0 {
-			r.gallery.loading = true
-			r.gallery.rendered = ""
-			r.gallery.fetchErr = nil
-			url := r.gallery.currentURL(r.readme.screenshots)
-			return r.resize(), fetchGalleryImageCmd(r.gallery.index, url, r.width, r.height)
+			if wasGallery && r.readme.gallery.hasURLs() {
+				r.readme.gallery.loading = true
+				r.readme.gallery.rendered = ""
+				return r.resize(), r.readme.gallery.fetchCurrentCmd()
+			}
 		}
 		// Rebuild the huh form on resize; typed values live in submitFields.
 		if r.mode == modeSubmit && r.submitPhase == submitPhaseForm {
@@ -107,7 +106,9 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, cmd
 
 	case galleryImageReadyMsg:
-		return r.applyGalleryImage(m)
+		var cmd tea.Cmd
+		r.readme, cmd = r.readme.applyGalleryImage(m)
+		return r, cmd
 
 	case reelTickMsg:
 		// Keep reel playback moving through brief overlay mode switches.
@@ -212,8 +213,6 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateHelp(m)
 		case modeReadme:
 			return r.updateReadme(m)
-		case modeGallery:
-			return r.updateGallery(m)
 		case modePkgConfirm:
 			return r.updatePkgConfirm(m)
 		case modePkgRunning:
@@ -377,6 +376,12 @@ func (r Root) updateHelp(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
+func (r Root) readmeGalleryStep(delta int) (Root, tea.Cmd) {
+	var cmd tea.Cmd
+	r.readme, cmd = r.readme.galleryStep(delta)
+	return r, cmd
+}
+
 func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, keys.Escape, keys.Quit, keys.Left) {
 		r.mode = modeBrowse
@@ -432,8 +437,13 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return r, nil
 	}
-	if key.Matches(msg, keys.Gallery) && len(r.readme.screenshots) > 0 {
-		return r.openGallery()
+	if len(r.readme.screenshots) > 1 {
+		if key.Matches(msg, keys.GalleryPrev) {
+			return r.readmeGalleryStep(-1)
+		}
+		if key.Matches(msg, keys.GalleryNext) {
+			return r.readmeGalleryStep(1)
+		}
 	}
 	if key.Matches(msg, keys.Help) {
 		r.helpReturnMode = modeReadme

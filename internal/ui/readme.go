@@ -60,6 +60,7 @@ type readmeModel struct {
 	fromCache      bool
 	reel           reelStrip
 	reelFetchCmd   tea.Cmd
+	gallery        galleryStrip
 	screenshots    []string
 	// Cached so reel ticks can refresh the viewport without re-running Glamour.
 	renderedMarkdown string
@@ -67,6 +68,10 @@ type readmeModel struct {
 
 func (m readmeModel) reelLoading() bool {
 	return m.app != nil && !m.reel.ready
+}
+
+func (m readmeModel) galleryLoading() bool {
+	return m.gallery.loadingActive()
 }
 
 func newReadme(app *catalog.App, width, height int) readmeModel {
@@ -84,19 +89,30 @@ func newReadme(app *catalog.App, width, height int) readmeModel {
 		reelFetchCmd: fetchCmd,
 		screenshots:  screenshots,
 	}
+	if app != nil && len(screenshots) > 0 {
+		m.gallery = newGalleryStrip(app.Repo, screenshots, width)
+		m.gallery.loading = true
+	}
 	return m.resize(width, height)
 }
 
-// ReelInit returns the command that starts an embedded reel or fetches a live one.
+// ReelInit returns commands that start embedded reel playback and/or fetch
+// live reel and screenshot media for the readme view.
 func (m readmeModel) ReelInit() tea.Cmd {
-	tickCmd := m.reel.Init()
-	if m.reelFetchCmd == nil {
-		return tickCmd
+	var cmds []tea.Cmd
+	if cmd := m.reel.Init(); cmd != nil {
+		cmds = append(cmds, cmd)
 	}
-	if tickCmd == nil {
-		return m.reelFetchCmd
+	if m.reelFetchCmd != nil {
+		cmds = append(cmds, m.reelFetchCmd)
 	}
-	return tea.Batch(tickCmd, m.reelFetchCmd)
+	if cmd := m.gallery.fetchCurrentCmd(); cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+	if len(cmds) == 0 {
+		return nil
+	}
+	return tea.Batch(cmds...)
 }
 
 // applyReelFetched accepts only the reel for the current app and starts playback.
@@ -133,6 +149,7 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) (readmeModel, tea.Cmd) {
 	}
 	m.loading = false
 	r := msg.result
+	var galleryCmd tea.Cmd
 	switch {
 	case r.Markdown != "":
 		m.raw = r.Markdown
@@ -140,7 +157,15 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) (readmeModel, tea.Cmd) {
 		m.rateLimited = r.RateLimited
 		m.rateLimitReset = r.ResetAt
 		if m.app != nil {
-			m.screenshots = rdm.GalleryURLs(m.app.Screenshots, m.app.Repo, m.app.Readme, m.raw)
+			urls := rdm.GalleryURLs(m.app.Screenshots, m.app.Repo, m.app.Readme, m.raw)
+			if !sameScreenshotURLs(m.screenshots, urls) {
+				m.screenshots = urls
+				m.gallery = newGalleryStrip(m.app.Repo, urls, m.contentWidth)
+				if len(urls) > 0 {
+					m.gallery.loading = true
+					galleryCmd = m.gallery.fetchCurrentCmd()
+				}
+			}
 		}
 	case r.NotFound:
 		m.notFound = true
@@ -152,7 +177,37 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) (readmeModel, tea.Cmd) {
 	}
 	m.renderedMarkdown = renderMarkdown(m.raw, m.contentWidth)
 	m.refreshViewportContent()
+	return m, galleryCmd
+}
+
+func (m readmeModel) applyGalleryImage(msg galleryImageReadyMsg) (readmeModel, tea.Cmd) {
+	if m.app == nil || msg.repo != m.app.Repo {
+		return m, nil
+	}
+	m.gallery = m.gallery.applyFetched(msg)
+	m.refreshViewportContent()
 	return m, nil
+}
+
+func (m readmeModel) galleryStep(delta int) (readmeModel, tea.Cmd) {
+	var cmd tea.Cmd
+	m.gallery, cmd = m.gallery.step(delta)
+	if cmd != nil {
+		m.refreshViewportContent()
+	}
+	return m, cmd
+}
+
+func sameScreenshotURLs(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (m readmeModel) resize(width, height int) readmeModel {
@@ -171,6 +226,9 @@ func (m readmeModel) resize(width, height int) readmeModel {
 		if m.reel.Height() > 0 {
 			m.reel.width = width
 		}
+		if m.gallery.hasURLs() {
+			m.gallery.width = width
+		}
 		m.contentWidth = width
 		m.viewport = viewport.New(m.contentWidth, bodyRows)
 	}
@@ -183,8 +241,17 @@ func (m readmeModel) resize(width, height int) readmeModel {
 // refreshViewportContent rebuilds content while preserving scroll offset.
 func (m *readmeModel) refreshViewportContent() {
 	content := m.renderedMarkdown
-	if !m.reelRightPane && m.reel.Height() > 0 {
-		content = m.reel.View() + "\n" + m.renderedMarkdown
+	if !m.reelRightPane {
+		var prefix []string
+		if m.gallery.Height() > 0 {
+			prefix = append(prefix, m.gallery.View())
+		}
+		if m.reel.Height() > 0 {
+			prefix = append(prefix, m.reel.View())
+		}
+		if len(prefix) > 0 {
+			content = strings.Join(prefix, "\n") + "\n" + content
+		}
 	}
 	yOff := m.viewport.YOffset
 	m.viewport.SetContent(content)
@@ -269,6 +336,9 @@ func (m readmeModel) renderHeader() string {
 	title := theme.GradientTitle(m.app.Name + " · README")
 	meta := theme.MutedText.Render(
 		fmt.Sprintf("★ %s · %s", formatStars(m.app.Stars), m.app.Language))
+	if len(m.screenshots) > 0 {
+		meta += theme.AccentText.Render(fmt.Sprintf(" · %d screenshots", len(m.screenshots)))
+	}
 
 	left := back + "   " + title
 	spacerW := m.contentWidth - lipgloss.Width(left) - lipgloss.Width(meta)
