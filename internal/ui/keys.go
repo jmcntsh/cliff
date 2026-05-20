@@ -3,30 +3,30 @@ package ui
 import "github.com/charmbracelet/bubbles/key"
 
 type keyMap struct {
-	Up           key.Binding
-	Down         key.Binding
-	Top          key.Binding
-	Bottom       key.Binding
-	PageUp       key.Binding
-	PageDown     key.Binding
-	Tab          key.Binding
-	Enter        key.Binding
-	OpenGithub   key.Binding
-	GalleryPrev  key.Binding
-	GalleryNext  key.Binding
-	CopyInstall  key.Binding
-	Install      key.Binding
-	Uninstall    key.Binding
-	Upgrade      key.Binding
-	Search       key.Binding
-	Sort         key.Binding
-	Categories   key.Binding
-	Help         key.Binding
-	Quit         key.Binding
-	Escape       key.Binding
-	Left         key.Binding
-	Right        key.Binding
-	Submit       key.Binding
+	Up          key.Binding
+	Down        key.Binding
+	Top         key.Binding
+	Bottom      key.Binding
+	PageUp      key.Binding
+	PageDown    key.Binding
+	Tab         key.Binding
+	Enter       key.Binding
+	OpenGithub  key.Binding
+	GalleryPrev key.Binding
+	GalleryNext key.Binding
+	CopyInstall key.Binding
+	Install     key.Binding
+	Uninstall   key.Binding
+	Upgrade     key.Binding
+	Search      key.Binding
+	Sort        key.Binding
+	Categories  key.Binding
+	Help        key.Binding
+	Quit        key.Binding
+	Escape      key.Binding
+	Left        key.Binding
+	Right       key.Binding
+	Submit      key.Binding
 }
 
 var keys = keyMap{
@@ -53,9 +53,5 @@ var keys = keyMap{
 	Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 	Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 	Escape:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "back / cancel")),
-	// `+` is the submit-an-app hotkey. Picked for its universal
-	// "add" mnemonic — same finger memory as `+` in most tools
-	// that mean "new thing." `=` (the unshifted key on US
-	// layouts) also binds so users don't need to hold shift.
-	Submit: key.NewBinding(key.WithKeys("+", "="), key.WithHelp("+", "submit an app")),
+	Submit:      key.NewBinding(key.WithKeys("+", "="), key.WithHelp("+", "submit an app")),
 }

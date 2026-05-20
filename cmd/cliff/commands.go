@@ -42,6 +42,11 @@ Environment:
   CLIFF_BG=dark|light          override the README markdown renderer's
                                background detection. Set this if your
                                terminal does not respond to OSC 11.
+  CLIFF_IMAGE_PROTOCOL=auto    screenshot renderer when supported: auto
+                               (default), kitty, iterm, or sixel. README
+                               screenshots are omitted on terminals without
+                               a graphics protocol (e.g. macOS Terminal).
+                               Set halfblocks to force the blocky fallback.
   CLIFF_DEBUG=1                print extra diagnostics on startup
                                (e.g. catalog source and fetch errors).
 

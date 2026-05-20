@@ -55,6 +55,7 @@ func runTUI() int {
 		dark = true
 	}
 	ui.SetDarkBackground(dark)
+	ui.WarmGalleryProtocolCache()
 
 	res := catalog.LoadWithFallback(catalog.LoadOptions{})
 	if res.Catalog == nil {

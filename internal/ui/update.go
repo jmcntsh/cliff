@@ -437,7 +437,7 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return r, nil
 	}
-	if len(r.readme.screenshots) > 1 {
+	if r.readme.gallery.hasURLs() && len(r.readme.screenshots) > 1 {
 		if key.Matches(msg, keys.GalleryPrev) {
 			return r.readmeGalleryStep(-1)
 		}

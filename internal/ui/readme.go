@@ -89,9 +89,8 @@ func newReadme(app *catalog.App, width, height int) readmeModel {
 		reelFetchCmd: fetchCmd,
 		screenshots:  screenshots,
 	}
-	if app != nil && len(screenshots) > 0 {
+	if shouldShowInlineGallery(screenshots) {
 		m.gallery = newGalleryStrip(app.Repo, screenshots, width)
-		m.gallery.loading = true
 	}
 	return m.resize(width, height)
 }
@@ -160,10 +159,11 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) (readmeModel, tea.Cmd) {
 			urls := rdm.GalleryURLs(m.app.Screenshots, m.app.Repo, m.app.Readme, m.raw)
 			if !sameScreenshotURLs(m.screenshots, urls) {
 				m.screenshots = urls
-				m.gallery = newGalleryStrip(m.app.Repo, urls, m.contentWidth)
-				if len(urls) > 0 {
-					m.gallery.loading = true
+				if shouldShowInlineGallery(urls) {
+					m.gallery = newGalleryStrip(m.app.Repo, urls, m.contentWidth)
 					galleryCmd = m.gallery.fetchCurrentCmd()
+				} else {
+					m.gallery = galleryStrip{}
 				}
 			}
 		}
@@ -336,7 +336,7 @@ func (m readmeModel) renderHeader() string {
 	title := theme.GradientTitle(m.app.Name + " · README")
 	meta := theme.MutedText.Render(
 		fmt.Sprintf("★ %s · %s", formatStars(m.app.Stars), m.app.Language))
-	if len(m.screenshots) > 0 {
+	if len(m.screenshots) > 0 && shouldShowInlineGallery(m.screenshots) {
 		meta += theme.AccentText.Render(fmt.Sprintf(" · %d screenshots", len(m.screenshots)))
 	}
 

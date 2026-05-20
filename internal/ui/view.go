@@ -231,7 +231,7 @@ func (r Root) footer() string {
 			readmeVerb = "⏎ manage · U update · u uninstall"
 		}
 		hints = readmeVerb + " · o github · ? help · ← back"
-		if len(r.readme.screenshots) > 1 {
+		if r.readme.gallery.hasURLs() && len(r.readme.screenshots) > 1 {
 			hints = "[ ] screenshots · " + hints
 		}
 	case modePkgConfirm:

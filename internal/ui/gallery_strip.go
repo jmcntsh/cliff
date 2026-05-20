@@ -29,6 +29,7 @@ type galleryStrip struct {
 	urls     []string
 	index    int
 	rendered string
+	protocol termimg.Protocol
 	loading  bool
 	fetchErr error
 	width    int
@@ -38,11 +39,12 @@ type galleryImageReadyMsg struct {
 	repo     string
 	index    int
 	rendered string
+	protocol termimg.Protocol
 	err      error
 }
 
 func newGalleryStrip(repo string, urls []string, width int) galleryStrip {
-	return galleryStrip{repo: repo, urls: urls, width: width}
+	return galleryStrip{repo: repo, urls: urls, width: width, loading: true}
 }
 
 func (g galleryStrip) hasURLs() bool {
@@ -51,13 +53,6 @@ func (g galleryStrip) hasURLs() bool {
 
 func (g galleryStrip) loadingActive() bool {
 	return g.hasURLs() && g.loading
-}
-
-func (g galleryStrip) currentURL() string {
-	if g.index < 0 || g.index >= len(g.urls) {
-		return ""
-	}
-	return g.urls[g.index]
 }
 
 func (g galleryStrip) fetchCurrentCmd() tea.Cmd {
@@ -69,8 +64,8 @@ func (g galleryStrip) fetchCurrentCmd() tea.Cmd {
 	url := g.urls[index]
 	width := g.width
 	return func() tea.Msg {
-		rendered, err := downloadAndRenderGalleryImage(url, width)
-		return galleryImageReadyMsg{repo: repo, index: index, rendered: rendered, err: err}
+		rendered, protocol, err := downloadAndRenderGalleryImage(url, width)
+		return galleryImageReadyMsg{repo: repo, index: index, rendered: rendered, protocol: protocol, err: err}
 	}
 }
 
@@ -81,6 +76,7 @@ func (g galleryStrip) applyFetched(msg galleryImageReadyMsg) galleryStrip {
 	g.loading = false
 	g.fetchErr = msg.err
 	g.rendered = msg.rendered
+	g.protocol = msg.protocol
 	return g
 }
 
@@ -96,6 +92,7 @@ func (g galleryStrip) step(delta int) (galleryStrip, tea.Cmd) {
 	g.loading = true
 	g.rendered = ""
 	g.fetchErr = nil
+	g.protocol = 0
 	return g, g.fetchCurrentCmd()
 }
 
@@ -110,7 +107,6 @@ func (g galleryStrip) Height() int {
 	if rows == 0 {
 		rows = 1
 	}
-	// Caption row when multiple screenshots.
 	if len(g.urls) > 1 {
 		rows++
 	}
@@ -137,6 +133,9 @@ func (g galleryStrip) View() string {
 		caption := theme.MutedText.Render(fmt.Sprintf("screenshot %d / %d · [ ] browse", g.index+1, len(g.urls)))
 		body = body + "\n" + caption
 	}
+	if galleryUsesGraphicsProtocol(g.protocol) {
+		return centerGalleryBlock(body, g.width)
+	}
 	framed := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(theme.ColorBorder).
@@ -158,41 +157,58 @@ func (g galleryStrip) View() string {
 	return framed
 }
 
-func downloadAndRenderGalleryImage(imageURL string, width int) (string, error) {
+func centerGalleryBlock(body string, width int) string {
+	if body == "" {
+		return ""
+	}
+	blockWidth := lipgloss.Width(strings.Split(body, "\n")[0])
+	if width <= blockWidth {
+		return body
+	}
+	leftPad := (width - blockWidth) / 2
+	if leftPad <= 0 {
+		return body
+	}
+	prefix := strings.Repeat(" ", leftPad)
+	lines := strings.Split(body, "\n")
+	for i := range lines {
+		lines[i] = prefix + lines[i]
+	}
+	return strings.Join(lines, "\n")
+}
+
+func downloadAndRenderGalleryImage(imageURL string, width int) (string, termimg.Protocol, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), galleryFetchTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", imageURL, nil)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("HTTP %d", res.StatusCode)
+		return "", 0, fmt.Errorf("HTTP %d", res.StatusCode)
 	}
 	if ct := res.Header.Get("Content-Type"); strings.Contains(ct, "svg") {
-		return "", fmt.Errorf("SVG not supported")
+		return "", 0, fmt.Errorf("SVG not supported")
 	}
 
 	body, err := io.ReadAll(io.LimitReader(res.Body, galleryMaxBytes))
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	img, err := termimg.From(bytes.NewReader(body))
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
+	protocol := galleryRenderProtocol()
 	cellW := max(width-8, 20)
-	return img.
-		Width(cellW).
-		Height(galleryMaxRows).
-		Scale(termimg.ScaleFit).
-		Protocol(termimg.Auto).
-		Render()
+	rendered, err := configureGalleryImage(img, protocol, cellW).Render()
+	return rendered, protocol, err
 }
