@@ -5,6 +5,14 @@ and PRs for implementation detail.
 
 ## Unreleased
 
+## v0.1.21 - 2026-05-20
+
+- Added a README screenshot gallery (`g`) that autopopulates from manifest
+  `screenshots` or non-badge images found in the fetched README.
+- Gallery images render through terminal graphics protocols (Kitty, iTerm,
+  Sixel) via `go-termimg`, with browser fallback on `o`.
+- `install.sh` now replaces an existing `cliff` binary already on `PATH`.
+
 ## v0.1.20 - 2026-05-15
 
 - Added a `Featured` sidebar panel for launch-friendly, eye-catching apps.

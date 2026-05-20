@@ -3,17 +3,22 @@
 Current shipped state. Product principles live in `CLAUDE.md`; historical
 release notes live in `CHANGELOG.md`.
 
-Last updated: 2026-05-15.
+Last updated: 2026-05-20.
 
 ## Current Release
 
-Latest release: `v0.1.20` (2026-05-15).
+Latest release: `v0.1.21` (2026-05-20).
 
+- README view has a screenshot gallery (`g`) autopopulated from manifest
+  `screenshots` or non-badge images in the fetched README. Images render
+  via terminal graphics protocols in a modal overlay; press `o` to open in
+  the browser.
 - The TUI has a `Featured` discovery surface for launch-friendly apps and a
   `Hot` surface backed by `cliff.sh/hot.json`. Hot appears only after enough
   apps have non-zero scores; until then the `New` row remains visible.
 - Cargo installs can bootstrap Rust/Cargo first and then continue the original
   app install from the same TUI flow.
+- `curl cliff.sh | sh` replaces an existing `cliff` binary already on `PATH`.
 - Sort order is descending-only: `stars ↓`, `recency ↓`, and `hot ↓` once
   Hot is revealed.
 - README and reel fetches route through `cliff.sh/r/*` tracking redirects,
