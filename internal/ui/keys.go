@@ -12,6 +12,7 @@ type keyMap struct {
 	Tab          key.Binding
 	Enter        key.Binding
 	OpenGithub   key.Binding
+	OpenGalleryImage key.Binding
 	CopyInstall  key.Binding
 	Install      key.Binding
 	Uninstall    key.Binding
@@ -25,6 +26,7 @@ type keyMap struct {
 	Left         key.Binding
 	Right        key.Binding
 	Submit       key.Binding
+	Gallery      key.Binding
 }
 
 var keys = keyMap{
@@ -39,6 +41,7 @@ var keys = keyMap{
 	Tab:         key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "switch pane")),
 	Enter:       key.NewBinding(key.WithKeys("enter"), key.WithHelp("⏎", "open / confirm")),
 	OpenGithub:  key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "open on github")),
+	OpenGalleryImage: key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "open image")),
 	CopyInstall: key.NewBinding(key.WithKeys("y"), key.WithHelp("y", "copy install cmd")),
 	Install:     key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "install")),
 	Uninstall:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "uninstall (if installed)")),
@@ -54,4 +57,5 @@ var keys = keyMap{
 	// that mean "new thing." `=` (the unshifted key on US
 	// layouts) also binds so users don't need to hold shift.
 	Submit: key.NewBinding(key.WithKeys("+", "="), key.WithHelp("+", "submit an app")),
+	Gallery: key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "screenshot gallery")),
 }

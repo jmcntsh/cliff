@@ -60,6 +60,7 @@ type readmeModel struct {
 	fromCache      bool
 	reel           reelStrip
 	reelFetchCmd   tea.Cmd
+	screenshots    []string
 	// Cached so reel ticks can refresh the viewport without re-running Glamour.
 	renderedMarkdown string
 }
@@ -71,12 +72,17 @@ func (m readmeModel) reelLoading() bool {
 func newReadme(app *catalog.App, width, height int) readmeModel {
 	raw := placeholderMarkdown(app)
 	reel, fetchCmd := newReelStripForApp(app.Name, width)
+	screenshots := []string(nil)
+	if app != nil {
+		screenshots = rdm.GalleryURLs(app.Screenshots, app.Repo, app.Readme, "")
+	}
 	m := readmeModel{
 		app:          app,
 		raw:          raw,
 		loading:      true,
 		reel:         reel,
 		reelFetchCmd: fetchCmd,
+		screenshots:  screenshots,
 	}
 	return m.resize(width, height)
 }
@@ -133,6 +139,9 @@ func (m readmeModel) applyFetch(msg readmeFetchedMsg) (readmeModel, tea.Cmd) {
 		m.fromCache = r.FromCache
 		m.rateLimited = r.RateLimited
 		m.rateLimitReset = r.ResetAt
+		if m.app != nil {
+			m.screenshots = rdm.GalleryURLs(m.app.Screenshots, m.app.Repo, m.app.Readme, m.raw)
+		}
 	case r.NotFound:
 		m.notFound = true
 	case r.RateLimited:

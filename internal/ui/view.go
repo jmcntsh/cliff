@@ -20,6 +20,14 @@ func (r Root) View() string {
 		return r.readme.ViewWithSpinner(r.spinner.View()) + "\n" + r.footer()
 	}
 
+	if r.mode == modeGallery {
+		name := ""
+		if app := r.selectedApp(); app != nil {
+			name = app.Name
+		}
+		return galleryView(name, r.readme.screenshots, r.gallery, r.width, r.height, r.spinner.View()) + "\n" + r.footer()
+	}
+
 	contentH := r.height - 2
 	if r.mode == modeSearch {
 		contentH -= 3
@@ -231,6 +239,11 @@ func (r Root) footer() string {
 			readmeVerb = "⏎ manage · U update · u uninstall"
 		}
 		hints = readmeVerb + " · o github · ? help · ← back"
+		if len(r.readme.screenshots) > 0 {
+			hints = "g gallery · " + hints
+		}
+	case modeGallery:
+		hints = "← → browse · o open · esc back"
 	case modePkgConfirm:
 		if r.installOp == pkgOpInstall {
 			if spec := selectedInstallSpec(r.installApp); spec != nil && !install.ToolAvailable(spec.Type) && install.BootstrapCommand(spec.Type) != "" {

@@ -71,6 +71,13 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if r.readme.ready {
 			r.readme = r.readme.resize(m.Width, m.Height)
 		}
+		if r.mode == modeGallery && len(r.readme.screenshots) > 0 {
+			r.gallery.loading = true
+			r.gallery.rendered = ""
+			r.gallery.fetchErr = nil
+			url := r.gallery.currentURL(r.readme.screenshots)
+			return r.resize(), fetchGalleryImageCmd(r.gallery.index, url, r.width, r.height)
+		}
 		// Rebuild the huh form on resize; typed values live in submitFields.
 		if r.mode == modeSubmit && r.submitPhase == submitPhaseForm {
 			r.submitForm = newSubmitForm(
@@ -98,6 +105,9 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		r.readme, cmd = r.readme.applyReelFetched(m)
 		return r, cmd
+
+	case galleryImageReadyMsg:
+		return r.applyGalleryImage(m)
 
 	case reelTickMsg:
 		// Keep reel playback moving through brief overlay mode switches.
@@ -202,6 +212,8 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateHelp(m)
 		case modeReadme:
 			return r.updateReadme(m)
+		case modeGallery:
+			return r.updateGallery(m)
 		case modePkgConfirm:
 			return r.updatePkgConfirm(m)
 		case modePkgRunning:
@@ -419,6 +431,9 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return r.flash("opening " + app.Homepage), clearFlashCmd()
 		}
 		return r, nil
+	}
+	if key.Matches(msg, keys.Gallery) && len(r.readme.screenshots) > 0 {
+		return r.openGallery()
 	}
 	if key.Matches(msg, keys.Help) {
 		r.helpReturnMode = modeReadme
