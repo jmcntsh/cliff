@@ -5,6 +5,15 @@ and PRs for implementation detail.
 
 ## Unreleased
 
+## v0.1.22 - 2026-05-20
+
+- Screenshot gallery now auto-loads inline at the top of the README view,
+  stacked above reels and markdown like the reel preview strip.
+- Removed the full-screen `g` gallery overlay; browse multiple screenshots
+  with `[` and `]` from the README view.
+- Improved screenshot URL extraction (HTML `<img>` tags, badge filtering,
+  WebP support).
+
 ## v0.1.21 - 2026-05-20
 
 - Added a README screenshot gallery (`g`) that autopopulates from manifest

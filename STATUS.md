@@ -7,12 +7,11 @@ Last updated: 2026-05-20.
 
 ## Current Release
 
-Latest release: `v0.1.21` (2026-05-20).
+Latest release: `v0.1.22` (2026-05-20).
 
-- README view has a screenshot gallery (`g`) autopopulated from manifest
-  `screenshots` or non-badge images in the fetched README. Images render
-  via terminal graphics protocols in a modal overlay; press `o` to open in
-  the browser.
+- README screenshots auto-load inline at the top of the detail view (above
+  reels and markdown), extracted from manifest `screenshots` or the fetched
+  README. Use `[` / `]` to browse when multiple images are found.
 - The TUI has a `Featured` discovery surface for launch-friendly apps and a
   `Hot` surface backed by `cliff.sh/hot.json`. Hot appears only after enough
   apps have non-zero scores; until then the `New` row remains visible.
