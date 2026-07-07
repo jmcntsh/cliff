@@ -36,7 +36,7 @@ Latest release: `v0.2.0` (2026-07-07).
 - **`registry.cliff.sh/index.json`** is published by `cliff-registry` CI and
   is the canonical catalog source. The registry's weekly auto-seed
   workflow scrapes GitHub for new TUIs and commits manifests to main.
-- **Catalog** has 334 apps. The embedded snapshot at
+- **Catalog** has 682 apps. The embedded snapshot at
   `internal/catalog/data/index.json` is the offline fallback.
 - **GitHub releases** publish darwin/linux binaries for amd64 and arm64.
 - **Install paths** are live through `curl cliff.sh | sh`,
@@ -45,9 +45,6 @@ Latest release: `v0.2.0` (2026-07-07).
 
 ## Pending
 
-- **Refresh the embedded snapshot** after the next registry build so
-  it no longer carries `has_reel` fields (harmless — clients ignore
-  unknown fields — but stale).
 - **Registry dispatch token** still needs to be wired so `cliff-registry` can
   trigger the embedded snapshot refresh workflow on merge.
 
