@@ -96,21 +96,6 @@ func (r Root) View() string {
 		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
 			fixPathView(r.fixPlan, r.fixErr, r.fixApplied, r.fixAlreadyPresent, r.installApp, r.launchMethod, r.launchErr, r.binOverrides, r.width))
 	}
-	if r.mode == modeSubmit {
-		var content string
-		switch r.submitPhase {
-		case submitPhaseForm:
-			if r.submitForm != nil {
-				content = submitFormView(r.submitForm, r.width)
-			}
-		case submitPhaseConfirm:
-			content = submitConfirmView(r.submitURL, r.width)
-		case submitPhaseOpened:
-			content = submitOpenedView(r.submitURL, r.submitErr, r.width)
-		}
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center, content)
-	}
-
 	return body + "\n" + r.footer()
 }
 
@@ -144,8 +129,6 @@ func categoryDisplay(cat string) string {
 	switch cat {
 	case categoryNew:
 		return "new"
-	case categoryFeatured:
-		return "featured"
 	case categoryInstalled:
 		return "installed"
 	default:
@@ -163,9 +146,6 @@ func sortLabelFor(cat string, sort sortMode) string {
 	if cat == categoryNew && sort == sortStarsDesc {
 		return "freshness ↓"
 	}
-	if cat == categoryFeatured && sort == sortStarsDesc {
-		return "featured"
-	}
 	return sort.label()
 }
 
@@ -180,21 +160,8 @@ func (r Root) emptyGridView(w, h int) string {
 		hint = "try a different category"
 	}
 	hintLine := theme.MutedText.Render(hint)
-	// When the user is searching and has hit zero results, the most
-	// useful next action is often "cliff should list what I was
-	// looking for" — surface the submit flow right here rather than
-	// relying on them finding `+` via help. Shown only in search
-	// mode; for an empty category filter, "try a different category"
-	// is the better prod.
-	var submitLine string
-	if r.search.Value() != "" {
-		submitLine = theme.MutedText.Render("+ submit this app to cliff")
-	}
 
 	block := "  " + msg + "\n  " + hintLine
-	if submitLine != "" {
-		block += "\n  " + submitLine
-	}
 	return lipgloss.NewStyle().Width(w).Height(h).Render(block)
 }
 
@@ -267,15 +234,6 @@ func (r Root) footer() string {
 			hints = "⏎ or esc close"
 		} else {
 			hints = "⏎ apply · esc cancel"
-		}
-	case modeSubmit:
-		switch r.submitPhase {
-		case submitPhaseForm:
-			hints = "tab/⏎ next field · ⏎ on last field to confirm · esc cancel"
-		case submitPhaseConfirm:
-			hints = "⏎ open in browser · esc cancel"
-		case submitPhaseOpened:
-			hints = "⏎ or esc close"
 		}
 	}
 	if r.flashMsg != "" && time.Now().Before(r.flashExpiry) {

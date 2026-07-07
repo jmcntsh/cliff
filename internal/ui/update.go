@@ -12,13 +12,11 @@ import (
 	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/launcher"
 	"github.com/jmcntsh/cliff/internal/pathfix"
-	"github.com/jmcntsh/cliff/internal/submit"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
 )
 
 var errNoInstallCommand = errors.New("no install command after prerequisite setup")
@@ -48,21 +46,6 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, launchTitleTick()
 	}
 
-	// Huh forms need non-key messages too; key and resize messages stay
-	// in the main switch so esc-cancel and form rebuilds happen first.
-	if r.mode == modeSubmit && r.submitPhase == submitPhaseForm && r.submitForm != nil {
-		switch msg.(type) {
-		case tea.KeyMsg, tea.WindowSizeMsg:
-			// fall through to the main switch below
-		default:
-			form, cmd := r.submitForm.Update(msg)
-			if f, ok := form.(*huh.Form); ok {
-				r.submitForm = f
-			}
-			return r, cmd
-		}
-	}
-
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		r.width = m.Width
@@ -77,15 +60,6 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return r.resize(), r.readme.gallery.fetchCurrentCmd()
 			}
 		}
-		// Rebuild the huh form on resize; typed values live in submitFields.
-		if r.mode == modeSubmit && r.submitPhase == submitPhaseForm {
-			r.submitForm = newSubmitForm(
-				&r.submitFields,
-				submitFormWidth(r.width),
-				submitFormHeight(r.height),
-			)
-			return r.resize(), r.submitForm.Init()
-		}
 		return r.resize(), nil
 
 	case readmeFetchedMsg:
@@ -93,27 +67,9 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.readme, cmd = r.readme.applyFetch(m)
 		return r, cmd
 
-	case hotFetchedMsg:
-		// Hot scores are mode-agnostic and may arrive behind any overlay.
-		r = r.applyHotScores(m)
-		return r.refilter(), nil
-
-	case reelFetchedMsg:
-		// Unconditional; stale or unrelated reel fetches are ignored by
-		// the readme model.
-		var cmd tea.Cmd
-		r.readme, cmd = r.readme.applyReelFetched(m)
-		return r, cmd
-
 	case galleryImageReadyMsg:
 		var cmd tea.Cmd
 		r.readme, cmd = r.readme.applyGalleryImage(m)
-		return r, cmd
-
-	case reelTickMsg:
-		// Keep reel playback moving through brief overlay mode switches.
-		var cmd tea.Cmd
-		r.readme, cmd = r.readme.Update(m)
 		return r, cmd
 
 	case installStartedMsg:
@@ -223,8 +179,6 @@ func (r Root) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r.updateManage(m)
 		case modeFixPath:
 			return r.updateFixPath(m)
-		case modeSubmit:
-			return r.updateSubmit(m)
 		default:
 			return r.updateBrowse(m)
 		}
@@ -264,10 +218,6 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.helpReturnMode = modeBrowse
 		r.mode = modeHelp
 		return r, nil
-	case key.Matches(msg, keys.Submit):
-		// Submit always starts blank; the current app is already listed.
-		r.submitReturnMode = modeBrowse
-		return r.openSubmitForm()
 	case key.Matches(msg, keys.Enter):
 		if app := r.selectedApp(); app != nil {
 			if r.installed[app.Repo] {
@@ -279,7 +229,7 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			r.readme = newReadme(app, r.width, r.height)
 			r.mode = modeReadme
-			return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit(), r.spinner.Tick)
+			return r, tea.Batch(fetchReadmeCmd(app), r.readme.galleryInit(), r.spinner.Tick)
 		}
 		return r, nil
 	case key.Matches(msg, keys.Install):
@@ -449,10 +399,6 @@ func (r Root) updateReadme(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.helpReturnMode = modeReadme
 		r.mode = modeHelp
 		return r, nil
-	}
-	if key.Matches(msg, keys.Submit) {
-		r.submitReturnMode = modeReadme
-		return r.openSubmitForm()
 	}
 	var cmd tea.Cmd
 	r.readme, cmd = r.readme.Update(msg)
@@ -670,7 +616,7 @@ func (r Root) updateManage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if app != nil {
 				r.readme = newReadme(app, r.width, r.height)
 				r.mode = modeReadme
-				return r, tea.Batch(fetchReadmeCmd(app), r.readme.ReelInit(), r.spinner.Tick)
+				return r, tea.Batch(fetchReadmeCmd(app), r.readme.galleryInit(), r.spinner.Tick)
 			}
 			r.mode = r.installReturnMode
 			return r, nil
@@ -767,106 +713,6 @@ func (r Root) clearFixPath() Root {
 	r.fixApplied = false
 	r.fixAlreadyPresent = false
 	return r
-}
-
-// openSubmitForm resets submit state and enters the huh form phase.
-func (r Root) openSubmitForm() (tea.Model, tea.Cmd) {
-	r.submitFields = submit.Request{}
-	r.submitURL = ""
-	r.submitErr = nil
-	r.submitPhase = submitPhaseForm
-	r.mode = modeSubmit
-	r.submitForm = newSubmitForm(
-		&r.submitFields,
-		submitFormWidth(r.width),
-		submitFormHeight(r.height),
-	)
-	return r, r.submitForm.Init()
-}
-
-// updateSubmit drives the form, confirm, and post-open submit phases.
-func (r Root) updateSubmit(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch r.submitPhase {
-	case submitPhaseForm:
-		return r.updateSubmitForm(msg)
-	case submitPhaseConfirm:
-		return r.updateSubmitConfirm(msg)
-	case submitPhaseOpened:
-		return r.updateSubmitOpened(msg)
-	}
-	return r, nil
-}
-
-func (r Root) updateSubmitForm(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if r.submitForm == nil {
-		// Defensive: no form means nothing to drive. Bounce back to
-		// the return mode so the user isn't stuck on a blank modal.
-		r.mode = r.submitReturnMode
-		r.submitPhase = submitPhaseForm
-		return r, nil
-	}
-	if km, ok := msg.(tea.KeyMsg); ok {
-		if key.Matches(km, keys.Escape, keys.Quit) {
-			r.mode = r.submitReturnMode
-			r.submitForm = nil
-			r.submitFields = submit.Request{}
-			return r, nil
-		}
-	}
-
-	form, cmd := r.submitForm.Update(msg)
-	if f, ok := form.(*huh.Form); ok {
-		r.submitForm = f
-	}
-
-	if r.submitForm.State == huh.StateCompleted {
-		r.submitURL = r.submitFields.URL()
-		r.submitPhase = submitPhaseConfirm
-		r.submitForm = nil
-		return r, nil
-	}
-	if r.submitForm.State == huh.StateAborted {
-		r.mode = r.submitReturnMode
-		r.submitForm = nil
-		r.submitFields = submit.Request{}
-		return r, nil
-	}
-	return r, cmd
-}
-
-func (r Root) updateSubmitConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
-	km, ok := msg.(tea.KeyMsg)
-	if !ok {
-		return r, nil
-	}
-	switch {
-	case key.Matches(km, keys.Escape, keys.Quit, keys.Left):
-		r.mode = r.submitReturnMode
-		r.submitURL = ""
-		r.submitFields = submit.Request{}
-		return r, nil
-	case key.Matches(km, keys.Enter):
-		r.submitErr = browser.Open(r.submitURL)
-		r.submitPhase = submitPhaseOpened
-		return r, nil
-	}
-	return r, nil
-}
-
-func (r Root) updateSubmitOpened(msg tea.Msg) (tea.Model, tea.Cmd) {
-	km, ok := msg.(tea.KeyMsg)
-	if !ok {
-		return r, nil
-	}
-	if key.Matches(km, keys.Enter, keys.Escape, keys.Quit, keys.Left) {
-		r.mode = r.submitReturnMode
-		r.submitPhase = submitPhaseForm
-		r.submitErr = nil
-		r.submitURL = ""
-		r.submitFields = submit.Request{}
-		return r, nil
-	}
-	return r, nil
 }
 
 func (r Root) updateSidebarOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd) {

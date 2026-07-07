@@ -56,29 +56,6 @@ func TestSort_RecencyDesc(t *testing.T) {
 	}
 }
 
-func TestSort_HotDesc(t *testing.T) {
-	apps := []catalog.App{
-		{Name: "cold", Repo: "a/cold", Stars: 1000, HotScore: 0},
-		{Name: "warm", Repo: "a/warm", Stars: 10, HotScore: 5.5},
-		{Name: "hot", Repo: "a/hot", Stars: 100, HotScore: 42.0},
-	}
-	got := filterAndSort(apps, filterCriteria{sort: sortHotDesc})
-	if got[0].Name != "hot" || got[1].Name != "warm" || got[2].Name != "cold" {
-		t.Errorf("expected hot > warm > cold by score, got %v", got)
-	}
-}
-
-func TestSort_HotDesc_TieBreaksOnStars(t *testing.T) {
-	apps := []catalog.App{
-		{Name: "low-stars", Repo: "a/low", Stars: 10, HotScore: 0},
-		{Name: "high-stars", Repo: "a/high", Stars: 1000, HotScore: 0},
-	}
-	got := filterAndSort(apps, filterCriteria{sort: sortHotDesc})
-	if got[0].Name != "high-stars" {
-		t.Errorf("expected stars to break HotScore ties, got %s first", got[0].Name)
-	}
-}
-
 func TestSearch_Fuzzy(t *testing.T) {
 	got := filterAndSort(sample(), filterCriteria{query: "git"})
 	if len(got) == 0 {
@@ -142,26 +119,6 @@ func TestFilter_Installed_SpansCategories(t *testing.T) {
 	})
 	if len(got) != 2 {
 		t.Fatalf("expected 2 apps across categories, got %d", len(got))
-	}
-}
-
-func TestFilter_Featured(t *testing.T) {
-	got := filterAndSort(sample(), filterCriteria{category: categoryFeatured})
-	if len(got) != 4 {
-		t.Fatalf("expected 4 featured apps, got %d", len(got))
-	}
-	want := []string{"balatro-tui", "tetrigo", "draw", "yazi"}
-	for i, name := range want {
-		if got[i].Name != name {
-			t.Errorf("at %d: expected %s, got %s", i, name, got[i].Name)
-		}
-	}
-}
-
-func TestFilter_Featured_ExplicitSort(t *testing.T) {
-	got := filterAndSort(sample(), filterCriteria{category: categoryFeatured, sort: sortRecencyDesc})
-	if got[0].Name != "balatro-tui" {
-		t.Errorf("expected zero recency tie to sort by name, got %s", got[0].Name)
 	}
 }
 
@@ -259,16 +216,17 @@ func TestFilter_New_EmptyWhenNoTimestamps(t *testing.T) {
 func TestFilter_New_RespectsExplicitSort(t *testing.T) {
 	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
 	apps := []catalog.App{
-		// Newer freshness, lower hot score → freshness sort would
-		// pick this; hot sort should not.
-		{Name: "fresh-cold", Repo: "a/fresh-cold", Stars: 10, HotScore: 1.0, AddedAt: now.Add(-24 * time.Hour)},
-		// Older freshness, higher hot score → hot sort should pick
-		// this when the user explicitly requests it, even on the
-		// New surface where freshness is the default.
-		{Name: "old-hot", Repo: "a/old-hot", Stars: 100, HotScore: 99.0, AddedAt: now.Add(-48 * time.Hour)},
+		// The New surface defaults to freshness order only for the
+		// default stars sort; an explicit sort choice must win.
+		{Name: "few-stars-newer", Repo: "a/newer", Stars: 10, AddedAt: now.Add(-24 * time.Hour)},
+		{Name: "many-stars-older", Repo: "a/older", Stars: 100, AddedAt: now.Add(-48 * time.Hour)},
 	}
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, sort: sortHotDesc, now: now})
-	if got[0].Name != "old-hot" {
-		t.Errorf("expected explicit hot sort to override New-row freshness override, got %s", got[0].Name)
+	got := filterAndSort(apps, filterCriteria{category: categoryNew, sort: sortStarsDesc, now: now})
+	if got[0].Name != "few-stars-newer" {
+		t.Errorf("expected default stars sort on New to use freshness override, got %s", got[0].Name)
+	}
+	got = filterAndSort(apps, filterCriteria{category: categoryNew, sort: sortRecencyDesc, now: now})
+	if got[0].Name != "few-stars-newer" {
+		t.Errorf("expected recency sort to order newest first, got %s", got[0].Name)
 	}
 }

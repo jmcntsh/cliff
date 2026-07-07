@@ -26,7 +26,6 @@ type keyMap struct {
 	Escape      key.Binding
 	Left        key.Binding
 	Right       key.Binding
-	Submit      key.Binding
 }
 
 var keys = keyMap{
@@ -53,5 +52,4 @@ var keys = keyMap{
 	Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 	Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 	Escape:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "back / cancel")),
-	Submit:      key.NewBinding(key.WithKeys("+", "="), key.WithHelp("+", "submit an app")),
 }

@@ -26,18 +26,20 @@ it before answering the question it was stale about.
 
 ## What this repo is
 
-cliff is a terminal-native directory for CLIs and TUIs. The Go
-binary in `cmd/cliff` opens a TUI: list of apps, search, sort,
-rendered README, one-key install via the project's own package
-manager (brew / cargo / npm / pipx / `go install` / script).
+cliff is a terminal-based browser for TUIs scraped automatically
+from GitHub. The Go binary in `cmd/cliff` opens a TUI: list of apps,
+search, sort, rendered README with inline screenshots, one-key
+install via the project's own package manager (brew / cargo / npm /
+pipx / `go install` / script).
 
 The registry lives in a separate repo ([`jmcntsh/cliff-registry`](https://github.com/jmcntsh/cliff-registry)):
-TOML manifests under `apps/`, compiled to `index.json` by CI,
-served via GitHub Pages at `https://registry.cliff.sh/index.json`.
-The client fetches that URL (overridable via `CLIFF_REGISTRY_URL`)
-with an ETag-cached copy in `~/.cliff/cache/` and a build-time
-snapshot of the same index embedded in the binary as last-resort
-fallback.
+TOML manifests under `apps/`, written mostly by a weekly
+GitHub-scraper workflow (`scripts/seed.py` + `auto-seed.yml`),
+compiled to `index.json` by CI, served via GitHub Pages at
+`https://registry.cliff.sh/index.json`. The client fetches that URL
+(overridable via `CLIFF_REGISTRY_URL`) with an ETag-cached copy in
+`~/.cliff/cache/` and a build-time snapshot of the same index
+embedded in the binary as last-resort fallback.
 
 Distribution: `curl cliff.sh | sh`, brew tap, `go install`. Single
 static binary.
@@ -53,35 +55,33 @@ Pick the smallest scope and simplest mechanism that could work;
 then do that one thing carefully and well. Concretely:
 
 - **We host nothing we don't have to.** No binaries, no catalog
-  database, no web app, no backend. The registry is TOML in a
-  GitHub repo, compiled to `index.json` by CI, served via GitHub
-  Pages. There is no server to run.
+  database, no web app, no backend beyond the install-script Worker.
+  The registry is TOML in a GitHub repo, compiled to `index.json` by
+  CI, served via GitHub Pages. There is no server to run.
 - **We wrap existing infrastructure, we don't replace it.**
   Installs shell out to brew/cargo/npm/pipx/go/script. Discovery
-  leans on GitHub stars and curation, not a recommendation engine.
-  Search is `sahilm/fuzzy` over a static list, not Elasticsearch.
-- **Defer until proven needed.** Gallery view, ratings, image
-  rendering, asciinema playback, `cliff try` sandbox — out of
-  scope until a user pushes against the absence.
+  leans on GitHub search, stars, and recency, not a recommendation
+  engine. Search is `sahilm/fuzzy` over a static list, not
+  Elasticsearch.
+- **Defer until proven needed.** Ratings, demo playback,
+  `cliff try` sandbox — out of scope until a user pushes against
+  the absence.
 
-### 2. The directory's only job is to be used
+### 2. The scraper is the intake; the directory's only job is to be used
 
-Success looks like weekly-active terminal users who return to
-cliff to find new tools. That is the single metric that matters.
-Everything else — pretty UI, rich previews, submit flow, clever
-search — is in service of it.
+Success looks like terminal users who return to cliff to find new
+tools. Freshness comes from automation, not editorial work:
 
 - **Zero friction to first install.** No account, no signup, no
   prompt, no config file. `curl cliff.sh | sh` → `cliff` → arrow
-  keys → `i`. Anything that adds a step between "I just heard
-  about cliff" and "I installed an app with cliff" is load-bearing
-  in the wrong direction.
-- **Curation is the product.** The front door is the curated
-  registry — a hand-picked seed refreshed weekly, plus a "new this
-  week" surface. Famous FOSS is backdrop; indie/new work is the
-  identity.
+  keys → `i`.
+- **The catalog feeds itself.** The weekly seed run finds new TUIs,
+  rejects non-apps, and commits manifests to main. Human effort goes
+  into improving the scraper's filters, not into reviewing a queue.
+  There is no submission flow; gaps are fixed with one-file PRs to
+  the registry.
 - **No dark patterns, ever.** No signup walls, no "sign in to see
-  more," no modal nags.
+  more," no modal nags, no telemetry.
 
 ### 3. Name the trust model; don't pretend to be the App Store
 

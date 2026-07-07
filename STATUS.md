@@ -3,56 +3,53 @@
 Current shipped state. Product principles live in `CLAUDE.md`; historical
 release notes live in `CHANGELOG.md`.
 
-Last updated: 2026-05-20.
+Last updated: 2026-07-07.
 
 ## Current Release
 
-Latest release: `v0.1.23` (2026-05-20).
+Latest release: `v0.2.0` (2026-07-07).
 
+- **Respec:** cliff is now scoped to a
+  GitHub TUI scraper + browser + installer. Removed from the client:
+  the submit flow (`cliff submit`, `+` keybind, huh form), reel
+  playback, the Hot surface and `hot.json` fetch, the hand-picked
+  Featured row, and README tracking redirects (READMEs now fetch
+  directly from the GitHub API). The Worker is reduced to serving the
+  install script and landing page — Analytics Engine logging, R2
+  stats, and the daily aggregation crons are gone. Sorts are
+  `stars ↓` and `recency ↓`; sidebar rows are All / New / Installed /
+  categories.
 - README screenshots auto-load inline at the top of the detail view when the
-  terminal supports Kitty, iTerm, or Sixel graphics. macOS Terminal omits
-  screenshots; reels remain the in-terminal visual preview there.
-- Set `CLIFF_IMAGE_PROTOCOL=kitty|iterm|sixel` on Ghostty, iTerm2, or WezTerm
-  for sharp screenshots; `halfblocks` forces the blocky fallback for testing.
-- The TUI has a `Featured` discovery surface for launch-friendly apps and a
-  `Hot` surface backed by `cliff.sh/hot.json`. Hot appears only after enough
-  apps have non-zero scores; until then the `New` row remains visible.
+  terminal supports Kitty, iTerm, or Sixel graphics; halfblocks is the
+  fallback renderer. `CLIFF_IMAGE_PROTOCOL` overrides detection.
 - Cargo installs can bootstrap Rust/Cargo first and then continue the original
   app install from the same TUI flow.
 - `curl cliff.sh | sh` replaces an existing `cliff` binary already on `PATH`.
-- Sort order is descending-only: `stars ↓`, `recency ↓`, and `hot ↓` once
-  Hot is revealed.
-- README and reel fetches route through `cliff.sh/r/*` tracking redirects,
-  with direct upstream fallback when the redirector fails and no cache exists.
-- Registry seeding scripts now live in `cliff-registry`; this repo owns the
-  client, installer, Worker, and embedded catalog snapshot.
 
 ## Live
 
 - **`cliff.sh`** serves `scripts/install.sh` to curl and a small HTML page to
-  browsers through the Cloudflare Worker in `web/worker`.
+  browsers through the Cloudflare Worker in `web/worker`. The trimmed
+  Worker was redeployed 2026-07-07; `/r/*` and `/hot.json` now 404.
+  Already-released clients handle this: they fall back to direct
+  GitHub README fetches and treat a `hot.json` 404 as "no hot data."
 - **`registry.cliff.sh/index.json`** is published by `cliff-registry` CI and
-  is the canonical catalog source.
-- **Catalog** has 149 live apps across 15 categories. The embedded snapshot
-  at `internal/catalog/data/index.json` is refreshed to the 2026-05-04
-  registry build and remains the offline fallback.
+  is the canonical catalog source. The registry's weekly auto-seed
+  workflow scrapes GitHub for new TUIs and commits manifests to main.
+- **Catalog** has 334 apps. The embedded snapshot at
+  `internal/catalog/data/index.json` is the offline fallback.
 - **GitHub releases** publish darwin/linux binaries for amd64 and arm64.
 - **Install paths** are live through `curl cliff.sh | sh`,
   `go install github.com/jmcntsh/cliff/cmd/cliff@latest`, and
   `brew install jmcntsh/tap/cliff`.
-- **Tracking redirects** at `cliff.sh/r/readme/<owner>/<repo>` and
-  `cliff.sh/r/reel/<slug>` log Cloudflare Analytics Engine events and 302 to
-  upstream content.
-- **Hot aggregation** writes `hot.json` to the private `cliff-stats` R2 bucket
-  after the minimum data gate is met.
 
 ## Pending
 
-- **Weekly digest** remains the main unfinished curation surface.
+- **Refresh the embedded snapshot** after the next registry build so
+  it no longer carries `has_reel` fields (harmless — clients ignore
+  unknown fields — but stale).
 - **Registry dispatch token** still needs to be wired so `cliff-registry` can
   trigger the embedded snapshot refresh workflow on merge.
-- **Per-app view surfacing** is still gated on enough collected data and a
-  clearer maintainer/user need.
 
 ## Known Issues
 

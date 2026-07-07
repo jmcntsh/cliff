@@ -22,39 +22,6 @@ const categoryInstalled = "__installed__"
 // doesn't live in catalog.Categories.
 const categoryNew = "__new__"
 
-// categoryHot is the sentinel for the "Hot" pseudo-category: apps
-// with a non-zero HotScore from the worker's hot.json sidecar,
-// sorted by that score. Pseudo, like New and Installed: the
-// filter and sort live in code, not the registry.
-const categoryHot = "__hot__"
-
-// categoryFeatured is a launch-focused hand-picked surface for apps
-// that make Cliff feel visual, fun, or immediately understandable.
-// It is intentionally client-side while the launch set is still small.
-const categoryFeatured = "__featured__"
-
-var featuredRepos = []string{
-	"Passeriform/BalatroTUI",
-	"thomas-mauran/chess-tui",
-	"Broderick-Westrope/tetrigo",
-	"Mjoyufull/Setrixtui",
-	"jmcntsh/draw",
-	"sxyazi/yazi",
-	"yorukot/superfile",
-	"aome510/spotify-player",
-	"RafidMuhymin/termusic",
-	"darrenburns/posting",
-	"charmbracelet/glow",
-}
-
-var featuredRank = func() map[string]int {
-	out := make(map[string]int, len(featuredRepos))
-	for i, repo := range featuredRepos {
-		out[repo] = i
-	}
-	return out
-}()
-
 // newWindow is how far back "new" reaches. One week matches the
 // "new this week" language in README/CLAUDE.
 const newWindow = 7 * 24 * time.Hour
@@ -146,14 +113,6 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 			if _, ok := newRepos[app.Repo]; !ok {
 				continue
 			}
-		case c.category == categoryHot:
-			if app.HotScore <= 0 {
-				continue
-			}
-		case c.category == categoryFeatured:
-			if _, ok := featuredRank[app.Repo]; !ok {
-				continue
-			}
 		case c.category != "":
 			if app.Category != c.category {
 				continue
@@ -172,33 +131,8 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 		sortByFreshness(filtered)
 		return filtered
 	}
-	// Symmetric override for the Hot surface: default to
-	// HotScore-descending so the row's name and contents agree.
-	// Same explicit-sort-wins rule as New.
-	if c.category == categoryHot && c.sort == sortStarsDesc {
-		sortApps(filtered, sortHotDesc)
-		return filtered
-	}
-	if c.category == categoryFeatured && c.sort == sortStarsDesc {
-		sortByFeatured(filtered)
-		return filtered
-	}
 	sortApps(filtered, c.sort)
 	return filtered
-}
-
-func sortByFeatured(apps []catalog.App) {
-	sort.SliceStable(apps, func(i, j int) bool {
-		ri, iok := featuredRank[apps[i].Repo]
-		rj, jok := featuredRank[apps[j].Repo]
-		if iok && jok {
-			return ri < rj
-		}
-		if iok != jok {
-			return iok
-		}
-		return apps[i].Name < apps[j].Name
-	})
 }
 
 // sortByFreshness sorts newest-first by FreshnessTime, tie-breaking on
@@ -238,18 +172,6 @@ func sortApps(apps []catalog.App, mode sortMode) {
 			ti, tj := apps[i].FreshnessTime(), apps[j].FreshnessTime()
 			if !ti.Equal(tj) {
 				return ti.After(tj)
-			}
-			return apps[i].Name < apps[j].Name
-		case sortHotDesc:
-			// Apps with no hot signal carry HotScore=0 and tie
-			// at the bottom; star-count is a reasonable
-			// secondary because it puts established apps above
-			// truly unknown ones in the long tail of zeros.
-			if apps[i].HotScore != apps[j].HotScore {
-				return apps[i].HotScore > apps[j].HotScore
-			}
-			if apps[i].Stars != apps[j].Stars {
-				return apps[i].Stars > apps[j].Stars
 			}
 			return apps[i].Name < apps[j].Name
 		default:

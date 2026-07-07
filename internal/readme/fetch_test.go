@@ -1,58 +1,28 @@
 package readme
 
 import (
-	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
-func TestFetchURL(t *testing.T) {
-	t.Run("no token routes through redirector", func(t *testing.T) {
-		got := fetchURL("octocat", "hello-world", "")
-		want := "https://cliff.sh/r/readme/octocat/hello-world"
-		if got != want {
-			t.Errorf("fetchURL: got %q, want %q", got, want)
-		}
-	})
+func TestFetchHitsGitHubReadmePath(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
 
-	t.Run("with token bypasses redirector", func(t *testing.T) {
-		got := fetchURL("octocat", "hello-world", "ghp_abc")
-		want := "https://api.github.com/repos/octocat/hello-world/readme"
-		if got != want {
-			t.Errorf("fetchURL: got %q, want %q", got, want)
-		}
-	})
+	prev := BaseURL
+	BaseURL = srv.URL
+	defer func() { BaseURL = prev }()
 
-	t.Run("empty redirect var bypasses redirector", func(t *testing.T) {
-		prev := TrackingRedirectURL
-		TrackingRedirectURL = ""
-		defer func() { TrackingRedirectURL = prev }()
-
-		got := fetchURL("octocat", "hello-world", "")
-		want := "https://api.github.com/repos/octocat/hello-world/readme"
-		if got != want {
-			t.Errorf("fetchURL: got %q, want %q", got, want)
-		}
-	})
-}
-
-func TestShouldFallback(t *testing.T) {
-	tests := []struct {
-		name string
-		r    Result
-		want bool
-	}{
-		{"successful fetch is final", Result{Markdown: "# hi"}, false},
-		{"cache-served is final", Result{Markdown: "# hi", FromCache: true}, false},
-		{"rate-limited is final", Result{RateLimited: true}, false},
-		{"404 with no cache falls back", Result{NotFound: true}, true},
-		{"network error with no cache falls back", Result{Err: errors.New("dial tcp: refused")}, true},
-		{"empty cache-served NotFound stays final", Result{NotFound: true, FromCache: true}, false},
+	res := Fetch("octocat", "hello-world", "")
+	if gotPath != "/repos/octocat/hello-world/readme" {
+		t.Errorf("path: got %q, want %q", gotPath, "/repos/octocat/hello-world/readme")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := shouldFallback(tt.r); got != tt.want {
-				t.Errorf("shouldFallback(%+v) = %v, want %v", tt.r, got, tt.want)
-			}
-		})
+	if !res.NotFound {
+		t.Errorf("expected NotFound result, got %+v", res)
 	}
 }

@@ -22,8 +22,6 @@ func main() {
 			os.Exit(cmdUpgrade(os.Args[2:]))
 		case "installed":
 			os.Exit(cmdInstalled(os.Args[2:]))
-		case "submit":
-			os.Exit(cmdSubmit(os.Args[2:]))
 		case "bin-audit":
 			os.Exit(cmdBinAudit(os.Args[2:]))
 		case "completions":

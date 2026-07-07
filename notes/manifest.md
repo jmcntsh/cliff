@@ -16,7 +16,6 @@ description = "Simple terminal UI for git commands"
 author = "jesseduffield"
 homepage = "https://github.com/jesseduffield/lazygit"
 readme = "https://raw.githubusercontent.com/jesseduffield/lazygit/master/README.md"
-demo = "https://asciinema.org/a/410848"
 screenshots = [
   "https://example.com/lazygit-1.png",
 ]
@@ -41,10 +40,8 @@ package = "lazygit"    # or `command = "..."` for type=script
 
 ### Recommended (drives in-TUI richness)
 - `readme` — raw URL to a markdown file. Rendered in detail view.
-- `demo` — URL for an external demo artifact. Registry-hosted `.reel`
-  previews are added separately under `reels/<name>.reel` and exposed
-  in `index.json` as `has_reel`.
-- `screenshots` — array of image URLs. Reserved for future UI use.
+- `screenshots` — array of image URLs, shown in the detail view's
+  screenshot strip (in addition to images parsed from the README).
 - `tags` — array of lowercase tags.
 - `license` — SPDX identifier.
 - `binary` — name of the installed executable when it doesn't match
@@ -195,7 +192,7 @@ Checks:
 - Schema validity.
 - `name` uniqueness; matches `[a-z0-9][a-z0-9-]*`.
 - `tags` are lowercase.
-- URL shape (readme, homepage, screenshots, demo).
+- URL shape (readme, homepage, screenshots).
 - Exactly one of `[install]` or `[[installs]]` is declared.
 - Within `[[installs]]`, each entry's type is unique.
 - `[uninstall]` present when any method has `type = "script"`.

@@ -3,7 +3,25 @@
 Version history for shipped cliff releases. Keep this concise; use git history
 and PRs for implementation detail.
 
-## Unreleased
+## v0.2.0 - 2026-07-07
+
+- **Respec: cliff is a GitHub TUI scraper + browser + installer.**
+  The registry's weekly scraper is the sole catalog intake; everything
+  built for the curated/submission model was removed. Rationale: the
+  submission lifecycle, reels, and view-tracking hotness all assumed
+  human-curated intake and per-app manual artifacts, which don't scale
+  with an automated catalog and doubled the maintenance surface.
+- Removed the submit flow: `cliff submit`, the `+` keybind, the huh
+  form, and `internal/submit`.
+- Removed reel playback (`internal/reelfetch`, the reel strip, the
+  embedded cliff demo reel). Screenshots parsed from READMEs remain
+  the visual preview.
+- Removed the Hot surface, `hot.json` fetching (`internal/hotfetch`),
+  and the hand-picked Featured row. Sorts are `stars ↓` / `recency ↓`;
+  sidebar rows are All / New / Installed / categories.
+- READMEs fetch directly from the GitHub API; the `cliff.sh/r/*`
+  tracking redirects are gone. The Worker now only serves the install
+  script and landing page (no Analytics Engine, R2, or crons).
 
 ## v0.1.23 - 2026-05-20
 

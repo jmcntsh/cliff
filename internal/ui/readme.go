@@ -18,10 +18,6 @@ import (
 )
 
 const readmeMaxContentWidth = 80
-const (
-	readmeReelPaneGap     = 2
-	readmeMinContentWidth = 60
-)
 
 // darkBackground stores the terminal background polarity detected at
 // startup. It's set by main via SetDarkBackground before any tea Program
@@ -44,30 +40,22 @@ type readmeFetchedMsg struct {
 }
 
 type readmeModel struct {
-	app            *catalog.App
-	raw            string
-	viewport       viewport.Model
-	contentWidth   int
-	width          int
-	height         int
-	ready          bool
-	reelRightPane  bool
-	loading        bool
-	rateLimited    bool
-	rateLimitReset time.Time
-	notFound       bool
-	fetchErr       error
-	fromCache      bool
-	reel           reelStrip
-	reelFetchCmd   tea.Cmd
-	gallery        galleryStrip
-	screenshots    []string
-	// Cached so reel ticks can refresh the viewport without re-running Glamour.
+	app              *catalog.App
+	raw              string
+	viewport         viewport.Model
+	contentWidth     int
+	width            int
+	height           int
+	ready            bool
+	loading          bool
+	rateLimited      bool
+	rateLimitReset   time.Time
+	notFound         bool
+	fetchErr         error
+	fromCache        bool
+	gallery          galleryStrip
+	screenshots      []string
 	renderedMarkdown string
-}
-
-func (m readmeModel) reelLoading() bool {
-	return m.app != nil && !m.reel.ready
 }
 
 func (m readmeModel) galleryLoading() bool {
@@ -76,18 +64,15 @@ func (m readmeModel) galleryLoading() bool {
 
 func newReadme(app *catalog.App, width, height int) readmeModel {
 	raw := placeholderMarkdown(app)
-	reel, fetchCmd := newReelStripForApp(app.Name, width)
 	screenshots := []string(nil)
 	if app != nil {
 		screenshots = rdm.GalleryURLs(app.Screenshots, app.Repo, app.Readme, "")
 	}
 	m := readmeModel{
-		app:          app,
-		raw:          raw,
-		loading:      true,
-		reel:         reel,
-		reelFetchCmd: fetchCmd,
-		screenshots:  screenshots,
+		app:         app,
+		raw:         raw,
+		loading:     true,
+		screenshots: screenshots,
 	}
 	if shouldShowInlineGallery(screenshots) {
 		m.gallery = newGalleryStrip(app.Repo, screenshots, width)
@@ -95,34 +80,9 @@ func newReadme(app *catalog.App, width, height int) readmeModel {
 	return m.resize(width, height)
 }
 
-// ReelInit returns commands that start embedded reel playback and/or fetch
-// live reel and screenshot media for the readme view.
-func (m readmeModel) ReelInit() tea.Cmd {
-	var cmds []tea.Cmd
-	if cmd := m.reel.Init(); cmd != nil {
-		cmds = append(cmds, cmd)
-	}
-	if m.reelFetchCmd != nil {
-		cmds = append(cmds, m.reelFetchCmd)
-	}
-	if cmd := m.gallery.fetchCurrentCmd(); cmd != nil {
-		cmds = append(cmds, cmd)
-	}
-	if len(cmds) == 0 {
-		return nil
-	}
-	return tea.Batch(cmds...)
-}
-
-// applyReelFetched accepts only the reel for the current app and starts playback.
-func (m readmeModel) applyReelFetched(msg reelFetchedMsg) (readmeModel, tea.Cmd) {
-	wasReady := m.reel.ready
-	var cmd tea.Cmd
-	m.reel, cmd = m.reel.applyReelFetched(msg)
-	if !wasReady && m.reel.ready {
-		m = m.resize(m.width, m.height)
-	}
-	return m, cmd
+// galleryInit kicks off the screenshot fetch for the readme view.
+func (m readmeModel) galleryInit() tea.Cmd {
+	return m.gallery.fetchCurrentCmd()
 }
 
 func fetchReadmeCmd(app *catalog.App) tea.Cmd {
@@ -214,24 +174,11 @@ func (m readmeModel) resize(width, height int) readmeModel {
 	m.width = width
 	m.height = height
 	bodyRows := max(height-3, 1)
-	m.reelRightPane = m.canUseReelRightPane(width, bodyRows)
-
-	if m.reelRightPane {
-		reelW := m.reel.FramedWidth()
-		m.contentWidth = max(width-reelW-readmeReelPaneGap, 20)
-		m.reel.width = reelW
-		m.viewport = viewport.New(m.contentWidth, bodyRows)
-	} else {
-		// In stacked mode the reel lives inside the scrollable content.
-		if m.reel.Height() > 0 {
-			m.reel.width = width
-		}
-		if m.gallery.hasURLs() {
-			m.gallery.width = width
-		}
-		m.contentWidth = width
-		m.viewport = viewport.New(m.contentWidth, bodyRows)
+	if m.gallery.hasURLs() {
+		m.gallery.width = width
 	}
+	m.contentWidth = width
+	m.viewport = viewport.New(m.contentWidth, bodyRows)
 	m.renderedMarkdown = renderMarkdown(m.raw, m.contentWidth)
 	m.refreshViewportContent()
 	m.ready = true
@@ -241,17 +188,8 @@ func (m readmeModel) resize(width, height int) readmeModel {
 // refreshViewportContent rebuilds content while preserving scroll offset.
 func (m *readmeModel) refreshViewportContent() {
 	content := m.renderedMarkdown
-	if !m.reelRightPane {
-		var prefix []string
-		if m.gallery.Height() > 0 {
-			prefix = append(prefix, m.gallery.View())
-		}
-		if m.reel.Height() > 0 {
-			prefix = append(prefix, m.reel.View())
-		}
-		if len(prefix) > 0 {
-			content = strings.Join(prefix, "\n") + "\n" + content
-		}
+	if m.gallery.Height() > 0 {
+		content = m.gallery.View() + "\n" + content
 	}
 	yOff := m.viewport.YOffset
 	m.viewport.SetContent(content)
@@ -269,15 +207,6 @@ func (m *readmeModel) refreshViewportContent() {
 const scrollStep = 5
 
 func (m readmeModel) Update(msg tea.Msg) (readmeModel, tea.Cmd) {
-	// Stacked reels are part of the viewport, so each tick refreshes content.
-	if _, isTick := msg.(reelTickMsg); isTick {
-		var reelCmd tea.Cmd
-		m.reel, reelCmd = m.reel.Update(msg)
-		if !m.reelRightPane && m.reel.Height() > 0 {
-			m.refreshViewportContent()
-		}
-		return m, reelCmd
-	}
 	if km, ok := msg.(tea.KeyMsg); ok {
 		switch {
 		case key.Matches(km, keys.Up):
@@ -305,27 +234,7 @@ func (m readmeModel) ViewWithSpinner(spinnerGlyph string) string {
 	}
 	header := m.renderHeader()
 	footer := m.renderFooterWithSpinner(spinnerGlyph)
-	if m.reelRightPane {
-		body := lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			m.viewport.View(),
-			strings.Repeat(" ", readmeReelPaneGap),
-			m.reel.View(),
-		)
-		return lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
-	}
 	return lipgloss.JoinVertical(lipgloss.Left, header, m.viewport.View(), footer)
-}
-
-func (m readmeModel) canUseReelRightPane(width, bodyRows int) bool {
-	reelW := m.reel.FramedWidth()
-	reelH := m.reel.Height()
-	if reelW == 0 || reelH == 0 {
-		return false
-	}
-	// Only split when both panes remain useful: README keeps a readable
-	// column and the reel fits in the body area without forcing extra rows.
-	return width-reelW-readmeReelPaneGap >= readmeMinContentWidth && reelH <= bodyRows
 }
 
 func (m readmeModel) renderHeader() string {

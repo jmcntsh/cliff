@@ -1,17 +1,18 @@
 # cliff
 
-**A terminal-native directory for CLIs and TUIs.** Browse what
-people have built, read the README without leaving the terminal,
-install in one keystroke.
+**A terminal-based browser for TUIs.** New terminal apps are scraped
+from GitHub weekly; browse them, read the README without leaving the
+terminal, install in one keystroke.
 
 ```
 $ curl cliff.sh | sh
 $ cliff
 ```
 
-Today: 149 apps, rendered READMEs, fuzzy search, one-key install
-via the project's own package manager (brew / cargo / npm / pipx /
-`go install`). No accounts, no payments, no hosted binaries.
+Today: 334 apps, rendered READMEs with inline screenshots, fuzzy
+search, one-key install via the project's own package manager (brew /
+cargo / npm / pipx / `go install`). No accounts, no telemetry, no
+hosted binaries.
 
 If the colors look washed out, your terminal is reporting the
 wrong background. Force it: `CLIFF_THEME=dark cliff` (or `light`).
@@ -20,26 +21,23 @@ wrong background. Force it: `CLIFF_THEME=dark cliff` (or `light`).
 
 AI coding tools are producing a flood of weird, useful, personal
 terminal apps faster than GitHub stars or awesome-lists can surface
-them. Most of it lives in a gist or a half-finished repo nobody
-finds. cliff is the front door: a well-curated, fast, in-terminal
-directory that treats new indie TUIs as first-class, not buried
-under the same five famous FOSS projects.
+them. cliff finds them automatically: a scheduled scraper searches
+GitHub for new TUIs each week, filters out libraries and templates,
+and adds anything installable to the catalog. The client is a fast
+in-terminal browser over that catalog.
 
-The audience is people who live in the terminal and want a better
-way to discover new tools for it. That's it. Everything else is
-downstream of nailing that.
+The audience is people who live in the terminal and want an easy way
+to check for new tools and install them. That's it.
 
 ## The product in one screen
 
-- **Browse** a curated catalog in a real TUI. README rendered with
-  Glamour inline, metadata sidebar, fuzzy search.
+- **Browse** the catalog in a real TUI. README rendered with Glamour
+  inline, screenshots when your terminal supports graphics, metadata
+  sidebar, fuzzy search, a "New" row for this week's finds.
 - **Install** in one keystroke. cliff shells out to the right
   package manager (brew / cargo / npm / pipx / `go install` /
   upstream install script). We host zero binaries — we wrap
   existing infrastructure.
-- **Discover** — the list is sorted by recency and curation, not
-  just stars, so a good project from last week isn't drowned by
-  btop. Weekly highlights, tags, and categories surface new work.
 - **Stay in the terminal.** `o` opens the project page in your
   browser; `y` copies the install command via OSC 52 (works over
   SSH, no clipboard helper needed); `?` shows everything else.
@@ -50,24 +48,25 @@ That's the whole product. It is small on purpose.
 
 - **No hosted binaries.** Ever. Package managers already solved
   distribution; we wrap them.
-- **No accounts for browsing or installing.** Auth is a wall; the
-  directory works with zero friction.
+- **No accounts or telemetry.** The directory works with zero
+  friction and phones home to no one.
+- **No submission pipeline.** The scraper is the intake. Anything it
+  misses can be added with a one-file PR to the registry repo.
 - **No sandbox as a security boundary.** Installs run with the
-  user's shell privileges, same as `brew install`. If we add a
-  try-mode later, it's for trying, not safety.
+  user's shell privileges, same as `brew install`.
 
 ## Architecture, briefly
 
 - **Client:** Go single static binary (Bubble Tea stack).
   Distributed via `curl cliff.sh | sh`, `brew`, `go install`.
-- **Registry:** TOML manifests in the registry repo, compiled to
-  `index.json` by CI, served via GitHub Pages at
-  `https://registry.cliff.sh/index.json`. No catalog database.
+- **Registry:** TOML manifests in the registry repo, written mostly
+  by a weekly GitHub-scraper workflow, compiled to `index.json` by CI,
+  served via GitHub Pages at `https://registry.cliff.sh/index.json`.
+  No catalog database.
 - **Distribution of apps:** wrap existing package managers. We
   host zero binaries and never will.
-- **Backend:** a small Cloudflare Worker serves `cliff.sh`, redirects
-  README/reel requests, and publishes hotness data. No app catalog
-  server.
+- **Backend:** a small Cloudflare Worker serves the `cliff.sh`
+  install script and landing page. Nothing else runs server-side.
 
 See [`CLAUDE.md`](CLAUDE.md) for operating principles, and
 [`DEVELOPMENT.md`](DEVELOPMENT.md) for how to build and run.

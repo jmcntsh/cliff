@@ -9,14 +9,12 @@ import (
 	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/launcher"
 	"github.com/jmcntsh/cliff/internal/pathfix"
-	"github.com/jmcntsh/cliff/internal/submit"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -44,18 +42,6 @@ const (
 	modePkgResult
 
 	modeFixPath // confirm + result screen for auto-adding a dir to $PATH
-	modeSubmit  // confirm screen for opening the registry submit form in a browser
-)
-
-// submitPhase tracks the form → confirm → opened flow inside modeSubmit.
-type submitPhase int
-
-const (
-	submitPhaseForm submitPhase = iota
-
-	submitPhaseConfirm
-
-	submitPhaseOpened
 )
 
 // pkgOp is the active package operation for the shared confirm/running/
@@ -111,7 +97,6 @@ type sortMode int
 const (
 	sortStarsDesc sortMode = iota
 	sortRecencyDesc
-	sortHotDesc
 )
 
 func (s sortMode) label() string {
@@ -120,30 +105,15 @@ func (s sortMode) label() string {
 		return "stars ↓"
 	case sortRecencyDesc:
 		return "recency ↓"
-	case sortHotDesc:
-		return "hot ↓"
 	}
 	return ""
 }
 
-// hotRevealThreshold avoids showing Hot while almost every score is zero.
-const hotRevealThreshold = 25
-
-func (r Root) visibleSorts() []sortMode {
-	if r.hotRevealed {
-		return []sortMode{sortStarsDesc, sortRecencyDesc, sortHotDesc}
-	}
-	return []sortMode{sortStarsDesc, sortRecencyDesc}
-}
-
 func (r Root) nextSort() sortMode {
-	cycle := r.visibleSorts()
-	for i, s := range cycle {
-		if s == r.sort {
-			return cycle[(i+1)%len(cycle)]
-		}
+	if r.sort == sortStarsDesc {
+		return sortRecencyDesc
 	}
-	return cycle[0]
+	return sortStarsDesc
 }
 
 type Root struct {
@@ -160,12 +130,9 @@ type Root struct {
 	pkgState
 	fixPathState
 	launchState
-	submitState
 	manageState
 	spinnerState
 
-	// Gates the Hot sidebar row and sort step; New hides when Hot appears.
-	hotRevealed bool
 	layout      layoutMode
 	width       int
 	height      int
@@ -210,16 +177,6 @@ type launchState struct {
 	launchErr    error
 }
 
-// submitState holds the three-phase `+` flow: form, confirm, opened.
-type submitState struct {
-	submitReturnMode mode
-	submitPhase      submitPhase
-	submitErr        error
-	submitURL        string
-	submitFields     submit.Request
-	submitForm       *huh.Form
-}
-
 // manageState backs the installed-app action picker.
 type manageState struct {
 	manageActions []manageAction
@@ -239,8 +196,6 @@ func (r Root) spinnerActive() bool {
 	case r.mode == modePkgRunning && len(r.installLines) == 0:
 		return true
 	case r.mode == modeReadme && r.readme.loading:
-		return true
-	case r.mode == modeReadme && r.readme.reelLoading():
 		return true
 	case r.mode == modeReadme && r.readme.galleryLoading():
 		return true
@@ -281,7 +236,7 @@ func New(c *catalog.Catalog) Root {
 	r := Root{
 		catalog:      c,
 		grid:         newGrid(),
-		sidebar:      newSidebar(c, installed, false),
+		sidebar:      newSidebar(c, installed),
 		search:       ti,
 		installed:    installed,
 		binOverrides: overrides,
@@ -302,13 +257,8 @@ const (
 	installLogHeight = 12
 )
 
-// Init batches the launch-title sweep with a one-shot background
-// hot.json fetch. The fetch is fire-and-forget: if the sidecar is
-// 404 (worker still inside its 14-day days-seen gate) or unreachable,
-// hotFetchedMsg arrives with Available=false and the UI quietly
-// stays in pre-reveal shape. No spinner; nothing to wait for.
 func (r Root) Init() tea.Cmd {
-	return tea.Batch(launchTitleTick(), fetchHotCmd())
+	return launchTitleTick()
 }
 
 // titleTickMsg drives the launch sweep on the brand-mark gradient.

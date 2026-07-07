@@ -141,8 +141,8 @@ CI already did the work.
 - `~/.cliff/cache/index.json` + `.etag` — fetched registry index.
 
 Installed-state is derived from `$PATH` at runtime, not persisted.
-No config file and no client-side telemetry. README/reel requests may
-pass through `cliff.sh/r/*` server-side redirects, with upstream fallback.
+No config file and no telemetry. READMEs are fetched directly from
+the GitHub API.
 
 ## Common maintainer tasks
 
@@ -163,7 +163,6 @@ Chosen for speed to MVP and single-binary distribution. See [CLAUDE.md](CLAUDE.m
 ## What's not in the tool today
 
 cliff does not have accounts, hosted binaries, a server-side catalog
-database, client telemetry, or sandboxed installs. The remaining
-curation work is mostly editorial/product surface area, such as a
-weekly digest and deciding how much of the collected redirect data to
-show.
+database, telemetry, or sandboxed installs. Catalog intake is the
+registry repo's weekly GitHub scraper plus manual PRs; there is no
+submission flow in the client.
