@@ -1,6 +1,6 @@
 # cliff
 
-**A terminal-based browser for TUIs.** New terminal apps are scraped
+**A terminal-based browser for TUIs and CLIs.** New terminal apps are scraped
 from GitHub weekly; browse them, read the README without leaving the
 terminal, install in one keystroke.
 
@@ -9,10 +9,10 @@ $ curl cliff.sh | sh
 $ cliff
 ```
 
-Today: 334 apps, rendered READMEs with inline screenshots, fuzzy
-search, one-key install via the project's own package manager (brew /
-cargo / npm / pipx / `go install`). No accounts, no telemetry, no
-hosted binaries.
+A live catalog refreshed by the weekly scraper, rendered READMEs with
+inline screenshots, fuzzy search, one-key install via the project's own
+package manager (brew / cargo / npm / pipx / `go install`). No
+accounts, no telemetry, no hosted binaries.
 
 If the colors look washed out, your terminal is reporting the
 wrong background. Force it: `CLIFF_THEME=dark cliff` (or `light`).
@@ -22,9 +22,9 @@ wrong background. Force it: `CLIFF_THEME=dark cliff` (or `light`).
 AI coding tools are producing a flood of weird, useful, personal
 terminal apps faster than GitHub stars or awesome-lists can surface
 them. cliff finds them automatically: a scheduled scraper searches
-GitHub for new TUIs each week, filters out libraries and templates,
-and adds anything installable to the catalog. The client is a fast
-in-terminal browser over that catalog.
+GitHub for new TUIs and CLIs each week, filters out libraries and
+templates, and adds anything installable to the catalog. The client is
+a fast in-terminal browser over that catalog.
 
 The audience is people who live in the terminal and want an easy way
 to check for new tools and install them. That's it.

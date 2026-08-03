@@ -206,6 +206,30 @@ func TestFilter_New_AddedAtCapsToTopN(t *testing.T) {
 	}
 }
 
+func TestFilter_New_RanksSameBatchByStars(t *testing.T) {
+	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
+	apps := make([]catalog.App, 0, 15)
+	for i := 0; i < 15; i++ {
+		apps = append(apps, catalog.App{
+			Name:    fmt.Sprintf("app-%02d", i),
+			Repo:    fmt.Sprintf("a/app-%02d", i),
+			Stars:   i,
+			AddedAt: now.Add(-24 * time.Hour),
+		})
+	}
+
+	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
+	if len(got) != newCap {
+		t.Fatalf("expected cap of %d, got %d", newCap, len(got))
+	}
+	for i, app := range got {
+		wantName := fmt.Sprintf("app-%02d", 14-i)
+		if app.Name != wantName {
+			t.Errorf("at %d: expected %s, got %s", i, wantName, app.Name)
+		}
+	}
+}
+
 func TestFilter_New_EmptyWhenNoTimestamps(t *testing.T) {
 	got := filterAndSort(sample(), filterCriteria{category: categoryNew, now: time.Now()})
 	if len(got) != 0 {

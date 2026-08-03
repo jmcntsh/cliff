@@ -3,14 +3,17 @@
 Current shipped state. Product principles live in `CLAUDE.md`; historical
 release notes live in `CHANGELOG.md`.
 
-Last updated: 2026-07-07.
+Last updated: 2026-08-03.
 
 ## Current Release
 
-Latest release: `v0.2.0` (2026-07-07).
+Latest release: `v0.2.1` (2026-08-03).
 
+- **Discovery refresh:** apps added in the same weekly scrape batch are
+  ranked by stars in the capped New view, so it surfaces the highest-interest
+  recent tools instead of selecting alphabetically.
 - **Respec:** cliff is now scoped to a
-  GitHub TUI scraper + browser + installer. Removed from the client:
+  GitHub CLI/TUI scraper + browser + installer. Removed from the client:
   the submit flow (`cliff submit`, `+` keybind, huh form), reel
   playback, the Hot surface and `hot.json` fetch, the hand-picked
   Featured row, and README tracking redirects (READMEs now fetch
@@ -35,9 +38,10 @@ Latest release: `v0.2.0` (2026-07-07).
   GitHub README fetches and treat a `hot.json` 404 as "no hot data."
 - **`registry.cliff.sh/index.json`** is published by `cliff-registry` CI and
   is the canonical catalog source. The registry's weekly auto-seed
-  workflow scrapes GitHub for new TUIs and commits manifests to main.
-- **Catalog** has 682 apps. The embedded snapshot at
-  `internal/catalog/data/index.json` is the offline fallback.
+  workflow scrapes GitHub for new TUIs and CLIs and commits manifests to main.
+- **Catalog** is fetched live on each launch from the weekly-refreshed
+  registry. The release-time snapshot at
+  `internal/catalog/data/index.json` is only the offline fallback.
 - **GitHub releases** publish darwin/linux binaries for amd64 and arm64.
 - **Install paths** are live through `curl cliff.sh | sh`,
   `go install github.com/jmcntsh/cliff/cmd/cliff@latest`, and

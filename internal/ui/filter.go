@@ -36,9 +36,10 @@ const newCap = 10
 // When any app has a non-zero AddedAt, we use AddedAt exclusively
 // (LastCommit means "pushed code recently," a very different claim);
 // otherwise we fall back to LastCommit. In both branches we keep the
-// top newCap by timestamp inside newWindow. Returning a set rather
-// than a predicate is what lets the cap be enforced once for the
-// whole render instead of per-row.
+// top newCap by timestamp inside newWindow, using stars to rank apps
+// from the same weekly batch. Returning a set rather than a predicate
+// is what lets the cap be enforced once for the whole render instead
+// of per-row.
 func newSet(apps []catalog.App, now time.Time) map[string]struct{} {
 	pick := func(a *catalog.App) time.Time {
 		if !a.AddedAt.IsZero() {
@@ -58,20 +59,24 @@ func newSet(apps []catalog.App, now time.Time) map[string]struct{} {
 	}
 
 	type ranked struct {
-		repo string
-		t    time.Time
+		repo  string
+		t     time.Time
+		stars int
 	}
 	eligible := make([]ranked, 0, len(apps))
 	for i := range apps {
 		a := &apps[i]
 		t := pick(a)
 		if !t.IsZero() && now.Sub(t) <= newWindow {
-			eligible = append(eligible, ranked{repo: a.Repo, t: t})
+			eligible = append(eligible, ranked{repo: a.Repo, t: t, stars: a.Stars})
 		}
 	}
 	sort.Slice(eligible, func(i, j int) bool {
 		if !eligible[i].t.Equal(eligible[j].t) {
 			return eligible[i].t.After(eligible[j].t)
+		}
+		if eligible[i].stars != eligible[j].stars {
+			return eligible[i].stars > eligible[j].stars
 		}
 		return eligible[i].repo < eligible[j].repo
 	})
@@ -135,13 +140,16 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 	return filtered
 }
 
-// sortByFreshness sorts newest-first by FreshnessTime, tie-breaking on
-// name for deterministic ordering when two apps share a timestamp.
+// sortByFreshness sorts newest-first by FreshnessTime, then by stars
+// within a weekly batch, with name as the deterministic final tie-break.
 func sortByFreshness(apps []catalog.App) {
 	sort.Slice(apps, func(i, j int) bool {
 		ti, tj := apps[i].FreshnessTime(), apps[j].FreshnessTime()
 		if !ti.Equal(tj) {
 			return ti.After(tj)
+		}
+		if apps[i].Stars != apps[j].Stars {
+			return apps[i].Stars > apps[j].Stars
 		}
 		return apps[i].Name < apps[j].Name
 	})

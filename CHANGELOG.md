@@ -3,6 +3,14 @@
 Version history for shipped cliff releases. Keep this concise; use git history
 and PRs for implementation detail.
 
+## v0.2.1 - 2026-08-03
+
+- Ranked apps from the same weekly scrape batch by stars in the capped
+  `New` view, so recent high-interest tools are shown instead of the
+  first ten repositories alphabetically.
+- Updated product copy to describe the live CLI and TUI catalog without
+  a hard-coded app count.
+
 ## v0.2.0 - 2026-07-07
 
 - **Respec: cliff is a GitHub TUI scraper + browser + installer.**
