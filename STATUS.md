@@ -3,31 +3,28 @@
 Current shipped state. Product principles live in `CLAUDE.md`; historical
 release notes live in `CHANGELOG.md`.
 
-Last updated: 2026-08-08.
-
-## In Development
-
-- A new `Hot` surface uses static 7-day and 30-day net GitHub star-growth
-  rankings generated from daily registry snapshots. This does not restore
-  the removed README-view tracking, `hot.json`, or Worker aggregation.
+Last updated: 2026-08-10.
 
 ## Current Release
 
-Latest release: `v0.2.1` (2026-08-03).
+Latest release: `v0.3.0` (2026-08-10).
 
+- **Hot rankings:** the `Hot` sidebar surface ranks apps by static 7-day or
+  30-day net GitHub star growth from daily registry snapshots. It does not
+  use Cliff views, accounts, or user telemetry.
 - **Discovery refresh:** apps added in the same weekly scrape batch are
   ranked by stars in the capped New view, so it surfaces the highest-interest
   recent tools instead of selecting alphabetically.
 - **Respec:** cliff is now scoped to a
   GitHub CLI/TUI scraper + browser + installer. Removed from the client:
   the submit flow (`cliff submit`, `+` keybind, huh form), reel
-  playback, the Hot surface and `hot.json` fetch, the hand-picked
-  Featured row, and README tracking redirects (READMEs now fetch
-  directly from the GitHub API). The Worker is reduced to serving the
-  install script and landing page — Analytics Engine logging, R2
-  stats, and the daily aggregation crons are gone. Sorts are
-  `stars ↓` and `recency ↓`; sidebar rows are All / New / Installed /
-  categories.
+  playback, the old view-tracking Hot surface and `hot.json` fetch,
+  the hand-picked Featured row, and README tracking redirects
+  (READMEs now fetch directly from the GitHub API). The Worker is
+  reduced to serving the install script and landing page — Analytics Engine
+  logging, R2 stats, and the daily aggregation crons are gone. Standard sorts are
+  `stars ↓` and `recency ↓`; sidebar rows are All / New / Hot /
+  Installed / categories.
 - README screenshots auto-load inline at the top of the detail view when the
   terminal supports Kitty, iTerm, or Sixel graphics; halfblocks is the
   fallback renderer. `CLIFF_IMAGE_PROTOCOL` overrides detection.

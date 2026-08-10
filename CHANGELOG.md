@@ -3,7 +3,7 @@
 Version history for shipped cliff releases. Keep this concise; use git history
 and PRs for implementation detail.
 
-## Unreleased
+## v0.3.0 - 2026-08-10
 
 - Added a `Hot` view ranked by net GitHub star growth, with `t` switching
   between 7-day and 30-day windows. Rankings come from static daily registry
