@@ -1,15 +1,17 @@
 package catalog
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestAppBinaryName(t *testing.T) {
 	cases := []struct {
-		name   string
-		app    App
-		want   string
+		name string
+		app  App
+		want string
 	}{
 		{"derived from repo basename", App{Repo: "charmbracelet/glow"}, "glow"},
 		{"derived, single-segment repo", App{Repo: "standalone"}, "standalone"},
@@ -51,7 +53,7 @@ func TestResolvedBinaryName_FallbackWhenNoOverride(t *testing.T) {
 // basename. Without this, uninstall silently removes nothing.
 func TestUninstallCommandWithOverrides_GoUsesDetectedBinary(t *testing.T) {
 	app := App{
-		Repo:        "author/repo-with-weird-suffix",
+		Repo:         "author/repo-with-weird-suffix",
 		InstallSpecs: []InstallSpec{{Type: "go", Package: "example.com/author/repo-with-weird-suffix@latest"}},
 	}
 	overrides := map[string]string{"author/repo-with-weird-suffix": "actualbin"}
@@ -77,7 +79,7 @@ func TestAppUninstallCommand_OverrideWins(t *testing.T) {
 
 func TestAppUninstallCommand_DerivedFallback(t *testing.T) {
 	app := App{
-		Repo:        "foo/bar",
+		Repo:         "foo/bar",
 		InstallSpecs: []InstallSpec{{Type: "brew", Package: "bar"}},
 	}
 	if got := app.UninstallCommand(); got != "brew uninstall bar" {
@@ -109,7 +111,7 @@ func TestAppUninstallCommand_GoUsesRuntimeGoEnv(t *testing.T) {
 	// and a naive shell fallback would point at ~/go/bin where the
 	// binary doesn't actually live. Regression guard for that bug.
 	app := App{
-		Repo:        "foo/bar",
+		Repo:         "foo/bar",
 		InstallSpecs: []InstallSpec{{Type: "go", Package: "github.com/foo/bar@latest"}},
 	}
 	got := app.UninstallCommand()
@@ -133,8 +135,8 @@ func TestEmbeddedSnapshotLoads(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	if c.SchemaVersion != 1 {
-		t.Errorf("schema_version = %d, want 1", c.SchemaVersion)
+	if c.SchemaVersion != 2 {
+		t.Errorf("schema_version = %d, want 2", c.SchemaVersion)
 	}
 	if len(c.Apps) == 0 {
 		t.Fatal("embedded snapshot has no apps")
@@ -149,5 +151,42 @@ func TestEmbeddedSnapshotLoads(t *testing.T) {
 			t.Errorf("duplicate repo: %s", app.Repo)
 		}
 		seen[app.Repo] = true
+	}
+	for _, window := range []string{"7d", "30d"} {
+		if _, ok := c.StarWindows[window]; !ok {
+			t.Errorf("embedded snapshot missing %s star window", window)
+		}
+	}
+}
+
+func TestCatalogSchemaV1LeavesGrowthUnavailable(t *testing.T) {
+	var c Catalog
+	err := json.Unmarshal([]byte(`{
+		"schema_version": 1,
+		"apps": [{"name":"old","repo":"a/old","stars":12}],
+		"categories": []
+	}`), &c)
+	if err != nil {
+		t.Fatalf("unmarshal schema v1: %v", err)
+	}
+	if _, ok := c.Apps[0].StarGrowth["7d"]; ok {
+		t.Fatal("schema-v1 app should not acquire synthetic growth")
+	}
+	if _, ok := c.StarWindows["7d"]; ok {
+		t.Fatal("schema-v1 catalog should leave growth window unavailable")
+	}
+}
+
+func TestStarWindowAvailability(t *testing.T) {
+	from := time.Date(2026, 8, 1, 4, 0, 0, 0, time.UTC)
+	to := from.Add(7 * 24 * time.Hour)
+	if (StarWindow{RequestedDays: 7}).Available() {
+		t.Fatal("window without endpoints must be unavailable")
+	}
+	if !(StarWindow{RequestedDays: 7, From: &from, To: &to, Complete: true}).Available() {
+		t.Fatal("ordered endpoints should make the window available")
+	}
+	if (StarWindow{RequestedDays: 7, From: &to, To: &from}).Available() {
+		t.Fatal("reversed endpoints must be unavailable")
 	}
 }

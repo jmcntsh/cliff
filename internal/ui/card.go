@@ -24,6 +24,15 @@ func formatStars(n int) string {
 	}
 }
 
+func formatSignedStars(n int) string {
+	sign := "+"
+	if n < 0 {
+		sign = "-"
+		n = -n
+	}
+	return sign + formatStars(n)
+}
+
 // renderCard draws one app card. The card is fixed-width so rows align;
 // height is fixed at cardHeightCompact for unselected cards. Selected
 // cards share the same outer height (so neighbors don't shift) but use
@@ -36,7 +45,7 @@ func formatStars(n int) string {
 // falls back to ColorText — "black on a light terminal, white on a
 // dark one". This keeps the accent pink meaningful: it only appears
 // where input is actually going.
-func renderCard(app catalog.App, width, height int, selected, installed, focused bool) string {
+func renderCard(app catalog.App, width, height int, selected, installed, focused bool, growthWindow string) string {
 	// Selection cues are stacked on purpose: shape (thick vs. rounded
 	// border), color (accent vs. muted border), and a panel background
 	// fill. Any one of these alone is easy to lose track of on a busy
@@ -99,7 +108,11 @@ func renderCard(app catalog.App, width, height int, selected, installed, focused
 		}
 		return s
 	}
-	metaParts := []string{applyBG(theme.Stars).Render("★ " + formatStars(app.Stars))}
+	starText := "★ " + formatStars(app.Stars)
+	if delta, ok := app.StarGrowth[growthWindow]; growthWindow != "" && ok {
+		starText = "★ " + formatSignedStars(delta) + " / " + growthWindow
+	}
+	metaParts := []string{applyBG(theme.Stars).Render(starText)}
 	if app.Language != "" {
 		dotStyle := applyBG(lipgloss.NewStyle().Foreground(theme.LanguageColor(app.Language)))
 		langNameStyle := applyBG(lipgloss.NewStyle())
@@ -214,4 +227,3 @@ func wrapTextColored(s string, w, maxLines int, fg lipgloss.TerminalColor) []str
 	}
 	return lines
 }
-

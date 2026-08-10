@@ -25,14 +25,15 @@ type sidebar struct {
 	focused bool
 }
 
-// newSidebar builds the sidebar pinned at the top with All, New,
-// Installed, then every catalog category in registry order. Counts
-// are derived at runtime: New from FreshnessTime, Installed from the
-// live install map.
+// newSidebar builds the sidebar pinned at the top with All, New, Hot,
+// Installed, then every catalog category in registry order. Counts are
+// derived at runtime: New from FreshnessTime, Hot from measured weekly
+// growth, and Installed from the live install map.
 func newSidebar(c *catalog.Catalog, installed map[string]bool) sidebar {
 	items := []sidebarItem{
 		{name: "", count: len(c.Apps)},
 		{name: categoryNew, count: countNew(c.Apps, time.Now())},
+		{name: categoryHot, count: countHot(c.Apps, hotPeriodWeek.key())},
 		{name: categoryInstalled, count: len(installed)},
 	}
 	for _, cat := range c.Categories {
@@ -69,6 +70,16 @@ func (s sidebar) setInstalled(installed map[string]bool) sidebar {
 func (s sidebar) setNewCount(n int) sidebar {
 	for i, item := range s.items {
 		if item.name == categoryNew {
+			s.items[i].count = n
+			break
+		}
+	}
+	return s
+}
+
+func (s sidebar) setHotCount(n int) sidebar {
+	for i, item := range s.items {
+		if item.name == categoryHot {
 			s.items[i].count = n
 			break
 		}
@@ -132,6 +143,8 @@ func (s sidebar) view(height int) string {
 			name = "All"
 		case categoryNew:
 			name = "New"
+		case categoryHot:
+			name = "Hot"
 		case categoryInstalled:
 			name = "Installed"
 		}

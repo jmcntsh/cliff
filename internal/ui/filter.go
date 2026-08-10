@@ -22,6 +22,11 @@ const categoryInstalled = "__installed__"
 // doesn't live in catalog.Categories.
 const categoryNew = "__new__"
 
+// categoryHot is the registry-backed popularity surface. Unlike New,
+// eligibility comes from measured star-growth map membership: a zero
+// delta is valid, while a missing key means the app lacked coverage.
+const categoryHot = "__hot__"
+
 // newWindow is how far back "new" reaches. One week matches the
 // "new this week" language in README/CLAUDE.
 const newWindow = 7 * 24 * time.Hour
@@ -94,6 +99,7 @@ type filterCriteria struct {
 	category  string
 	query     string
 	sort      sortMode
+	hotWindow string
 	installed map[string]bool // required when category == categoryInstalled
 	now       time.Time       // injection point for isNew; zero means time.Now()
 }
@@ -118,6 +124,10 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 			if _, ok := newRepos[app.Repo]; !ok {
 				continue
 			}
+		case c.category == categoryHot:
+			if _, ok := app.StarGrowth[c.hotWindow]; !ok {
+				continue
+			}
 		case c.category != "":
 			if app.Category != c.category {
 				continue
@@ -126,7 +136,14 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 		filtered = append(filtered, app)
 	}
 	if c.query != "" {
-		return applyFuzzy(filtered, c.query)
+		filtered = applyFuzzy(filtered, c.query)
+		if c.category != categoryHot {
+			return filtered
+		}
+	}
+	if c.category == categoryHot {
+		sortByStarGrowth(filtered, c.hotWindow)
+		return filtered
 	}
 	// For the New surface, default-sort by freshness (newest first)
 	// so the row actually reads as "new this week" rather than
@@ -138,6 +155,31 @@ func filterAndSort(apps []catalog.App, c filterCriteria) []catalog.App {
 	}
 	sortApps(filtered, c.sort)
 	return filtered
+}
+
+func countHot(apps []catalog.App, window string) int {
+	n := 0
+	for i := range apps {
+		if _, ok := apps[i].StarGrowth[window]; ok {
+			n++
+		}
+	}
+	return n
+}
+
+// sortByStarGrowth is the fixed order for Hot. Absolute net growth is the
+// primary signal; lifetime stars and name make ties deterministic.
+func sortByStarGrowth(apps []catalog.App, window string) {
+	sort.Slice(apps, func(i, j int) bool {
+		di, dj := apps[i].StarGrowth[window], apps[j].StarGrowth[window]
+		if di != dj {
+			return di > dj
+		}
+		if apps[i].Stars != apps[j].Stars {
+			return apps[i].Stars > apps[j].Stars
+		}
+		return apps[i].Name < apps[j].Name
+	})
 }
 
 // sortByFreshness sorts newest-first by FreshnessTime, then by stars

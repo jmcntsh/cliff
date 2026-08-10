@@ -3,6 +3,14 @@
 Version history for shipped cliff releases. Keep this concise; use git history
 and PRs for implementation detail.
 
+## Unreleased
+
+- Added a `Hot` view ranked by net GitHub star growth, with `t` switching
+  between 7-day and 30-day windows. Rankings come from static daily registry
+  snapshots and do not use Cliff views or user telemetry.
+- Hot cards show the measured period change and label partial collection
+  windows while the registry builds its initial history.
+
 ## v0.2.1 - 2026-08-03
 
 - Ranked apps from the same weekly scrape batch by stars in the capped

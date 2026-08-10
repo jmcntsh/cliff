@@ -32,8 +32,13 @@ var helpLeft = []helpSection{
 // sidebar is always visible otherwise), and `o` open-on-github only
 // does anything from inside the README view. Showing either one in
 // contexts where it's a no-op misleads the user, so we hide them.
-func helpRightFor(layout layoutMode, from mode) []helpSection {
-	find := []key.Binding{keys.Search, keys.Sort}
+func helpRightFor(layout layoutMode, from mode, hot bool) []helpSection {
+	find := []key.Binding{keys.Search}
+	if hot {
+		find = append(find, keys.Timeframe)
+	} else {
+		find = append(find, keys.Sort)
+	}
 	if layout == layoutNarrow {
 		find = append(find, keys.Categories)
 	}
@@ -48,14 +53,14 @@ func helpRightFor(layout layoutMode, from mode) []helpSection {
 	}
 }
 
-func helpView(layout layoutMode, from mode) string {
+func helpView(layout layoutMode, from mode, hot bool) string {
 	header := theme.GradientTitle("cliff · keys")
 	intro := theme.MutedText.Render(
 		"arrows move where you look · ⏎ opens · ← or esc goes back",
 	)
 
 	left := renderHelpColumn(helpLeft)
-	right := renderHelpColumn(helpRightFor(layout, from))
+	right := renderHelpColumn(helpRightFor(layout, from, hot))
 	cols := lipgloss.JoinHorizontal(lipgloss.Top, left, "    ", right)
 
 	body := header + "\n" + intro + "\n\n" + cols

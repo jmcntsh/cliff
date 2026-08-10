@@ -254,3 +254,55 @@ func TestFilter_New_RespectsExplicitSort(t *testing.T) {
 		t.Errorf("expected recency sort to order newest first, got %s", got[0].Name)
 	}
 }
+
+func TestFilter_HotUsesMeasuredGrowthAndKeepsZero(t *testing.T) {
+	apps := []catalog.App{
+		{Name: "fast", Repo: "a/fast", Stars: 100, StarGrowth: map[string]int{"7d": 20}},
+		{Name: "flat", Repo: "a/flat", Stars: 200, StarGrowth: map[string]int{"7d": 0}},
+		{Name: "down", Repo: "a/down", Stars: 300, StarGrowth: map[string]int{"7d": -4}},
+		{Name: "missing", Repo: "a/missing", Stars: 1000},
+		{Name: "month-only", Repo: "a/month", Stars: 500, StarGrowth: map[string]int{"30d": 50}},
+	}
+
+	got := filterAndSort(apps, filterCriteria{category: categoryHot, hotWindow: "7d"})
+	if len(got) != 3 {
+		t.Fatalf("expected 3 measured weekly apps, got %d", len(got))
+	}
+	want := []string{"fast", "flat", "down"}
+	for i := range want {
+		if got[i].Name != want[i] {
+			t.Errorf("at %d: got %s, want %s", i, got[i].Name, want[i])
+		}
+	}
+	if countHot(apps, "7d") != 3 || countHot(apps, "30d") != 1 {
+		t.Errorf("countHot did not distinguish window membership")
+	}
+}
+
+func TestFilter_HotTieBreaksByLifetimeStarsThenName(t *testing.T) {
+	apps := []catalog.App{
+		{Name: "z-low", Repo: "a/z", Stars: 10, StarGrowth: map[string]int{"30d": 5}},
+		{Name: "z-high", Repo: "a/zh", Stars: 20, StarGrowth: map[string]int{"30d": 5}},
+		{Name: "a-high", Repo: "a/ah", Stars: 20, StarGrowth: map[string]int{"30d": 5}},
+	}
+
+	got := filterAndSort(apps, filterCriteria{category: categoryHot, hotWindow: "30d"})
+	want := []string{"a-high", "z-high", "z-low"}
+	for i := range want {
+		if got[i].Name != want[i] {
+			t.Errorf("at %d: got %s, want %s", i, got[i].Name, want[i])
+		}
+	}
+}
+
+func TestFilter_HotSearchRetainsGrowthOrder(t *testing.T) {
+	apps := []catalog.App{
+		{Name: "alpha fast", Repo: "a/fast", Description: "tool", StarGrowth: map[string]int{"7d": 20}},
+		{Name: "alpha slow", Repo: "a/slow", Description: "tool", StarGrowth: map[string]int{"7d": 2}},
+	}
+
+	got := filterAndSort(apps, filterCriteria{category: categoryHot, hotWindow: "7d", query: "alpha"})
+	if len(got) != 2 || got[0].Name != "alpha fast" {
+		t.Fatalf("Hot search should retain ranking order, got %+v", got)
+	}
+}

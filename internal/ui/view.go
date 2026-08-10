@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/install"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
 
@@ -73,7 +74,8 @@ func (r Root) View() string {
 	}
 
 	if r.mode == modeHelp {
-		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center, helpView(r.layout, r.helpReturnMode))
+		body = lipgloss.Place(r.width, contentH, lipgloss.Center, lipgloss.Center,
+			helpView(r.layout, r.helpReturnMode, r.sidebar.selected() == categoryHot))
 	}
 
 	if r.mode == modePkgConfirm {
@@ -113,7 +115,12 @@ func (r Root) computeTitle() string {
 	if cat != "" {
 		title += " · " + categoryDisplay(cat)
 	}
-	if query != "" {
+	if cat == categoryHot {
+		title += " · " + r.hotTitleLabel()
+		if query != "" {
+			title += fmt.Sprintf(" · %q", query)
+		}
+	} else if query != "" {
 		title += fmt.Sprintf(" · %q", query)
 	} else {
 		title += " · " + sortLabelFor(cat, r.sort)
@@ -121,7 +128,7 @@ func (r Root) computeTitle() string {
 	return title
 }
 
-// categoryDisplay maps the internal category sentinels (__new__,
+// categoryDisplay maps the internal category sentinels (__new__, __hot__,
 // __installed__) to the user-facing strings the sidebar uses, so the
 // title bar doesn't leak implementation details. Real category names
 // pass through unchanged.
@@ -129,6 +136,8 @@ func categoryDisplay(cat string) string {
 	switch cat {
 	case categoryNew:
 		return "new"
+	case categoryHot:
+		return "hot"
 	case categoryInstalled:
 		return "installed"
 	default:
@@ -149,20 +158,57 @@ func sortLabelFor(cat string, sort sortMode) string {
 	return sort.label()
 }
 
-func (r Root) emptyGridView(w, h int) string {
-	msg := theme.MutedItalic.Render("No apps match these filters.")
+func (r Root) hotTitleLabel() string {
+	windowID := r.hot.key()
+	base := windowID + " net stars ↓"
+	window, ok := r.catalog.StarWindows[windowID]
+	if !ok || !window.Available() {
+		return base + " · collecting history"
+	}
+	interval := formatHotInterval(window)
+	if !window.Complete {
+		return base + " · " + interval + " collected"
+	}
+	return base + " · " + interval
+}
 
-	var hint string
+func formatHotInterval(window catalog.StarWindow) string {
+	if !window.Available() {
+		return ""
+	}
+	from, to := window.From.UTC(), window.To.UTC()
+	if from.Year() == to.Year() {
+		return from.Format("Jan 2") + "–" + to.Format("Jan 2")
+	}
+	return from.Format("Jan 2, 2006") + "–" + to.Format("Jan 2, 2006")
+}
+
+func (r Root) emptyGridView(w, h int) string {
+	message := "No apps match these filters."
+	hint := ""
+
 	switch {
 	case r.search.Value() != "":
 		hint = "esc clear search"
+	case r.sidebar.selected() == categoryHot && !r.hotWindowAvailable():
+		message = "Collecting star history."
+		hint = "Hot rankings need two daily snapshots"
+	case r.sidebar.selected() == categoryHot:
+		message = "No apps have data for this Hot window."
+		hint = "t switch timeframe"
 	default:
 		hint = "try a different category"
 	}
+	msg := theme.MutedItalic.Render(message)
 	hintLine := theme.MutedText.Render(hint)
 
 	block := "  " + msg + "\n  " + hintLine
 	return lipgloss.NewStyle().Width(w).Height(h).Render(block)
+}
+
+func (r Root) hotWindowAvailable() bool {
+	window, ok := r.catalog.StarWindows[r.hot.key()]
+	return ok && window.Available()
 }
 
 func (r Root) footer() string {
@@ -181,9 +227,13 @@ func (r Root) footer() string {
 		primaryVerb = "U update"
 		enterVerb = "⏎ manage"
 	}
-	hints := "/ search · s sort · " + primaryVerb + " · " + enterVerb + " · ? help · q quit"
+	findVerb := "s sort"
+	if r.sidebar.selected() == categoryHot {
+		findVerb = "t timeframe"
+	}
+	hints := "/ search · " + findVerb + " · " + primaryVerb + " · " + enterVerb + " · ? help · q quit"
 	if r.layout == layoutNarrow {
-		hints = "/ search · c categories · " + primaryVerb + " · ? help · q quit"
+		hints = "/ search · c categories · " + findVerb + " · " + primaryVerb + " · ? help · q quit"
 	}
 	switch r.mode {
 	case modeSidebarOverlay:

@@ -99,6 +99,27 @@ const (
 	sortRecencyDesc
 )
 
+type hotPeriod int
+
+const (
+	hotPeriodWeek hotPeriod = iota
+	hotPeriodMonth
+)
+
+func (p hotPeriod) key() string {
+	if p == hotPeriodMonth {
+		return "30d"
+	}
+	return "7d"
+}
+
+func (p hotPeriod) next() hotPeriod {
+	if p == hotPeriodWeek {
+		return hotPeriodMonth
+	}
+	return hotPeriodWeek
+}
+
 func (s sortMode) label() string {
 	switch s {
 	case sortStarsDesc:
@@ -125,6 +146,7 @@ type Root struct {
 	focus   focusState
 	mode    mode
 	sort    sortMode
+	hot     hotPeriod
 
 	modeState
 	pkgState
@@ -357,10 +379,16 @@ func (r Root) refilter() Root {
 		category:  r.sidebar.selected(),
 		query:     r.search.Value(),
 		sort:      r.sort,
+		hotWindow: r.hot.key(),
 		installed: r.installed,
 	})
 
 	r.grid = r.grid.setApps(apps, r.installed)
+	if r.sidebar.selected() == categoryHot {
+		r.grid = r.grid.setGrowthWindow(r.hot.key())
+	} else {
+		r.grid = r.grid.setGrowthWindow("")
+	}
 	r.grid = r.grid.selectByRepo(selectedRepo)
 	gridW, gridH := r.gridDimensions()
 	r.grid = r.grid.setLayout(gridW, gridH)

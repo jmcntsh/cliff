@@ -9,10 +9,11 @@ $ curl cliff.sh | sh
 $ cliff
 ```
 
-A live catalog refreshed by the weekly scraper, rendered READMEs with
-inline screenshots, fuzzy search, one-key install via the project's own
-package manager (brew / cargo / npm / pipx / `go install`). No
-accounts, no telemetry, no hosted binaries.
+A live catalog refreshed by the weekly scraper, daily GitHub star-growth
+rankings, rendered READMEs with inline screenshots, fuzzy search, and
+one-key install via the project's own package manager (brew / cargo /
+npm / pipx / `go install`). No accounts, no telemetry, no hosted
+binaries.
 
 If the colors look washed out, your terminal is reporting the
 wrong background. Force it: `CLIFF_THEME=dark cliff` (or `light`).
@@ -33,7 +34,9 @@ to check for new tools and install them. That's it.
 
 - **Browse** the catalog in a real TUI. README rendered with Glamour
   inline, screenshots when your terminal supports graphics, metadata
-  sidebar, fuzzy search, a "New" row for this week's finds.
+  sidebar, fuzzy search, a "New" row for this week's finds, and a
+  "Hot" row ranked by net GitHub star growth. Press `t` in Hot to
+  switch between 7-day and 30-day rankings.
 - **Install** in one keystroke. cliff shells out to the right
   package manager (brew / cargo / npm / pipx / `go install` /
   upstream install script). We host zero binaries — we wrap
@@ -61,8 +64,9 @@ That's the whole product. It is small on purpose.
   Distributed via `curl cliff.sh | sh`, `brew`, `go install`.
 - **Registry:** TOML manifests in the registry repo, written mostly
   by a weekly GitHub-scraper workflow, compiled to `index.json` by CI,
-  served via GitHub Pages at `https://registry.cliff.sh/index.json`.
-  No catalog database.
+  and served via GitHub Pages at `https://registry.cliff.sh/index.json`.
+  CI also records daily public GitHub star-count snapshots for the
+  static Hot rankings. No catalog database or user-event collection.
 - **Distribution of apps:** wrap existing package managers. We
   host zero binaries and never will.
 - **Backend:** a small Cloudflare Worker serves the `cliff.sh`

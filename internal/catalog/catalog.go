@@ -14,6 +14,11 @@ type App struct {
 	Language    string `json:"language"`
 	Stars       int    `json:"stars"`
 	Homepage    string `json:"homepage"`
+	// StarGrowth contains net GitHub star-count changes keyed by the
+	// registry's window IDs ("7d", "30d"). Map membership matters:
+	// a present zero is a measured zero change, while a missing key
+	// means one of the endpoint observations was unavailable.
+	StarGrowth map[string]int `json:"star_growth,omitempty"`
 
 	Author      string   `json:"author,omitempty"`
 	Readme      string   `json:"readme,omitempty"`
@@ -340,10 +345,26 @@ type Category struct {
 	Count int    `json:"count"`
 }
 
+// StarWindow describes the two observations used for a published growth
+// window. Nil endpoints mean the registry is still collecting enough
+// history to calculate that window. A partial warm-up window has endpoints
+// but Complete=false, so clients can label the shorter interval honestly.
+type StarWindow struct {
+	RequestedDays int        `json:"requested_days"`
+	From          *time.Time `json:"from,omitempty"`
+	To            *time.Time `json:"to,omitempty"`
+	Complete      bool       `json:"complete"`
+}
+
+func (w StarWindow) Available() bool {
+	return w.From != nil && w.To != nil && w.To.After(*w.From)
+}
+
 type Catalog struct {
-	SchemaVersion int        `json:"schema_version"`
-	GeneratedAt   time.Time  `json:"generated_at"`
-	SourceCommit  string     `json:"source_commit"`
-	Apps          []App      `json:"apps"`
-	Categories    []Category `json:"categories"`
+	SchemaVersion int                   `json:"schema_version"`
+	GeneratedAt   time.Time             `json:"generated_at"`
+	SourceCommit  string                `json:"source_commit"`
+	Apps          []App                 `json:"apps"`
+	Categories    []Category            `json:"categories"`
+	StarWindows   map[string]StarWindow `json:"star_windows,omitempty"`
 }

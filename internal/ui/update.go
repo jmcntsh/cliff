@@ -208,8 +208,20 @@ func (r Root) updateBrowse(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return r, nil
 		}
 	case key.Matches(msg, keys.Sort):
+		if r.sidebar.selected() == categoryHot {
+			return r, nil
+		}
 		r.sort = r.nextSort()
 		return r.refilter(), nil
+	case key.Matches(msg, keys.Timeframe):
+		if r.sidebar.selected() != categoryHot {
+			return r, nil
+		}
+		r.hot = r.hot.next()
+		r.sidebar = r.sidebar.setHotCount(countHot(r.catalog.Apps, r.hot.key()))
+		r = r.refilter()
+		r.grid = r.grid.jumpTop()
+		return r, nil
 	case key.Matches(msg, keys.Search):
 		r.mode = modeSearch
 		r.search.Focus()

@@ -3,7 +3,13 @@
 Current shipped state. Product principles live in `CLAUDE.md`; historical
 release notes live in `CHANGELOG.md`.
 
-Last updated: 2026-08-03.
+Last updated: 2026-08-08.
+
+## In Development
+
+- A new `Hot` surface uses static 7-day and 30-day net GitHub star-growth
+  rankings generated from daily registry snapshots. This does not restore
+  the removed README-view tracking, `hot.json`, or Worker aggregation.
 
 ## Current Release
 

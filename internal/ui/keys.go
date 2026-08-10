@@ -20,6 +20,7 @@ type keyMap struct {
 	Upgrade     key.Binding
 	Search      key.Binding
 	Sort        key.Binding
+	Timeframe   key.Binding
 	Categories  key.Binding
 	Help        key.Binding
 	Quit        key.Binding
@@ -48,6 +49,7 @@ var keys = keyMap{
 	Upgrade:     key.NewBinding(key.WithKeys("U"), key.WithHelp("U", "update (if installed)")),
 	Search:      key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "search")),
 	Sort:        key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "cycle sort")),
+	Timeframe:   key.NewBinding(key.WithKeys("t"), key.WithHelp("t", "Hot timeframe")),
 	Categories:  key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "categories")),
 	Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 	Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),

@@ -13,11 +13,12 @@ import (
 // and a viewport (topRow). The layout decides cols/rows/cardSize each
 // frame based on the available width and height.
 type grid struct {
-	apps      []catalog.App
-	installed map[string]bool
+	apps         []catalog.App
+	installed    map[string]bool
+	growthWindow string
 
-	cursor  int // index into apps; clamped to [0, len(apps)-1]
-	topRow  int // first visible row of cards
+	cursor int // index into apps; clamped to [0, len(apps)-1]
+	topRow int // first visible row of cards
 
 	cols       int
 	rows       int
@@ -48,6 +49,11 @@ func (g grid) setApps(apps []catalog.App, installed map[string]bool) grid {
 		g.cursor = max(len(apps)-1, 0)
 	}
 	g.ensureCursorVisible()
+	return g
+}
+
+func (g grid) setGrowthWindow(window string) grid {
+	g.growthWindow = window
 	return g
 }
 
@@ -184,7 +190,7 @@ func (g grid) View() string {
 			app := g.apps[idx]
 			selected := idx == g.cursor
 			installed := g.installed[app.Repo]
-			rowCards = append(rowCards, renderCard(app, g.cardWidth, g.cardHeight, selected, installed, g.focused))
+			rowCards = append(rowCards, renderCard(app, g.cardWidth, g.cardHeight, selected, installed, g.focused, g.growthWindow))
 		}
 		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, joinWithGap(rowCards, cardHGap)...))
 	}
