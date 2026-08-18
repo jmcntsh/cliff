@@ -34,9 +34,9 @@ to check for new tools and install them. That's it.
 
 - **Browse** the catalog in a real TUI. README rendered with Glamour
   inline, screenshots when your terminal supports graphics, metadata
-  sidebar, fuzzy search, a "New" row for this week's finds, and a
-  "Hot" row ranked by net GitHub star growth. Press `t` in Hot to
-  switch between 7-day and 30-day rankings.
+  sidebar, fuzzy search, and a "Hot" row ranked by net GitHub star
+  growth. Press `t` in Hot to switch between 7-day and 30-day
+  rankings.
 - **Install** in one keystroke. cliff shells out to the right
   package manager (brew / cargo / npm / pipx / `go install` /
   upstream install script). We host zero binaries — we wrap

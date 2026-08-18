@@ -22,6 +22,19 @@ func selectSidebarCategory(t *testing.T, r Root, category string) Root {
 	return r
 }
 
+func TestSidebarUsesHotWithoutNew(t *testing.T) {
+	r := New(&catalog.Catalog{})
+	want := []string{"", categoryHot, categoryInstalled}
+	if len(r.sidebar.items) != len(want) {
+		t.Fatalf("sidebar items = %d, want %d", len(r.sidebar.items), len(want))
+	}
+	for i, name := range want {
+		if got := r.sidebar.items[i].name; got != name {
+			t.Errorf("sidebar item %d = %q, want %q", i, got, name)
+		}
+	}
+}
+
 func TestHotTimeframeSwitchesAndRefilters(t *testing.T) {
 	c := &catalog.Catalog{Apps: []catalog.App{
 		{Name: "weekly", Repo: "a/weekly", Stars: 20, StarGrowth: map[string]int{"7d": 10, "30d": 1}},

@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jmcntsh/cliff/internal/catalog"
 	"github.com/jmcntsh/cliff/internal/ui/theme"
@@ -25,14 +24,13 @@ type sidebar struct {
 	focused bool
 }
 
-// newSidebar builds the sidebar pinned at the top with All, New, Hot,
-// Installed, then every catalog category in registry order. Counts are
-// derived at runtime: New from FreshnessTime, Hot from measured weekly
-// growth, and Installed from the live install map.
+// newSidebar builds the sidebar pinned at the top with All, Hot,
+// Installed, then every catalog category in registry order. Hot is
+// derived from measured weekly growth, and Installed from the live
+// install map.
 func newSidebar(c *catalog.Catalog, installed map[string]bool) sidebar {
 	items := []sidebarItem{
 		{name: "", count: len(c.Apps)},
-		{name: categoryNew, count: countNew(c.Apps, time.Now())},
 		{name: categoryHot, count: countHot(c.Apps, hotPeriodWeek.key())},
 		{name: categoryInstalled, count: len(installed)},
 	}
@@ -42,14 +40,6 @@ func newSidebar(c *catalog.Catalog, installed map[string]bool) sidebar {
 	return sidebar{items: items}
 }
 
-// countNew returns how many apps currently qualify as New relative to
-// `now`. Kept as a package-level helper so newSidebar and setNewCount
-// agree on the rule (ultimately newSet's rule, which enforces the
-// fallback cap — so countNew is exactly len(newSet)).
-func countNew(apps []catalog.App, now time.Time) int {
-	return len(newSet(apps, now))
-}
-
 // setInstalled refreshes the Installed pseudo-category's count after an
 // install or uninstall. No-op if there is no Installed row (shouldn't
 // happen post-newSidebar, but cheap to guard).
@@ -57,20 +47,6 @@ func (s sidebar) setInstalled(installed map[string]bool) sidebar {
 	for i, item := range s.items {
 		if item.name == categoryInstalled {
 			s.items[i].count = len(installed)
-			break
-		}
-	}
-	return s
-}
-
-// setNewCount refreshes the New pseudo-category's count. Called at
-// startup (via newSidebar) and if we ever reload the catalog mid-
-// session. Not wired into any per-keypress path: the window is 7 days,
-// so the count is stable for the lifetime of a normal cliff session.
-func (s sidebar) setNewCount(n int) sidebar {
-	for i, item := range s.items {
-		if item.name == categoryNew {
-			s.items[i].count = n
 			break
 		}
 	}
@@ -141,8 +117,6 @@ func (s sidebar) view(height int) string {
 		switch name {
 		case "":
 			name = "All"
-		case categoryNew:
-			name = "New"
 		case categoryHot:
 			name = "Hot"
 		case categoryInstalled:

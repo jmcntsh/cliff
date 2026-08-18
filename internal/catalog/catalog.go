@@ -35,16 +35,11 @@ type App struct {
 	InstallSpecs []InstallSpec `json:"install_specs,omitempty"`
 
 	// LastCommit is the most recent commit on the project's default
-	// branch, snapshotted at index build time. Already emitted by the
-	// registry's CI; used here to power the "New" sidebar surface and
-	// as a fallback signal for freshness when AddedAt isn't set yet.
+	// branch, snapshotted at index build time. It is the fallback
+	// recency signal when AddedAt is unavailable.
 	LastCommit time.Time `json:"last_commit,omitempty"`
-	// AddedAt is when the manifest first landed in the registry. The
-	// registry doesn't populate this yet (planned), so clients treat
-	// zero as "unknown, fall back to LastCommit for the New filter".
-	// When present, it takes precedence: a freshly-added app with an
-	// old last commit (e.g. a well-maintained classic a curator just
-	// noticed) should still appear under New.
+	// AddedAt is when the manifest first landed in the registry. It is
+	// the primary recency signal; a zero value falls back to LastCommit.
 	AddedAt time.Time `json:"added_at,omitempty"`
 	// Optional author-provided recipes. Required for type=script (no
 	// general reverse exists); optional otherwise, where presence
@@ -192,10 +187,8 @@ func (a *App) ResolvedBinaryName(overrides map[string]string) string {
 	return a.BinaryName()
 }
 
-// FreshnessTime returns the timestamp the "New" filter should compare
-// against. Precedence: AddedAt (when the registry stamps it) → LastCommit
-// → zero time. Centralized here so the sidebar, grid badge, and any
-// future "new this week" surface all agree on the same rule.
+// FreshnessTime returns the timestamp used by recency sorting.
+// Precedence: AddedAt → LastCommit → zero time.
 func (a *App) FreshnessTime() time.Time {
 	if a == nil {
 		return time.Time{}

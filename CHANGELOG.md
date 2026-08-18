@@ -3,6 +3,11 @@
 Version history for shipped cliff releases. Keep this concise; use git history
 and PRs for implementation detail.
 
+## Unreleased
+
+- Removed the `New` sidebar view. `Hot` remains the single discovery
+  surface so browsing is based on measured GitHub star growth.
+
 ## v0.3.0 - 2026-08-10
 
 - Added a `Hot` view ranked by net GitHub star growth, with `t` switching

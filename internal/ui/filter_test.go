@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -50,9 +49,21 @@ func TestSort_RecencyDesc(t *testing.T) {
 		{Name: "mid", Repo: "a/mid", Stars: 1, LastCommit: now.Add(-30 * 24 * time.Hour)},
 		{Name: "new", Repo: "a/new", Stars: 50, LastCommit: now.Add(-1 * time.Hour)},
 	}
-	got := filterAndSort(apps, filterCriteria{sort: sortRecencyDesc, now: now})
+	got := filterAndSort(apps, filterCriteria{sort: sortRecencyDesc})
 	if got[0].Name != "new" || got[2].Name != "old" {
 		t.Errorf("expected newest first / oldest last, got %v", got)
+	}
+}
+
+func TestSort_RecencyDescPrefersAddedAt(t *testing.T) {
+	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
+	apps := []catalog.App{
+		{Name: "older-add", Repo: "a/older", AddedAt: now.Add(-365 * 24 * time.Hour), LastCommit: now.Add(-1 * time.Minute)},
+		{Name: "recent-fallback", Repo: "a/recent", LastCommit: now.Add(-2 * time.Hour)},
+	}
+	got := filterAndSort(apps, filterCriteria{sort: sortRecencyDesc})
+	if got[0].Name != "recent-fallback" {
+		t.Errorf("expected AddedAt to be the primary recency signal, got %s", got[0].Name)
 	}
 }
 
@@ -119,139 +130,6 @@ func TestFilter_Installed_SpansCategories(t *testing.T) {
 	})
 	if len(got) != 2 {
 		t.Fatalf("expected 2 apps across categories, got %d", len(got))
-	}
-}
-
-func TestFilter_New_AddedAtBranchExcludesLastCommitOnly(t *testing.T) {
-	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
-	apps := []catalog.App{
-		// Inside window via AddedAt; LastCommit is old → qualifies.
-		{Name: "fresh", Repo: "a/fresh", AddedAt: now.Add(-48 * time.Hour), LastCommit: now.Add(-365 * 24 * time.Hour)},
-		// AddedAt outside window even though LastCommit is recent —
-		// once any app in the catalog has AddedAt, we trust that signal
-		// exclusively and ignore LastCommit. This is the important
-		// invariant: mixing branches would let a well-maintained old
-		// project leak into a "new" surface.
-		{Name: "stale-add", Repo: "a/stale-add", AddedAt: now.Add(-30 * 24 * time.Hour), LastCommit: now.Add(-1 * time.Hour)},
-		// AddedAt unset; a peer app has AddedAt so we don't fall back.
-		// This app is excluded even though LastCommit is very recent.
-		{Name: "commit-fresh-but-no-added", Repo: "a/commit-fresh-but-no-added", LastCommit: now.Add(-1 * time.Hour)},
-	}
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
-	if len(got) != 1 || got[0].Name != "fresh" {
-		t.Fatalf("expected [fresh] only under AddedAt-exclusive branch, got %+v", got)
-	}
-}
-
-func TestFilter_New_LastCommitFallbackWhenAddedAtAbsent(t *testing.T) {
-	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
-	apps := []catalog.App{
-		{Name: "commit-fresh", Repo: "a/commit-fresh", LastCommit: now.Add(-24 * time.Hour)},
-		{Name: "cold", Repo: "a/cold", LastCommit: now.Add(-30 * 24 * time.Hour)},
-	}
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
-	if len(got) != 1 || got[0].Name != "commit-fresh" {
-		t.Fatalf("expected [commit-fresh] under fallback, got %+v", got)
-	}
-}
-
-func TestFilter_New_FallbackCapsToTopN(t *testing.T) {
-	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
-	// 15 apps, all inside the 7-day LastCommit window, none with
-	// AddedAt → fallback branch triggers and the cap kicks in at
-	// newCap (10). The 5 oldest should be dropped.
-	apps := make([]catalog.App, 0, 15)
-	for i := 0; i < 15; i++ {
-		apps = append(apps, catalog.App{
-			Name:       fmt.Sprintf("app-%02d", i),
-			Repo:       fmt.Sprintf("a/app-%02d", i),
-			LastCommit: now.Add(-time.Duration(i) * time.Hour),
-		})
-	}
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
-	if len(got) != newCap {
-		t.Fatalf("expected cap of %d, got %d", newCap, len(got))
-	}
-	for i, app := range got {
-		wantName := fmt.Sprintf("app-%02d", i)
-		if app.Name != wantName {
-			t.Errorf("at %d: expected %s, got %s", i, wantName, app.Name)
-		}
-	}
-}
-
-func TestFilter_New_AddedAtCapsToTopN(t *testing.T) {
-	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
-	// Launch-week shape: 15 apps all added within the past week via
-	// AddedAt. Without a cap this returns the whole catalog and the
-	// "New" row shows everything — useless. With the cap we keep the
-	// 10 most recently added.
-	apps := make([]catalog.App, 0, 15)
-	for i := 0; i < 15; i++ {
-		apps = append(apps, catalog.App{
-			Name:    fmt.Sprintf("app-%02d", i),
-			Repo:    fmt.Sprintf("a/app-%02d", i),
-			AddedAt: now.Add(-time.Duration(i) * time.Hour),
-		})
-	}
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
-	if len(got) != newCap {
-		t.Fatalf("expected cap of %d, got %d", newCap, len(got))
-	}
-	for i, app := range got {
-		wantName := fmt.Sprintf("app-%02d", i)
-		if app.Name != wantName {
-			t.Errorf("at %d: expected %s, got %s", i, wantName, app.Name)
-		}
-	}
-}
-
-func TestFilter_New_RanksSameBatchByStars(t *testing.T) {
-	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
-	apps := make([]catalog.App, 0, 15)
-	for i := 0; i < 15; i++ {
-		apps = append(apps, catalog.App{
-			Name:    fmt.Sprintf("app-%02d", i),
-			Repo:    fmt.Sprintf("a/app-%02d", i),
-			Stars:   i,
-			AddedAt: now.Add(-24 * time.Hour),
-		})
-	}
-
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, now: now})
-	if len(got) != newCap {
-		t.Fatalf("expected cap of %d, got %d", newCap, len(got))
-	}
-	for i, app := range got {
-		wantName := fmt.Sprintf("app-%02d", 14-i)
-		if app.Name != wantName {
-			t.Errorf("at %d: expected %s, got %s", i, wantName, app.Name)
-		}
-	}
-}
-
-func TestFilter_New_EmptyWhenNoTimestamps(t *testing.T) {
-	got := filterAndSort(sample(), filterCriteria{category: categoryNew, now: time.Now()})
-	if len(got) != 0 {
-		t.Errorf("sample() has no freshness timestamps; expected 0 results, got %d", len(got))
-	}
-}
-
-func TestFilter_New_RespectsExplicitSort(t *testing.T) {
-	now := time.Date(2026, 4, 23, 12, 0, 0, 0, time.UTC)
-	apps := []catalog.App{
-		// The New surface defaults to freshness order only for the
-		// default stars sort; an explicit sort choice must win.
-		{Name: "few-stars-newer", Repo: "a/newer", Stars: 10, AddedAt: now.Add(-24 * time.Hour)},
-		{Name: "many-stars-older", Repo: "a/older", Stars: 100, AddedAt: now.Add(-48 * time.Hour)},
-	}
-	got := filterAndSort(apps, filterCriteria{category: categoryNew, sort: sortStarsDesc, now: now})
-	if got[0].Name != "few-stars-newer" {
-		t.Errorf("expected default stars sort on New to use freshness override, got %s", got[0].Name)
-	}
-	got = filterAndSort(apps, filterCriteria{category: categoryNew, sort: sortRecencyDesc, now: now})
-	if got[0].Name != "few-stars-newer" {
-		t.Errorf("expected recency sort to order newest first, got %s", got[0].Name)
 	}
 }
 
