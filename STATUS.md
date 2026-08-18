@@ -3,18 +3,17 @@
 Current shipped state. Product principles live in `CLAUDE.md`; historical
 release notes live in `CHANGELOG.md`.
 
-Last updated: 2026-08-10.
+Last updated: 2026-08-18.
 
 ## Current Release
 
-Latest release: `v0.3.0` (2026-08-10).
+Latest release: `v0.3.1` (2026-08-18).
 
+- **Discovery navigation:** `Hot` is the single discovery surface; the
+  redundant `New` sidebar view has been removed.
 - **Hot rankings:** the `Hot` sidebar surface ranks apps by static 7-day or
   30-day net GitHub star growth from daily registry snapshots. It does not
   use Cliff views, accounts, or user telemetry.
-- **Discovery refresh:** apps added in the same weekly scrape batch are
-  ranked by stars in the capped New view, so it surfaces the highest-interest
-  recent tools instead of selecting alphabetically.
 - **Respec:** cliff is now scoped to a
   GitHub CLI/TUI scraper + browser + installer. Removed from the client:
   the submit flow (`cliff submit`, `+` keybind, huh form), reel
@@ -23,7 +22,7 @@ Latest release: `v0.3.0` (2026-08-10).
   (READMEs now fetch directly from the GitHub API). The Worker is
   reduced to serving the install script and landing page — Analytics Engine
   logging, R2 stats, and the daily aggregation crons are gone. Standard sorts are
-  `stars ↓` and `recency ↓`; sidebar rows are All / New / Hot /
+  `stars ↓` and `recency ↓`; sidebar rows are All / Hot /
   Installed / categories.
 - README screenshots auto-load inline at the top of the detail view when the
   terminal supports Kitty, iTerm, or Sixel graphics; halfblocks is the
