@@ -27,77 +27,136 @@ const LANDING_HTML = `<!doctype html>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>cliff — a terminal-native directory for CLIs and TUIs</title>
   <meta name="description" content="Browse, preview, and install terminal apps without leaving the terminal.">
+  <meta name="theme-color" content="#050705">
+  <link rel="preload" href="https://jmcnt.sh/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <style>
-    :root { color-scheme: light dark; }
+    /* Matches the jmcnt.sh HUD look: green Departure Mono over a darkened nature video */
+    @font-face {
+      font-family: "Departure Mono";
+      src: url("https://jmcnt.sh/fonts/DepartureMono-Regular.woff2") format("woff2"),
+           url("https://jmcnt.sh/fonts/DepartureMono-Regular.woff") format("woff");
+      font-display: swap;
+    }
+    :root {
+      color-scheme: dark;
+      --hud: #6dff9a;
+      --hud-dim: rgba(109, 255, 154, 0.62);
+      --line: rgba(109, 255, 154, 0.35);
+      --glow:
+        0 0 2px rgba(109, 255, 154, 0.9),
+        0 0 10px rgba(109, 255, 154, 0.45),
+        0 0 28px rgba(109, 255, 154, 0.25);
+      --glow-soft: 0 0 6px rgba(109, 255, 154, 0.35);
+    }
+    html { background: #050705; }
+    /* Departure Mono is drawn on an 11px grid; sizes stay on multiples of 11 */
     body {
-      font: 16px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
-      max-width: 42rem;
-      margin: 4rem auto;
-      padding: 0 1.5rem;
-      color: #1a1a1a;
-      background: #fafafa;
+      max-width: 44rem;
+      margin: 0 auto;
+      padding: 7rem 1.5rem 4rem;
+      background: transparent;
+      color: var(--hud);
+      font: 11px/1.9 "Departure Mono", ui-monospace, Menlo, monospace;
+      letter-spacing: 0.06em;
+      text-shadow: var(--glow-soft);
+      -webkit-font-smoothing: antialiased;
     }
-    @media (prefers-color-scheme: dark) {
-      body { color: #e6e6e6; background: #111; }
-      pre { background: #1c1c1c !important; }
-      a { color: #c586c0; }
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: #050705 center / cover no-repeat;
     }
-    h1 { font-size: 1.6rem; margin-bottom: 0.2rem; }
-    .tagline { color: #888; margin-top: 0; }
+    .bg video { width: 100%; height: 100%; object-fit: cover; }
+    .bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(4, 7, 4, 0.5) 0%, rgba(4, 7, 4, 0.78) 100%),
+        rgba(4, 7, 4, 0.35);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      pointer-events: none;
+      background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.22) 2px 3px);
+    }
+    h1 {
+      margin: 0 0 0.4rem;
+      font-size: 88px;
+      font-weight: 400;
+      line-height: 1;
+      text-shadow: var(--glow);
+    }
+    h1::after {
+      content: "";
+      display: inline-block;
+      width: 0.5em;
+      height: 0.8em;
+      margin-left: 0.1em;
+      background: var(--hud);
+      box-shadow: 0 0 8px var(--hud-dim);
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .tagline {
+      margin: 0 0 3rem;
+      font-size: 22px;
+      line-height: 1.4;
+      text-transform: uppercase;
+      text-shadow: var(--glow);
+    }
+    p { color: var(--hud-dim); }
+    code { color: var(--hud); font: inherit; }
     pre {
-      background: #f0f0f0;
-      padding: 0.9rem 1rem;
-      border-radius: 6px;
-      overflow-x: auto;
-      font-size: 0.95rem;
       margin: 0;
+      padding: 0.9rem 1rem;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      font: inherit;
+      font-size: 22px;
+      line-height: 1.4;
+      color: var(--hud);
+      text-shadow: var(--glow);
     }
-    .cmd {
-      position: relative;
-      margin: 1rem 0;
-    }
-    .cmd pre { padding-right: 2.75rem; }
+    pre::before { content: "$ "; color: var(--hud-dim); }
+    .cmd { position: relative; margin: 1rem 0 2rem; }
+    .cmd pre { padding-right: 3.5rem; }
     .copy-btn {
       position: absolute;
-      top: 0.45rem;
-      right: 0.45rem;
-      width: 2rem;
-      height: 2rem;
+      top: 50%;
+      right: 0.6rem;
+      width: 2.2rem;
+      height: 2.2rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      transform: translateY(-50%);
       background: transparent;
       border: 1px solid transparent;
-      border-radius: 4px;
-      color: #888;
+      color: var(--hud-dim);
       cursor: pointer;
-      font: inherit;
       padding: 0;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
-    .copy-btn:hover {
-      background: rgba(0, 0, 0, 0.06);
-      color: #1a1a1a;
-      border-color: rgba(0, 0, 0, 0.1);
+    .copy-btn:hover { color: var(--hud); border-color: var(--line); background: rgba(109, 255, 154, 0.08); }
+    .copy-btn:focus-visible { outline: 1px dashed var(--hud-dim); outline-offset: 2px; }
+    .copy-btn svg { width: 1.1rem; height: 1.1rem; display: block; }
+    .copy-btn.copied { color: var(--hud); }
+    a { color: var(--hud); text-decoration: underline; text-underline-offset: 0.2em; }
+    a:hover { text-shadow: var(--glow); }
+    footer { margin-top: 3rem; color: var(--hud-dim); }
+    ::selection { background: rgba(109, 255, 154, 0.3); color: var(--hud); }
+    @media (max-width: 720px) {
+      body { padding-top: 4.5rem; }
+      h1 { font-size: 66px; }
+      pre { font-size: 11px; }
     }
-    .copy-btn:focus-visible {
-      outline: 2px solid #8a4d8a;
-      outline-offset: 1px;
+    @media (prefers-reduced-motion: reduce) {
+      h1::after { animation: none; }
     }
-    .copy-btn svg { width: 1rem; height: 1rem; display: block; }
-    .copy-btn.copied { color: #2e7d32; }
-    @media (prefers-color-scheme: dark) {
-      .copy-btn { color: #888; }
-      .copy-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: #e6e6e6;
-        border-color: rgba(255, 255, 255, 0.12);
-      }
-      .copy-btn.copied { color: #81c784; }
-    }
-    a { color: #8a4d8a; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    footer { margin-top: 3rem; color: #888; font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -109,8 +168,8 @@ const LANDING_HTML = `<!doctype html>
     <pre id="cmd-brew">brew install jmcntsh/tap/cliff</pre>
     <button type="button" class="copy-btn" data-copy-target="cmd-brew" aria-label="Copy command">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-        <rect x="5" y="5" width="8" height="9" rx="1.25"></rect>
-        <path d="M3 11V3.25A1.25 1.25 0 0 1 4.25 2H10"></path>
+        <rect x="5" y="5" width="8" height="9"></rect>
+        <path d="M3 11V2h7"></path>
       </svg>
     </button>
   </div>
@@ -120,8 +179,8 @@ const LANDING_HTML = `<!doctype html>
     <pre id="cmd-curl">curl -fsSL https://cliff.sh | sh</pre>
     <button type="button" class="copy-btn" data-copy-target="cmd-curl" aria-label="Copy command">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-        <rect x="5" y="5" width="8" height="9" rx="1.25"></rect>
-        <path d="M3 11V3.25A1.25 1.25 0 0 1 4.25 2H10"></path>
+        <rect x="5" y="5" width="8" height="9"></rect>
+        <path d="M3 11V2h7"></path>
       </svg>
     </button>
   </div>
@@ -133,10 +192,37 @@ const LANDING_HTML = `<!doctype html>
   </p>
 
   <footer>
-    No accounts, no payments, no hosted binaries — cliff wraps brew, cargo,
+    No accounts, no payments, no hosted binaries. cliff wraps brew, cargo,
     npm, pipx, and friends.
   </footer>
 
+  <script>
+    (function () {
+      var clips = ["meadow", "sea", "drive"];
+      var clip = clips[Math.floor(Math.random() * clips.length)];
+      var base = "https://jmcnt.sh/media/" + clip;
+      var bg = document.createElement("div");
+      bg.className = "bg";
+      bg.setAttribute("aria-hidden", "true");
+      bg.style.backgroundImage = "url(" + base + "-poster.jpg)";
+      var reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var saveData = navigator.connection && navigator.connection.saveData === true;
+      if (!reduceMotion && !saveData) {
+        var video = document.createElement("video");
+        video.muted = true;
+        video.loop = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.setAttribute("muted", "");
+        video.setAttribute("playsinline", "");
+        video.poster = base + "-poster.jpg";
+        video.src = base + (matchMedia("(max-width: 720px)").matches ? "-720.mp4" : "-1080.mp4");
+        bg.appendChild(video);
+        video.play().catch(function () {});
+      }
+      document.body.prepend(bg);
+    })();
+  </script>
   <script>
     (function () {
       var checkSVG =
